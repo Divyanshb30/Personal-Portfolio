@@ -1,33 +1,63 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { film, CHAPTERS } from "@/lib/scroll";
 import { identity, builds, stack, journey, explore, now, profile, regions } from "@/lib/content";
+import Nav from "@/components/ui/Nav";
+
+/** 0 below a, 1 above b, smooth between. */
+function smooth(x: number, a: number, b: number) {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
 
 /**
- * The DOM layer over the film — scroll length (chapter anchors) plus recessive,
- * per-chapter typography that fades in on its scroll window and sits OPPOSITE the
- * orb (which drifts left/right). Interface defers to the world.
+ * A chapter's DOM content, faded in/out over a progress window via RAF (no
+ * per-frame React re-render). Positioned to sit opposite the orb's drift.
  */
-export default function Overlay() {
+function Beat({
+  a,
+  b,
+  className = "",
+  children,
+}: {
+  a: number;
+  b: number;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let raf = 0;
+    const m = 0.028;
     const loop = () => {
       const p = film.progress;
-      document.querySelectorAll<HTMLElement>(".chap").forEach((el) => {
-        const from = parseFloat(el.dataset.from || "0");
-        const to = parseFloat(el.dataset.to || "1");
-        const o = windowOpacity(p, from, to);
+      const o = smooth(p, a, a + m) * (1 - smooth(p, b - m, b));
+      const el = ref.current;
+      if (el) {
         el.style.opacity = String(o);
-        el.style.transform = `translateY(${(1 - o) * 16}px)`;
+        el.style.transform = `translateY(${(1 - o) * 12}px)`;
         el.style.pointerEvents = o > 0.6 ? "auto" : "none";
-      });
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [a, b]);
+  return (
+    <div ref={ref} className={`fixed z-20 ${className}`} style={{ opacity: 0 }}>
+      {children}
+    </div>
+  );
+}
 
+const flow = ["QUESTION", "EXPLORE", "UNDERSTAND", "BUILD"];
+
+/**
+ * The DOM layer over the film — recessive, chapter-by-chapter. Interface defers
+ * to the world (Lusion). Real content from content.ts.
+ */
+export default function Overlay() {
   return (
     <>
       {/* scroll length — one anchor per chapter */}
@@ -35,112 +65,117 @@ export default function Overlay() {
         {CHAPTERS.map((c) => (
           <section key={c} id={c} className="h-[130svh]" aria-hidden />
         ))}
-        <div className="h-[30svh]" aria-hidden />
+        <div className="h-[40svh]" aria-hidden />
       </div>
 
-      {/* ---------- IDENTITY (orb centre → text lower-left) ---------- */}
-      <Block from={-0.03} to={0.075} className="left-6 bottom-[14%] md:left-14">
-        <h1 className="font-display text-[11vw] font-semibold leading-[0.86] tracking-[-0.03em] text-bone md:text-[5.6rem]">
-          Divyansh
+      <Nav />
+
+      {/* 01 IDENTITY — name beside the figure, never over the face */}
+      <Beat a={-0.05} b={0.09} className="bottom-[12%] left-6 md:left-14">
+        <h1 className="font-display text-[10vw] font-semibold leading-[0.86] tracking-[-0.03em] text-bone md:text-[5.4rem]">
+          {identity.name.split(" ")[0]}
           <br />
-          Bansal
+          {identity.name.split(" ")[1]}
         </h1>
-        <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.34em] text-smoke">
-          {identity.roles.join("  ·  ")}
+        <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.32em] text-smoke">
+          {identity.roles.join(" · ")}
         </p>
-        <p className="mt-2 max-w-[30ch] font-body text-[13px] leading-relaxed text-faint">{identity.line}</p>
-      </Block>
+        <p className="mt-2 max-w-[30ch] font-body text-[13px] leading-relaxed text-faint">
+          {identity.line}
+        </p>
+        <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.4em] text-faint/70">move · explore</p>
+      </Beat>
 
-      {/* ---------- THINK (orb left → text right) ---------- */}
-      <Block from={0.12} to={0.235} className="right-6 top-1/2 -translate-y-1/2 text-right md:right-14">
-        <Kicker>How he thinks</Kicker>
-        <h2 className="font-display text-[8vw] font-medium leading-[0.95] tracking-[-0.03em] text-bone md:text-[4rem]">
-          Question<span className="text-smoke">, </span>then build.
-        </h2>
-        <p className="ml-auto mt-4 max-w-[36ch] font-body text-[13.5px] leading-relaxed text-smoke">
-          Curiosity first. Every problem worth solving reveals a bigger one — so
-          the work is to keep expanding the system until it holds.
-        </p>
-        <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.24em] text-faint">
-          question → explore → understand → build
-        </p>
-      </Block>
-
-      {/* ---------- BUILD (orb right → text left) ---------- */}
-      <Block from={0.25} to={0.4} className="left-6 top-1/2 -translate-y-1/2 md:left-14">
-        <Kicker>What he builds</Kicker>
-        <h2 className="font-display text-[8vw] font-semibold leading-[0.9] tracking-[-0.03em] text-bone md:text-[4rem]">Build.</h2>
-        <ul className="mt-5 space-y-3">
-          {builds.map((b) => (
-            <li key={b.title} className="max-w-[42ch]">
-              <div className="flex items-baseline gap-3">
-                <span className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-bone/80">{b.kind}</span>
-                <span className="font-body text-[14px] text-smoke">{b.title}</span>
-              </div>
-              <p className="mt-0.5 font-body text-[12px] leading-snug text-faint">{b.hint}</p>
+      {/* 02 THINK — how he thinks (right; orb sits left) */}
+      <Beat a={0.11} b={0.22} className="right-6 top-1/2 -translate-y-1/2 text-right md:right-16">
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">How I think</p>
+        <ul className="space-y-2">
+          {flow.map((f, i) => (
+            <li key={f} className="font-display text-[6vw] leading-[1.02] tracking-[-0.02em] text-bone md:text-[2rem]">
+              <span className="mr-2 align-middle font-mono text-[11px] text-faint">{i + 1}</span>
+              {f}
             </li>
           ))}
         </ul>
-      </Block>
+      </Beat>
 
-      {/* ---------- STACK (orb centre-back → capability columns) ---------- */}
-      <Block from={0.4} to={0.545} className="left-1/2 top-[58%] w-[min(92vw,760px)] -translate-x-1/2 -translate-y-1/2 text-center">
-        <Kicker>The machinery beneath it</Kicker>
-        <h2 className="font-display text-[8vw] font-semibold leading-[0.9] tracking-[-0.03em] text-bone md:text-[3.6rem]">Stack.</h2>
-        <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-5 text-left sm:grid-cols-3">
+      {/* 03 BUILD — projects as manifestations, a short clue each (left; orb right) */}
+      <Beat a={0.24} b={0.36} className="left-6 top-1/2 max-w-[40ch] -translate-y-1/2 md:left-16">
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">What I build</p>
+        <ul className="space-y-4">
+          {builds.map((b) => (
+            <li key={b.title}>
+              <div className="flex items-baseline gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">{b.kind}</span>
+                <span className="font-display text-[1.15rem] leading-tight tracking-[-0.01em] text-bone">{b.title}</span>
+              </div>
+              <p className="mt-0.5 max-w-[42ch] font-body text-[12px] leading-snug text-faint">{b.hint}</p>
+            </li>
+          ))}
+        </ul>
+      </Beat>
+
+      {/* 04 STACK — capability legend (the constellation carries the tech) */}
+      <Beat a={0.38} b={0.49} className="bottom-[14%] left-6 md:left-16">
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">Underneath — the machinery</p>
+        <ul className="flex flex-wrap gap-x-6 gap-y-1 max-w-[42ch]">
           {stack.map((s) => (
-            <div key={s.cap}>
-              <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-bone/80">{s.cap}</div>
-              <div className="mt-1 font-body text-[12px] leading-relaxed text-faint">{s.items.join(" · ")}</div>
-            </div>
+            <li key={s.cap} className="font-mono text-[11px] uppercase tracking-[0.18em] text-bone">{s.cap}</li>
+          ))}
+        </ul>
+      </Beat>
+
+      {/* 05 JOURNEY — the DTU ERP documentary (the ecosystem grows in 3D).
+          The story is told as captions over the growing world; the arc frames it. */}
+      <Beat a={0.51} b={0.665} className="bottom-[13%] left-6 md:left-16">
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">DTU ERP · a system that kept growing</p>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          {journey.map((j) => (
+            <span key={j.year} className="font-mono text-[10px] tracking-[0.12em] text-faint">
+              <span className="text-smoke">{j.year}</span> {j.title}
+            </span>
           ))}
         </div>
-      </Block>
+      </Beat>
 
-      {/* ---------- JOURNEY (orb left → timeline right) ---------- */}
-      <Block from={0.55} to={0.695} className="right-6 top-1/2 -translate-y-1/2 text-right md:right-14">
-        <Kicker>How he got here</Kicker>
-        <h2 className="font-display text-[8vw] font-semibold leading-[0.9] tracking-[-0.03em] text-bone md:text-[4rem]">Journey.</h2>
-        <ul className="ml-auto mt-5 max-w-[40ch] space-y-2.5">
-          {journey.map((j) => (
-            <li key={j.year} className="flex items-baseline justify-end gap-3">
-              <span className="max-w-[30ch] font-body text-[12.5px] leading-snug text-faint">{j.note}</span>
-              <span className="font-mono text-[11px] tracking-wide text-bone/80">{j.title}</span>
-              <span className="w-10 shrink-0 font-mono text-[10.5px] text-faint">{j.year}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 font-body text-[13px] italic text-smoke">It started with a form. It became a platform.</p>
-      </Block>
+      {/* DTU documentary captions — change as the world grows */}
+      <Beat a={0.51} b={0.556} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
+        <p className="font-display text-[6vw] font-medium leading-tight tracking-[-0.02em] text-bone md:text-[2.4rem]">It started with one form.</p>
+      </Beat>
+      <Beat a={0.556} b={0.6} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
+        <p className="font-display text-[6vw] font-medium leading-tight tracking-[-0.02em] text-bone md:text-[2.4rem]">Then the problem kept growing.</p>
+      </Beat>
+      <Beat a={0.6} b={0.632} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
+        <p className="font-display text-[6vw] font-medium leading-tight tracking-[-0.02em] text-bone md:text-[2.4rem]">It became a department&rsquo;s platform.</p>
+      </Beat>
+      <Beat a={0.632} b={0.67} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
+        <p className="font-display text-[7vw] font-semibold leading-tight tracking-[-0.02em] text-bone md:text-[3rem]">2,000+ students. Still live.</p>
+      </Beat>
 
-      {/* ---------- EXPLORE (orb right → text left) ---------- */}
-      <Block from={0.7} to={0.83} className="left-6 top-1/2 -translate-y-1/2 md:left-14">
-        <Kicker>Beyond the title</Kicker>
-        <h2 className="font-display text-[8vw] font-semibold leading-[0.9] tracking-[-0.03em] text-bone md:text-[4rem]">Explore.</h2>
-        <ul className="mt-5 max-w-[40ch] space-y-2.5">
+      {/* 06 EXPLORE — deliberately broad (left; orb right) */}
+      <Beat a={0.67} b={0.78} className="left-6 top-1/2 max-w-[36ch] -translate-y-1/2 md:left-16">
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">Beyond the title</p>
+        <ul className="space-y-3">
           {explore.map((e) => (
             <li key={e.title}>
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-bone/80">{e.title}</span>
-              <span className="ml-3 font-body text-[12.5px] text-faint">{e.note}</span>
+              <div className="font-display text-[1.4rem] tracking-[-0.01em] text-bone">{e.title}</div>
+              <p className="max-w-[36ch] font-body text-[12px] leading-snug text-faint">{e.note}</p>
             </li>
           ))}
         </ul>
-      </Block>
+      </Beat>
 
-      {/* ---------- NOW (orb left → text right) ---------- */}
-      <Block from={0.83} to={0.92} className="right-6 top-1/2 -translate-y-1/2 text-right md:right-14">
-        <Kicker>Present tense</Kicker>
-        <h2 className="font-display text-[8vw] font-semibold leading-[0.9] tracking-[-0.03em] text-bone md:text-[4rem]">Now.</h2>
-        <dl className="ml-auto mt-5 max-w-[40ch] space-y-3">
-          <Row label="Building">{now.building}</Row>
-          <Row label="Exploring">{now.exploring}</Row>
-          <Row label="Open to">{now.open}</Row>
-        </dl>
-      </Block>
+      {/* 07 NOW — present tense (right) */}
+      <Beat a={0.8} b={0.9} className="right-6 top-1/2 max-w-[34ch] -translate-y-1/2 text-right md:right-16">
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">Now</p>
+        <p className="font-display text-[1.5rem] leading-snug tracking-[-0.01em] text-bone">{now.building}</p>
+        <p className="mt-3 font-body text-[12.5px] leading-relaxed text-smoke">Exploring — {now.exploring}</p>
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-faint">{now.open}</p>
+      </Beat>
 
-      {/* ---------- HUMAN — the close ---------- */}
-      <Block from={0.95} to={1.01} className="inset-0 flex flex-col items-center justify-center gap-8 px-6 text-center">
-        <h2 className="max-w-[16ch] font-display text-[9vw] font-semibold leading-[0.92] tracking-[-0.03em] text-bone md:text-[4.6rem]">
+      {/* 08 HUMAN — the close */}
+      <Beat a={0.94} b={1.06} className="inset-0 flex flex-col items-center justify-center gap-8 px-6 text-center">
+        <h2 className="font-display text-[9vw] font-semibold leading-[0.9] tracking-[-0.03em] text-bone md:text-[4.6rem]">
           Let&rsquo;s talk.
         </h2>
         <div className="flex flex-col items-center gap-4">
@@ -158,40 +193,7 @@ export default function Overlay() {
             ))}
           </div>
         </div>
-      </Block>
+      </Beat>
     </>
   );
-}
-
-function Block({ from, to, className = "", children }: { from: number; to: number; className?: string; children: React.ReactNode }) {
-  return (
-    <div className={`chap fixed z-20 opacity-0 ${className}`} data-from={from} data-to={to}>
-      {children}
-    </div>
-  );
-}
-
-function Kicker({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-faint">{children}</p>;
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-end gap-3">
-      <dd className="max-w-[32ch] font-body text-[12.5px] leading-snug text-smoke">{children}</dd>
-      <dt className="w-16 shrink-0 font-mono text-[9.5px] uppercase tracking-[0.2em] text-faint">{label}</dt>
-    </div>
-  );
-}
-
-/** 0 outside [from,to], 1 in the middle, smooth fades at both edges. */
-function windowOpacity(p: number, from: number, to: number) {
-  const fade = 0.028;
-  const rise = clamp01((p - from) / fade);
-  const fall = clamp01((to - p) / fade);
-  const t = Math.min(rise, fall);
-  return t * t * (3 - 2 * t);
-}
-function clamp01(x: number) {
-  return Math.max(0, Math.min(1, x));
 }

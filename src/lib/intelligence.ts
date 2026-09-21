@@ -173,9 +173,8 @@ import type { Chapter } from "./scroll";
 export function topicToChapter(topic: string | null): Chapter | null {
   if (!topic) return null;
   const t = topic.toLowerCase();
-  if (t.includes("agent") || t.includes("five-agent") || t.includes("platform") || t.includes("impact")) return "build";
-  if (t.includes("intellicode") || t.includes("loan") || t.includes("transformer") || t.includes("project")) return "build";
   if (t.includes("research") || t.includes("erp")) return "journey";
+  if (t.includes("agent") || t.includes("platform") || t.includes("impact") || t.includes("intellicode") || t.includes("loan") || t.includes("transformer") || t.includes("project")) return "build";
   if (t.includes("skill") || t.includes("stack")) return "stack";
   if (t.includes("recognition")) return "explore";
   if (t.includes("contact")) return "human";

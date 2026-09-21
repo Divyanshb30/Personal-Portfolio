@@ -1,24 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { CHAPTERS, CHAPTER_LABEL, chapterAt, goTo, film, type Chapter } from "@/lib/scroll";
 
 /**
- * Minimal nav — the chapters as a single line of markers. The current chapter
- * lights up; clicking one glides the film there (via the AI's goTo). Recessive,
- * single line at desktop; on mobile it collapses to the name + a compact rail.
+ * A recessive chapter index down the right edge. Marks the current chapter and
+ * jumps on click (reuses goTo / Lenis). No bar chrome — the interface defers to
+ * the world. Current chapter is tracked via RAF (no per-frame re-render).
  */
 export default function Nav() {
-  const [active, setActive] = useState<Chapter>("identity");
-  const last = useRef<Chapter>("identity");
+  const items = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     let raf = 0;
+    let last = "";
     const loop = () => {
       const c = chapterAt(film.progress);
-      if (c !== last.current) {
-        last.current = c;
-        setActive(c);
+      if (c !== last) {
+        last = c;
+        CHAPTERS.forEach((ch, i) => {
+          const el = items.current[i];
+          if (el) el.dataset.active = ch === c ? "1" : "0";
+        });
       }
       raf = requestAnimationFrame(loop);
     };
@@ -27,35 +30,27 @@ export default function Nav() {
   }, []);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-[60] flex items-center justify-between px-6 py-4 md:px-10">
-      <button
-        data-cursor
-        onClick={() => goTo("identity")}
-        className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone transition-opacity hover:opacity-70"
-      >
-        Divyansh Bansal
-      </button>
-
-      <nav className="hidden items-center gap-5 md:flex">
-        {CHAPTERS.map((c) => (
+    <nav className="pointer-events-none fixed inset-x-0 top-5 z-[60] hidden justify-center md:flex">
+      <div className="pointer-events-auto flex items-center gap-4">
+        {CHAPTERS.map((ch: Chapter, i) => (
           <button
-            key={c}
+            key={ch}
+            ref={(el) => {
+              items.current[i] = el;
+            }}
             data-cursor
-            onClick={() => goTo(c)}
-            className={`font-mono text-[10px] uppercase tracking-[0.2em] transition-colors ${
-              active === c ? "text-bone" : "text-faint hover:text-smoke"
-            }`}
+            data-active="0"
+            onClick={() => goTo(ch)}
+            aria-label={`Go to ${CHAPTER_LABEL[ch]}`}
+            className="group flex flex-col items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.24em] text-faint transition-colors data-[active=1]:text-bone hover:text-smoke"
           >
-            {CHAPTER_LABEL[c]}
+            <span className="opacity-0 transition-opacity group-data-[active=1]:opacity-100 group-hover:opacity-100">
+              {CHAPTER_LABEL[ch]}
+            </span>
+            <span className="h-[3px] w-[3px] rounded-full bg-current opacity-50 transition-all group-data-[active=1]:opacity-100" />
           </button>
         ))}
-      </nav>
-
-      {/* mobile: current chapter + availability dot */}
-      <div className="flex items-center gap-2 md:hidden">
-        <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-bone)]" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-smoke">{CHAPTER_LABEL[active]}</span>
       </div>
-    </header>
+    </nav>
   );
 }

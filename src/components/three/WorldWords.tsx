@@ -70,34 +70,27 @@ function WordCloud({
     const w = Math.max(0, inWin);
     const win = w * w * (3 - 2 * w);
     material.uniforms.uTime.value = performance.now() / 1000;
-    material.uniforms.uOpacity.value = win * 0.32;
+    material.uniforms.uOpacity.value = win * 0.95;
     material.uniforms.uScatter.value = (1 - win) * 1.3 + film.energy * 0.4 + 0.02;
     material.uniforms.uEnergy.value = film.energy;
     material.uniforms.uPointer.value.set(film.px * 2, -film.py * 1.4, 0);
   });
 
   const ref = useRef<THREE.Points>(null);
-  return <points ref={ref} geometry={geometry} material={material} position={position} />;
+  return <points ref={ref} geometry={geometry} material={material} position={position} raycast={() => null} />;
 }
 
-// Giant, faint chapter words far behind the orb — environmental typography that
-// adds depth without competing with the DOM headings.
-const WORDS: { text: string; from: number; to: number }[] = [
-  { text: "THINK", from: 0.13, to: 0.24 },
-  { text: "BUILD", from: 0.26, to: 0.4 },
-  { text: "STACK", from: 0.41, to: 0.54 },
-  { text: "JOURNEY", from: 0.56, to: 0.69 },
-  { text: "EXPLORE", from: 0.7, to: 0.83 },
-  { text: "NOW", from: 0.84, to: 0.92 },
-];
-
 export default function WorldWords({ tier = 2 }: { tier?: number }) {
-  const count = tier >= 2 ? 5000 : 2200;
+  const count = tier >= 2 ? 5200 : 2200;
+  // chapter word, positioned opposite the orb's drift for composition
   return (
     <>
-      {WORDS.map((w) => (
-        <WordCloud key={w.text} text={w.text} from={w.from} to={w.to} position={[0, 0.2, -4]} size={9} count={count} />
-      ))}
+      <WordCloud text="THINK" from={0.11} to={0.21} position={[1.5, 0.3, -1]} size={5} count={count} />
+      <WordCloud text="BUILD" from={0.24} to={0.34} position={[-1.6, 0.2, -1]} size={5} count={count} />
+      <WordCloud text="STACK" from={0.38} to={0.48} position={[0, 1.4, -1.4]} size={4.6} count={count} />
+      <WordCloud text="JOURNEY" from={0.52} to={0.63} position={[1.3, -0.3, -1]} size={4} count={count} />
+      <WordCloud text="EXPLORE" from={0.67} to={0.77} position={[-1.4, 0.3, -1]} size={4} count={count} />
+      <WordCloud text="NOW" from={0.81} to={0.9} position={[1.6, 0.2, -1]} size={5.4} count={count} />
     </>
   );
 }

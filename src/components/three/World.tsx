@@ -6,9 +6,12 @@ import { useFrame } from "@react-three/fiber";
 import Rig from "./Rig";
 import Atmosphere from "./Atmosphere";
 import WorldWords from "./WorldWords";
+import Constellation from "./Constellation";
+import Dtu from "./Dtu";
+import PhotoPlane from "./PhotoPlane";
 import Post from "./Post";
 import ParticleEntity from "./ParticleEntity";
-import CharacterFigure from "./CharacterFigure";
+import GLBFigure from "./GLBFigure";
 import { useHumanTarget } from "./useHumanTarget";
 import { decayEnergy } from "@/lib/scroll";
 
@@ -46,10 +49,14 @@ export default function World({ tier = 2, reduce = false }: { tier?: number; red
       <Rig />
       <Atmosphere tier={tier} />
       <WorldWords tier={tier} />
+      <Constellation />
+      <Dtu tier={tier} />
+      {/* reality breaks into the world during the DTU documentary (placeholder) */}
+      <PhotoPlane from={0.61} to={0.645} position={[0.6, 0.1, 1.2]} size={[3.6, 2.4]} />
 
       <Suspense fallback={null}>
         <EntityRig count={count} />
-        <CharacterFigure />
+        <GLBFigure />
       </Suspense>
 
       <EnergyDriver />

@@ -63,6 +63,8 @@ function composeAt(p: number, out: THREE.Vector3) {
   );
 }
 
+const tmpCompose = new THREE.Vector3();
+
 export default function ParticleEntity({
   count = 30000,
   human,
@@ -159,20 +161,26 @@ export default function ParticleEntity({
     const idle = 0.03;
     const scatter = arrival + hump + film.energy * 0.4 + idle;
 
+    // finale: the dust entity fades as the solid human takes over
+    const fade = 1 - THREE.MathUtils.smoothstep(p, 0.95, 0.995);
+
     material.uniforms.uTime.value = t;
     material.uniforms.uMorph.value = s.morph;
     material.uniforms.uScatter.value = scatter;
     material.uniforms.uEnergy.value = film.energy;
+    material.uniforms.uOpacity.value = 0.72 * fade;
     material.uniforms.uPointer.value.set(film.px * 3.4, -film.py * 2.1, 0);
-    // dust dissolves as the solid figure takes over at the very end
-    material.uniforms.uOpacity.value = 0.72 * (1 - THREE.MathUtils.smoothstep(p, 0.965, 0.998));
 
-    // gentle life
+    // composition: the orb drifts across the frame per chapter (not always centered)
+    composeAt(p, tmpCompose);
     if (points.current) {
+      const k = 1 - Math.pow(0.0022, delta);
+      points.current.position.x += (tmpCompose.x - points.current.position.x) * k;
+      points.current.position.y += (tmpCompose.y + Math.sin(t * 0.4) * 0.05 - points.current.position.y) * k;
+      points.current.position.z += (tmpCompose.z - points.current.position.z) * k;
       points.current.rotation.y += delta * (0.02 + film.energy * 0.12);
-      points.current.position.y = Math.sin(t * 0.4) * 0.05;
     }
   });
 
-  return <points ref={points} geometry={geometry} material={material} />;
+  return <points ref={points} geometry={geometry} material={material} raycast={() => null} />;
 }
