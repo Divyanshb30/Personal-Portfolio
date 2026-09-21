@@ -15,19 +15,53 @@ import { film } from "@/lib/scroll";
  */
 
 // The score: progress -> target name. Crossing a keyframe triggers a morph.
+// Mapped to the 8 chapters (identity·think·build·stack·journey·explore·now·human).
 const SCORE: { at: number; name: string }[] = [
-  { at: 0.0, name: "human" }, // 01 arrival — forms from dust
-  { at: 0.1, name: "sphere" }, // E01 disintegration: human -> orb
-  { at: 0.2, name: "network" }, // 02 mind — neural cloud
-  { at: 0.34, name: "clusters3" }, // 03 system — agentic split (E03)
-  { at: 0.46, name: "network" }, // 03 architecture
-  { at: 0.6, name: "core" }, // 04 work — pulled together
-  { at: 0.72, name: "sphere" }, // 05 deep-dive calm
-  { at: 0.82, name: "network" }, // 06 exploration
-  { at: 0.92, name: "human" }, // 07 return — reconstruct
+  { at: 0.0, name: "human" }, // identity — forms from dust
+  { at: 0.09, name: "sphere" }, // disintegration: human -> orb
+  { at: 0.16, name: "network" }, // think — neural / concepts
+  { at: 0.28, name: "clusters3" }, // build — projects as manifestations
+  { at: 0.42, name: "network" }, // stack — tech constellation
+  { at: 0.57, name: "sphere" }, // journey — calm orb travels the timeline
+  { at: 0.71, name: "network" }, // explore — broad, fluid
+  { at: 0.85, name: "core" }, // now — condensed, present
+  { at: 0.95, name: "human" }, // human — reconstruct
+];
+
+// Composition: the orb is a performer, not a hero object — it drifts across the
+// frame per chapter (left / right / near / far), never always centered.
+const COMPOSE: { at: number; p: [number, number, number] }[] = [
+  { at: 0.0, p: [0, 0, 0] }, // identity — centre
+  { at: 0.14, p: [-1.9, 0.2, 0] }, // think — left
+  { at: 0.28, p: [1.9, -0.2, 0] }, // build — right
+  { at: 0.42, p: [0, 0.4, -1.2] }, // stack — centre, pushed back (dive under)
+  { at: 0.57, p: [-1.5, -0.3, 0.4] }, // journey — left, near
+  { at: 0.71, p: [2.0, 0.4, -0.6] }, // explore — right, drifting
+  { at: 0.85, p: [-0.7, 0.0, 0.6] }, // now — slightly left, close
+  { at: 1.0, p: [0, 0, 0] }, // human — centre
 ];
 
 const MORPH_DURATION = 1.5;
+
+function composeAt(p: number, out: THREE.Vector3) {
+  let a = COMPOSE[0];
+  let b = COMPOSE[COMPOSE.length - 1];
+  for (let i = 0; i < COMPOSE.length - 1; i++) {
+    if (p >= COMPOSE[i].at && p <= COMPOSE[i + 1].at) {
+      a = COMPOSE[i];
+      b = COMPOSE[i + 1];
+      break;
+    }
+  }
+  const span = b.at - a.at || 1;
+  let t = (p - a.at) / span;
+  t = t * t * (3 - 2 * t);
+  out.set(
+    THREE.MathUtils.lerp(a.p[0], b.p[0], t),
+    THREE.MathUtils.lerp(a.p[1], b.p[1], t),
+    THREE.MathUtils.lerp(a.p[2], b.p[2], t)
+  );
+}
 
 export default function ParticleEntity({
   count = 30000,
@@ -77,9 +111,9 @@ export default function ParticleEntity({
           uSize: { value: 1.35 },
           uPointer: { value: new THREE.Vector3() },
           uPointerForce: { value: 0.28 },
-          uColor: { value: new THREE.Color("#9ba3b8") },
-          uColorHot: { value: new THREE.Color("#d2daed") },
-          uOpacity: { value: 0.7 },
+          uColor: { value: new THREE.Color("#c85f2b") },
+          uColorHot: { value: new THREE.Color("#ffab5e") },
+          uOpacity: { value: 0.72 },
         },
       }),
     []
@@ -130,6 +164,8 @@ export default function ParticleEntity({
     material.uniforms.uScatter.value = scatter;
     material.uniforms.uEnergy.value = film.energy;
     material.uniforms.uPointer.value.set(film.px * 3.4, -film.py * 2.1, 0);
+    // dust dissolves as the solid figure takes over at the very end
+    material.uniforms.uOpacity.value = 0.72 * (1 - THREE.MathUtils.smoothstep(p, 0.965, 0.998));
 
     // gentle life
     if (points.current) {

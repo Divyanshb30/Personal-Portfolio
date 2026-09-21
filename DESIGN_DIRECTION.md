@@ -9,6 +9,31 @@
 
 ---
 
+## CURRENT DIRECTION (supersedes the palette sections below)
+
+The build has since moved to the user's directed blueprint. What holds now:
+
+- **A cinematic 3D film**, one continuous scroll timeline, around a morphing
+  **particle entity** on a **material-driven near-black** world.
+- **The orb is warm (orange/ember)** — the single chromatic element; a set of
+  candidate looks lives at the `/orb-lab` route (final pick pending).
+- **The entity is a performer, not a hero object** — it drifts across the frame
+  per chapter (left / right / near / far), never always centred.
+- **8 chapters:** IDENTITY → THINK → BUILD → STACK → JOURNEY → EXPLORE → NOW →
+  HUMAN. Build shows projects as manifestations (not per-project chapters);
+  Stack is capability-based (BUILD/INTELLIGENCE/RETRIEVAL/SYSTEMS/APPLICATIONS/
+  INFRASTRUCTURE); Journey is the DTU-ERP / co-founder story; the profile is a
+  long-run builder, not AI-only.
+- **HUMAN finale:** the dust reconstructs, the **real GLB solidifies**, a slow
+  360°, then "Let's talk."
+- **DTU ERP** becomes a documentary-inside-the-film: real photos appear as rare
+  memory fragments (never a gallery). Rule: **3D = imagination, photography =
+  reality.** (Photos pending from the user.)
+
+The dual-temperature "ember/xenon" system below is **retired**; sections 2–3
+(cool palette, specific tokens) no longer bind. The narrative, systems, layering,
+effects, performance and quality-bar sections still apply.
+
 ## 0. The one idea
 
 **A cinematic observation chamber for a living intelligence.**

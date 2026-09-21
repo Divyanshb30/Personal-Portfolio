@@ -70,7 +70,7 @@ function WordCloud({
     const w = Math.max(0, inWin);
     const win = w * w * (3 - 2 * w);
     material.uniforms.uTime.value = performance.now() / 1000;
-    material.uniforms.uOpacity.value = win * 0.95;
+    material.uniforms.uOpacity.value = win * 0.32;
     material.uniforms.uScatter.value = (1 - win) * 1.3 + film.energy * 0.4 + 0.02;
     material.uniforms.uEnergy.value = film.energy;
     material.uniforms.uPointer.value.set(film.px * 2, -film.py * 1.4, 0);
@@ -80,12 +80,24 @@ function WordCloud({
   return <points ref={ref} geometry={geometry} material={material} position={position} />;
 }
 
+// Giant, faint chapter words far behind the orb — environmental typography that
+// adds depth without competing with the DOM headings.
+const WORDS: { text: string; from: number; to: number }[] = [
+  { text: "THINK", from: 0.13, to: 0.24 },
+  { text: "BUILD", from: 0.26, to: 0.4 },
+  { text: "STACK", from: 0.41, to: 0.54 },
+  { text: "JOURNEY", from: 0.56, to: 0.69 },
+  { text: "EXPLORE", from: 0.7, to: 0.83 },
+  { text: "NOW", from: 0.84, to: 0.92 },
+];
+
 export default function WorldWords({ tier = 2 }: { tier?: number }) {
-  const count = tier >= 2 ? 6500 : 2600;
+  const count = tier >= 2 ? 5000 : 2200;
   return (
     <>
-      <WordCloud text="THINKING" from={0.18} to={0.3} position={[0, 0.4, -1.5]} size={6.5} count={count} />
-      <WordCloud text="SYSTEMS" from={0.4} to={0.54} position={[0, 0.3, -1.2]} size={6} count={count} />
+      {WORDS.map((w) => (
+        <WordCloud key={w.text} text={w.text} from={w.from} to={w.to} position={[0, 0.2, -4]} size={9} count={count} />
+      ))}
     </>
   );
 }

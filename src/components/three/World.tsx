@@ -8,6 +8,7 @@ import Atmosphere from "./Atmosphere";
 import WorldWords from "./WorldWords";
 import Post from "./Post";
 import ParticleEntity from "./ParticleEntity";
+import CharacterFigure from "./CharacterFigure";
 import { useHumanTarget } from "./useHumanTarget";
 import { decayEnergy } from "@/lib/scroll";
 
@@ -48,6 +49,7 @@ export default function World({ tier = 2, reduce = false }: { tier?: number; red
 
       <Suspense fallback={null}>
         <EntityRig count={count} />
+        <CharacterFigure />
       </Suspense>
 
       <EnergyDriver />

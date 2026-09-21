@@ -173,6 +173,94 @@ export const regions = [
   { code: "EU", label: "Europe", file: "/resume/Divyansh_Bansal_EU.pdf" },
 ];
 
+// A broad, long-run framing — a builder who explores and evolves, not locked to
+// one title. Used in the Identity chapter.
+export const identity = {
+  name: "Divyansh Bansal",
+  roles: ["Engineer", "Builder", "Researcher"],
+  line: "I build intelligent systems — and keep exploring what comes next.",
+};
+
+// BUILD — projects as manifestations of what he builds (not per-project chapters).
+// Each carries a short clue, not a full section. Grounded in the projects above.
+export const builds = [
+  {
+    kind: "SYSTEMS",
+    title: "Agentic Reconciliation Platform",
+    hint: "Five specialised agents, live in production at AT&T scale — each on a budget, human-in-the-loop, deterministic fallbacks.",
+    tags: "Python · FastAPI · Azure OpenAI · LangGraph",
+    metric: "40+ hrs/wk automated",
+    href: null as string | null,
+  },
+  {
+    kind: "INTELLIGENCE",
+    title: "IntelliCode — Hybrid RAG",
+    hint: "Retrieval over a codebase: FAISS + BM25 + RRF + cross-encoder, async AST analysis, CI-gated.",
+    tags: "FAISS · BM25 · cross-encoder · HF ZeroGPU",
+    metric: "121 tests",
+    href: "https://github.com/Divyanshb30/IntelliCode",
+  },
+  {
+    kind: "MODELS",
+    title: "Decoder-Only Transformer",
+    hint: "Built from scratch in raw PyTorch — attention, positional encoding, autoregressive generation.",
+    tags: "PyTorch · attention · from scratch",
+    metric: "10.7M params",
+    href: "https://github.com/Divyanshb30/GPT-from-Scratch",
+  },
+  {
+    kind: "ENGINEERING",
+    title: "Loan Risk Intelligence",
+    hint: "Two-stage stacking ensemble over ~1.8M loans, SHAP-audited, drift-monitored on Cloud Run.",
+    tags: "XGBoost · PyTorch · SHAP · Cloud Run",
+    metric: "0.9184 AUC",
+    href: "https://github.com/Divyanshb30/Loan-Risk-Intelligence",
+  },
+  {
+    kind: "PRODUCT",
+    title: "DTU ERP Platform",
+    hint: "Multiuser ERP for higher ed — 8 modules, semantic search, 1,200+ users. See the Journey.",
+    tags: "React · Node · ChromaDB · embeddings",
+    metric: "1,200+ users",
+    href: null,
+  },
+];
+
+// STACK — capability-based, so it stays relevant as tools change.
+export const stack = [
+  { cap: "BUILD", items: ["Python", "C++", "JavaScript", "TypeScript", "SQL"] },
+  { cap: "INTELLIGENCE", items: ["PyTorch", "TensorFlow", "Transformers", "LangGraph", "LangChain", "scikit-learn"] },
+  { cap: "RETRIEVAL", items: ["FAISS", "ChromaDB", "BM25", "Cross-Encoder", "Embeddings"] },
+  { cap: "SYSTEMS", items: ["FastAPI", "Docker", "PostgreSQL", "Redis", "Airflow"] },
+  { cap: "APPLICATIONS", items: ["React", "Next.js", "Node", "REST APIs"] },
+  { cap: "INFRASTRUCTURE", items: ["Git", "GitHub Actions", "MLflow", "DagsHub", "GCP Cloud Run", "CI/CD"] },
+];
+
+// JOURNEY — how he became who he is (a physical journey, not a project list).
+export const journey = [
+  { year: "2021", title: "DTU", note: "Began B.Tech (ECE) at Delhi Technological University." },
+  { year: "2022", title: "Building", note: "Started shipping real systems — led architecture and frontend." },
+  { year: "2023", title: "Co-founder · ERP", note: "Architected a multiuser ERP for higher education; drove stakeholder buy-in." },
+  { year: "2024", title: "Users & Research", note: "1,200+ users; the method peer-reviewed in Wiley, then funded by DTU." },
+  { year: "2025", title: "Amdocs · AT&T", note: "AI engineer — five agents live in production at telecom scale." },
+];
+
+// EXPLORE — deliberately broad, so the site isn't locked to one identity.
+// TODO(Divyansh): replace the open slots with your real interests (film, etc.).
+export const explore = [
+  { title: "RESEARCH", note: "Published method (Wiley); always digging into new ideas." },
+  { title: "SYSTEMS", note: "How isolated technologies become systems that hold up." },
+  { title: "LEARNING", note: "Continuously — the stack is a moving target." },
+  { title: "CREATE", note: "TODO: your filmmaking / design / experiments go here." },
+];
+
+// NOW — present tense; meant to be updated every few months.
+export const now = {
+  building: "Agentic AI systems that earn trust in production, at Amdocs (AT&T).",
+  exploring: "Retrieval, agent memory, and making machine reasoning legible.",
+  open: profile.availability,
+};
+
 export const nav = [
   { label: "Work", href: "#work" },
   { label: "Journey", href: "#journey" },

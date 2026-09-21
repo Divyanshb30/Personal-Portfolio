@@ -5,16 +5,28 @@
 import type Lenis from "lenis";
 
 export const CHAPTERS = [
-  "arrival",
-  "mind",
-  "system",
-  "work",
-  "deepdive",
-  "exploration",
-  "return",
-  "contact",
+  "identity",
+  "think",
+  "build",
+  "stack",
+  "journey",
+  "explore",
+  "now",
+  "human",
 ] as const;
 export type Chapter = (typeof CHAPTERS)[number];
+
+// Display labels for the nav / in-world typography.
+export const CHAPTER_LABEL: Record<Chapter, string> = {
+  identity: "Identity",
+  think: "Think",
+  build: "Build",
+  stack: "Stack",
+  journey: "Journey",
+  explore: "Explore",
+  now: "Now",
+  human: "Human",
+};
 
 export const film = {
   /** 0..1 progress over the whole film */
