@@ -8,6 +8,7 @@ import Atmosphere from "./Atmosphere";
 import WorldWords from "./WorldWords";
 import Constellation from "./Constellation";
 import Dtu from "./Dtu";
+import ProjectUniverse from "./ProjectUniverse";
 import PhotoPlane from "./PhotoPlane";
 import Post from "./Post";
 import ParticleEntity from "./ParticleEntity";
@@ -49,6 +50,7 @@ export default function World({ tier = 2, reduce = false }: { tier?: number; red
       <Rig />
       <Atmosphere tier={tier} />
       <WorldWords tier={tier} />
+      <ProjectUniverse tier={tier} />
       <Constellation />
       <Dtu tier={tier} />
       {/* reality breaks into the world during the DTU documentary (placeholder) */}

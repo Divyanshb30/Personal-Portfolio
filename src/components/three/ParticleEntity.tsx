@@ -6,6 +6,8 @@ import * as THREE from "three";
 import { entityVert, entityFrag } from "./shaders/entityShaders";
 import { sphere, network, clusters3, randoms, word } from "@/lib/targets";
 import { film } from "@/lib/scroll";
+import { orb, stepOrb } from "@/lib/orb";
+import { director } from "@/lib/director";
 
 /**
  * The Morphing Entity (particle representation). It morphs between point-cloud
@@ -20,7 +22,7 @@ const SCORE: { at: number; name: string }[] = [
   { at: 0.0, name: "human" }, // identity — forms from dust
   { at: 0.09, name: "sphere" }, // disintegration: human -> orb
   { at: 0.16, name: "network" }, // think — neural / concepts
-  { at: 0.28, name: "clusters3" }, // build — projects as manifestations
+  { at: 0.28, name: "core" }, // build — compact orb carrier wandering the universe
   { at: 0.42, name: "network" }, // stack — tech constellation
   { at: 0.57, name: "sphere" }, // journey — calm orb travels the timeline
   { at: 0.71, name: "network" }, // explore — broad, fluid
@@ -33,7 +35,7 @@ const SCORE: { at: number; name: string }[] = [
 const COMPOSE: { at: number; p: [number, number, number] }[] = [
   { at: 0.0, p: [0, 0, 0] }, // identity — centre
   { at: 0.14, p: [-1.9, 0.2, 0] }, // think — left
-  { at: 0.28, p: [1.9, -0.2, 0] }, // build — right
+  { at: 0.28, p: [0, 0.1, 0.4] }, // build — the orb wanders among the projects
   { at: 0.42, p: [0, 0.4, -1.2] }, // stack — centre, pushed back (dive under)
   { at: 0.57, p: [-1.5, -0.3, 0.4] }, // journey — left, near
   { at: 0.71, p: [2.0, 0.4, -0.6] }, // explore — right, drifting
@@ -159,7 +161,9 @@ export default function ParticleEntity({
     const arrival = THREE.MathUtils.smoothstep(0.055 - p, 0, 0.055) * 0.4;
     const hump = Math.sin(Math.PI * s.morph) * 0.4;
     const idle = 0.03;
-    const scatter = arrival + hump + film.energy * 0.4 + idle;
+    // the orb's own motion agitates its particles (overshoot/lurch = scatter)
+    const energy = Math.max(film.energy, orb.energy);
+    const scatter = arrival + hump + energy * 0.45 + idle;
 
     // finale: the dust entity fades as the solid human takes over
     const fade = 1 - THREE.MathUtils.smoothstep(p, 0.95, 0.995);
@@ -167,18 +171,39 @@ export default function ParticleEntity({
     material.uniforms.uTime.value = t;
     material.uniforms.uMorph.value = s.morph;
     material.uniforms.uScatter.value = scatter;
-    material.uniforms.uEnergy.value = film.energy;
+    material.uniforms.uEnergy.value = energy;
     material.uniforms.uOpacity.value = 0.72 * fade;
     material.uniforms.uPointer.value.set(film.px * 3.4, -film.py * 2.1, 0);
 
-    // composition: the orb drifts across the frame per chapter (not always centered)
-    composeAt(p, tmpCompose);
+    // MOTION: the orb is a living body — the target is set by the beat / by BUILD
+    // wander / by a selected project; the physics engine moves it there with life.
+    const inBuild = p > 0.24 && p < 0.4;
+    if (director.selected) {
+      // inside a project world — the orb goes to the focused project and guides it
+      const n = orb.neighbors.find((x) => x.id === director.selected);
+      if (n) orb.target.copy(n.pos);
+      else {
+        composeAt(p, tmpCompose);
+        orb.target.copy(tmpCompose);
+      }
+      orb.buildActive = false;
+    } else if (inBuild) {
+      // wander among the projects; curiosity/physics curve it toward nearby ones
+      orb.buildActive = true;
+      orb.target.set(
+        Math.sin(t * 0.17) * 1.9,
+        Math.cos(t * 0.13) * 1.1 + 0.15,
+        0.4 + Math.sin(t * 0.1) * 0.7
+      );
+    } else {
+      orb.buildActive = false;
+      composeAt(p, tmpCompose);
+      orb.target.copy(tmpCompose);
+    }
+    stepOrb(delta, t);
     if (points.current) {
-      const k = 1 - Math.pow(0.0022, delta);
-      points.current.position.x += (tmpCompose.x - points.current.position.x) * k;
-      points.current.position.y += (tmpCompose.y + Math.sin(t * 0.4) * 0.05 - points.current.position.y) * k;
-      points.current.position.z += (tmpCompose.z - points.current.position.z) * k;
-      points.current.rotation.y += delta * (0.02 + film.energy * 0.12);
+      points.current.position.copy(orb.pos);
+      points.current.rotation.y += delta * (0.02 + energy * 0.14);
     }
   });
 

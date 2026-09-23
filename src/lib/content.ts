@@ -186,7 +186,10 @@ export const identity = {
 export const builds = [
   {
     kind: "SYSTEMS",
+    id: "agentic",
     title: "Agentic Reconciliation Platform",
+    flow: ["INGEST", "PLAN", "EXECUTE", "SCHEDULE", "REPORT"],
+    rel: ["rag", "gpt"],
     hint: "Five specialised agents, live in production at AT&T scale — each on a budget, human-in-the-loop, deterministic fallbacks.",
     tags: "Python · FastAPI · Azure OpenAI · LangGraph",
     metric: "40+ hrs/wk automated",
@@ -194,7 +197,10 @@ export const builds = [
   },
   {
     kind: "INTELLIGENCE",
+    id: "rag",
     title: "IntelliCode — Hybrid RAG",
+    flow: ["QUERY", "RETRIEVE", "RERANK", "GENERATE"],
+    rel: ["agentic", "gpt"],
     hint: "Retrieval over a codebase: FAISS + BM25 + RRF + cross-encoder, async AST analysis, CI-gated.",
     tags: "FAISS · BM25 · cross-encoder · HF ZeroGPU",
     metric: "121 tests",
@@ -202,7 +208,10 @@ export const builds = [
   },
   {
     kind: "MODELS",
+    id: "gpt",
     title: "Decoder-Only Transformer",
+    flow: ["TOKENS", "ATTENTION", "OUTPUT"],
+    rel: ["rag", "loan"],
     hint: "Built from scratch in raw PyTorch — attention, positional encoding, autoregressive generation.",
     tags: "PyTorch · attention · from scratch",
     metric: "10.7M params",
@@ -210,7 +219,10 @@ export const builds = [
   },
   {
     kind: "ENGINEERING",
+    id: "loan",
     title: "Loan Risk Intelligence",
+    flow: ["DATA", "FEATURES", "ENSEMBLE", "RISK SCORE"],
+    rel: ["gpt"],
     hint: "Two-stage stacking ensemble over ~1.8M loans, SHAP-audited, drift-monitored on Cloud Run.",
     tags: "XGBoost · PyTorch · SHAP · Cloud Run",
     metric: "0.9184 AUC",
@@ -218,7 +230,10 @@ export const builds = [
   },
   {
     kind: "PRODUCT",
+    id: "dtu",
     title: "DTU ERP Platform",
+    flow: ["FORM", "MODULES", "USERS", "PLATFORM"],
+    rel: [] as string[],
     hint: "Multiuser ERP for higher ed — 8 modules, semantic search, 1,200+ users. See the Journey.",
     tags: "React · Node · ChromaDB · embeddings",
     metric: "1,200+ users",

@@ -86,7 +86,7 @@ export default function WorldWords({ tier = 2 }: { tier?: number }) {
   return (
     <>
       <WordCloud text="THINK" from={0.11} to={0.21} position={[1.5, 0.3, -1]} size={5} count={count} />
-      <WordCloud text="BUILD" from={0.24} to={0.34} position={[-1.6, 0.2, -1]} size={5} count={count} />
+      {/* BUILD word removed — the project universe itself carries the chapter */}
       <WordCloud text="STACK" from={0.38} to={0.48} position={[0, 1.4, -1.4]} size={4.6} count={count} />
       <WordCloud text="JOURNEY" from={0.52} to={0.63} position={[1.3, -0.3, -1]} size={4} count={count} />
       <WordCloud text="EXPLORE" from={0.67} to={0.77} position={[-1.4, 0.3, -1]} size={4} count={count} />

@@ -21,7 +21,7 @@ export default function FilmCanvas() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-0" style={{ pointerEvents: "none" }} aria-hidden>
+    <div className="fixed inset-0 z-0">
       <Canvas
         dpr={dpr}
         camera={{ position: [0, 0.35, 9.2], fov: 42 }}

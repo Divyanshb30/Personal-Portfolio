@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { film, CHAPTERS } from "@/lib/scroll";
-import { identity, builds, stack, journey, explore, now, profile, regions } from "@/lib/content";
+import { identity, stack, journey, explore, now, profile, regions } from "@/lib/content";
 import Nav from "@/components/ui/Nav";
 
 /** 0 below a, 1 above b, smooth between. */
@@ -60,8 +60,9 @@ const flow = ["QUESTION", "EXPLORE", "UNDERSTAND", "BUILD"];
 export default function Overlay() {
   return (
     <>
-      {/* scroll length — one anchor per chapter */}
-      <div className="relative z-10">
+      {/* scroll length — one anchor per chapter. pointer-events-none so clicks
+          fall through to the 3D project hit-proxies underneath. */}
+      <div className="pointer-events-none relative z-10">
         {CHAPTERS.map((c) => (
           <section key={c} id={c} className="h-[130svh]" aria-hidden />
         ))}
@@ -99,20 +100,12 @@ export default function Overlay() {
         </ul>
       </Beat>
 
-      {/* 03 BUILD — projects as manifestations, a short clue each (left; orb right) */}
-      <Beat a={0.24} b={0.36} className="left-6 top-1/2 max-w-[40ch] -translate-y-1/2 md:left-16">
-        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">What I build</p>
-        <ul className="space-y-4">
-          {builds.map((b) => (
-            <li key={b.title}>
-              <div className="flex items-baseline gap-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">{b.kind}</span>
-                <span className="font-display text-[1.15rem] leading-tight tracking-[-0.01em] text-bone">{b.title}</span>
-              </div>
-              <p className="mt-0.5 max-w-[42ch] font-body text-[12px] leading-snug text-faint">{b.hint}</p>
-            </li>
-          ))}
-        </ul>
+      {/* 03 BUILD — the project universe is the content (3D). DOM stays a caption. */}
+      <Beat a={0.24} b={0.36} className="bottom-[12%] left-6 md:left-16">
+        <p className="font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">What I build</p>
+        <p className="mt-2 max-w-[30ch] font-body text-[13px] leading-relaxed text-faint">
+          Five bodies of work, alive in space. Approach one to enter it.
+        </p>
       </Beat>
 
       {/* 04 STACK — capability legend (the constellation carries the tech) */}
