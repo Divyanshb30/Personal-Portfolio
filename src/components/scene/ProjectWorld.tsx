@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useSelected, selectProject } from "@/lib/director";
+import { useSelected, selectProject, director } from "@/lib/director";
 import { builds } from "@/lib/content";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -16,6 +16,7 @@ export default function ProjectWorld() {
   const id = useSelected();
   const reduce = useReducedMotion();
   const b = builds.find((x) => x.id === id);
+  const [stage, setStage] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -25,6 +26,23 @@ export default function ProjectWorld() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [id]);
+
+  // the orb guides the flow — advance stages on a gentle loop (3D orb follows via director.flowStage)
+  useEffect(() => {
+    if (!id) return;
+    const total = builds.find((x) => x.id === id)?.flow.length ?? 1;
+    setStage(0);
+    director.flowStage = 0;
+    if (reduce || total <= 1) return;
+    const iv = setInterval(() => {
+      setStage((s) => {
+        const n = (s + 1) % total;
+        director.flowStage = n;
+        return n;
+      });
+    }, 2200);
+    return () => clearInterval(iv);
+  }, [id, reduce]);
 
   return (
     <AnimatePresence>
@@ -69,9 +87,11 @@ export default function ProjectWorld() {
 
             {/* the flow the orb guides you through */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.2em] text-faint">
-              {b.flow.map((stage, i) => (
-                <span key={stage} className="flex items-center gap-2">
-                  <span className="text-bone">{stage}</span>
+              {b.flow.map((label, i) => (
+                <span key={label} className="flex items-center gap-2">
+                  <span className={i === stage ? "text-bone" : "text-faint/70"} style={{ transition: "color 0.4s" }}>
+                    {label}
+                  </span>
                   {i < b.flow.length - 1 && <span className="text-faint">→</span>}
                 </span>
               ))}

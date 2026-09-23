@@ -17,7 +17,7 @@ const PATH: Key[] = [
   { at: 0.09, pos: [0, 0.15, 5.6], look: [0, 0.05, 0] }, // push in
   { at: 0.16, pos: [0, 0.0, 6.0], look: [0, 0, 0] }, // think
   { at: 0.28, pos: [0, 0.3, 6.8], look: [0, 0.1, 0] }, // build — reveal the universe
-  { at: 0.42, pos: [0, 0.25, 5.3], look: [0, 0.1, 0] }, // stack — closer (dive under)
+  { at: 0.42, pos: [0, 0.3, 8.2], look: [0, 0.1, 0] }, // stack — pull back to reveal the web
   { at: 0.57, pos: [-0.4, 0.0, 6.4], look: [0, 0, 0] }, // journey
   { at: 0.71, pos: [0.5, 0.25, 6.6], look: [0, 0.05, 0] }, // explore
   { at: 0.85, pos: [0, 0.0, 5.6], look: [0, 0, 0] }, // now — closer

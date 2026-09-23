@@ -3,9 +3,13 @@
 // subscribes via useSelected(). Also parks/unparks Lenis when a world opens.
 
 import { useSyncExternalStore } from "react";
+import * as THREE from "three";
 import { film } from "./scroll";
 
 export type Mode = "film" | "project";
+
+/** Where a focused project's structure settles so it frames right of the DOM panel. */
+export const FOCUS_POS = new THREE.Vector3(1.5, 0.15, 1.4);
 
 export const director = {
   mode: "film" as Mode,
@@ -13,6 +17,8 @@ export const director = {
   selected: null as string | null,
   /** id the orb is currently near/hovering (for brightening), or null */
   hovered: null as string | null,
+  /** current flow stage inside a project world (orb-guided) */
+  flowStage: 0,
 };
 
 const listeners = new Set<() => void>();
@@ -24,6 +30,7 @@ function emit() {
 export function selectProject(id: string | null) {
   director.selected = id;
   director.mode = id ? "project" : "film";
+  director.flowStage = 0;
   // park the film scroll while a world is open; resume on exit
   try {
     if (id) film.lenis?.stop();

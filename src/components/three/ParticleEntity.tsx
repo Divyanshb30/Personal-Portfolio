@@ -7,7 +7,8 @@ import { entityVert, entityFrag } from "./shaders/entityShaders";
 import { sphere, network, clusters3, randoms, word } from "@/lib/targets";
 import { film } from "@/lib/scroll";
 import { orb, stepOrb } from "@/lib/orb";
-import { director } from "@/lib/director";
+import { director, FOCUS_POS } from "@/lib/director";
+import { builds } from "@/lib/content";
 
 /**
  * The Morphing Entity (particle representation). It morphs between point-cloud
@@ -23,7 +24,7 @@ const SCORE: { at: number; name: string }[] = [
   { at: 0.09, name: "sphere" }, // disintegration: human -> orb
   { at: 0.16, name: "network" }, // think — neural / concepts
   { at: 0.28, name: "core" }, // build — compact orb carrier wandering the universe
-  { at: 0.42, name: "network" }, // stack — tech constellation
+  { at: 0.42, name: "core" }, // stack — compact orb navigating the tech web
   { at: 0.57, name: "sphere" }, // journey — calm orb travels the timeline
   { at: 0.71, name: "network" }, // explore — broad, fluid
   { at: 0.85, name: "core" }, // now — condensed, present
@@ -179,13 +180,13 @@ export default function ParticleEntity({
     // wander / by a selected project; the physics engine moves it there with life.
     const inBuild = p > 0.24 && p < 0.4;
     if (director.selected) {
-      // inside a project world — the orb goes to the focused project and guides it
-      const n = orb.neighbors.find((x) => x.id === director.selected);
-      if (n) orb.target.copy(n.pos);
-      else {
-        composeAt(p, tmpCompose);
-        orb.target.copy(tmpCompose);
-      }
+      // inside a project world — the orb GUIDES the flow: it descends through the
+      // focused structure (at FOCUS_POS) as the flow stages advance.
+      const b = builds.find((x) => x.id === director.selected);
+      const total = b ? b.flow.length : 1;
+      const stage = Math.min(director.flowStage, total - 1);
+      const yOff = (0.5 - (total > 1 ? stage / (total - 1) : 0)) * 1.8;
+      orb.target.set(FOCUS_POS.x - 0.5, FOCUS_POS.y + yOff, FOCUS_POS.z + 0.6);
       orb.buildActive = false;
     } else if (inBuild) {
       // wander among the projects; curiosity/physics curve it toward nearby ones
@@ -194,6 +195,14 @@ export default function ParticleEntity({
         Math.sin(t * 0.17) * 1.9,
         Math.cos(t * 0.13) * 1.1 + 0.15,
         0.4 + Math.sin(t * 0.1) * 0.7
+      );
+    } else if (p > 0.37 && p < 0.56) {
+      // STACK — the orb navigates the technology web (wider volume, with depth)
+      orb.buildActive = false;
+      orb.target.set(
+        Math.sin(t * 0.13) * 2.3,
+        Math.cos(t * 0.11) * 1.6 + 0.3,
+        -0.8 + Math.sin(t * 0.09) * 1.9
       );
     } else {
       orb.buildActive = false;

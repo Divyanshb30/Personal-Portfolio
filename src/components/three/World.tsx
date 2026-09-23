@@ -6,7 +6,7 @@ import { useFrame } from "@react-three/fiber";
 import Rig from "./Rig";
 import Atmosphere from "./Atmosphere";
 import WorldWords from "./WorldWords";
-import Constellation from "./Constellation";
+import StackWeb from "./StackWeb";
 import Dtu from "./Dtu";
 import ProjectUniverse from "./ProjectUniverse";
 import PhotoPlane from "./PhotoPlane";
@@ -51,7 +51,7 @@ export default function World({ tier = 2, reduce = false }: { tier?: number; red
       <Atmosphere tier={tier} />
       <WorldWords tier={tier} />
       <ProjectUniverse tier={tier} />
-      <Constellation />
+      <StackWeb />
       <Dtu tier={tier} />
       {/* reality breaks into the world during the DTU documentary (placeholder) */}
       <PhotoPlane from={0.61} to={0.645} position={[0.6, 0.1, 1.2]} size={[3.6, 2.4]} />

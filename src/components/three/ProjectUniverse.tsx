@@ -9,7 +9,7 @@ import { randoms } from "@/lib/targets";
 import { builds } from "@/lib/content";
 import { film } from "@/lib/scroll";
 import { orb } from "@/lib/orb";
-import { director, selectProject, setHovered } from "@/lib/director";
+import { director, selectProject, setHovered, FOCUS_POS } from "@/lib/director";
 
 /**
  * BUILD — the project universe. Five small, asymmetric, ALIVE artifacts scattered
@@ -78,6 +78,7 @@ function Signature({
   const [hover, setHover] = useState(false);
   const outer = useRef<THREE.Group>(null);
   const worldPos = useMemo(() => new THREE.Vector3(...pos), [pos]);
+  const focusOffset = useMemo(() => FOCUS_POS.clone().sub(worldPos), [worldPos]);
   const localOrb = useRef(new THREE.Vector3());
 
   const geometry = useMemo(() => {
@@ -145,6 +146,13 @@ function Signature({
       outer.current.scale.x += (s - outer.current.scale.x) * k;
       outer.current.scale.y += (s - outer.current.scale.y) * k;
       outer.current.scale.z += (s - outer.current.scale.z) * k;
+      // focus: dive to a consistent framing spot; exit: contract back to its place
+      const tx = focus ? focusOffset.x : 0;
+      const ty = focus ? focusOffset.y : 0;
+      const tz = focus ? focusOffset.z : 0;
+      outer.current.position.x += (tx - outer.current.position.x) * k;
+      outer.current.position.y += (ty - outer.current.position.y) * k;
+      outer.current.position.z += (tz - outer.current.position.z) * k;
       outer.current.visible = win > 0.001 || focus;
       outer.current.rotation.y += 0.0015 + intensity * 0.004;
     }
@@ -205,6 +213,55 @@ function Signature({
   );
 }
 
+// relationship flow — faint points streaming from a focused project to a relative
+const flowVert = /* glsl */ `
+  attribute float aT; uniform vec3 uFrom; uniform vec3 uTo; uniform float uT;
+  void main(){ float t = fract(aT + uT); vec3 p = mix(uFrom, uTo, t);
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    gl_PointSize = 2.4 * (14.0 / -mv.z); gl_Position = projectionMatrix * mv; }
+`;
+const flowFrag = /* glsl */ `
+  uniform float uOpacity; uniform vec3 uColor;
+  void main(){ vec2 uv = gl_PointCoord - 0.5; float a = smoothstep(0.5, 0.0, length(uv));
+    if (a < 0.01) discard; gl_FragColor = vec4(uColor, a * uOpacity); }
+`;
+
+function Flow({ from, to, activeId }: { from: THREE.Vector3; to: THREE.Vector3; activeId: string }) {
+  const N = 18;
+  const geo = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    const aT = new Float32Array(N);
+    for (let i = 0; i < N; i++) aT[i] = i / N;
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+    g.setAttribute("aT", new THREE.BufferAttribute(aT, 1));
+    return g;
+  }, []);
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: flowVert,
+        fragmentShader: flowFrag,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: {
+          uFrom: { value: from },
+          uTo: { value: to },
+          uT: { value: 0 },
+          uOpacity: { value: 0 },
+          uColor: { value: new THREE.Color("#c6d0e6") },
+        },
+      }),
+    [from, to]
+  );
+  useFrame((_, d) => {
+    mat.uniforms.uT.value += d * 0.22;
+    const active = director.hovered === activeId || director.selected === activeId;
+    mat.uniforms.uOpacity.value += ((active ? 0.55 : 0) - mat.uniforms.uOpacity.value) * 0.08;
+  });
+  return <points geometry={geo} material={mat} raycast={() => null} />;
+}
+
 export default function ProjectUniverse({ tier = 2 }: { tier?: number }) {
   const base = tier >= 2 ? 1300 : 650;
   const windowRef = useRef({ v: 0 });
@@ -225,6 +282,26 @@ export default function ProjectUniverse({ tier = 2 }: { tier?: number }) {
       THREE.MathUtils.smoothstep(p, 0.23, 0.26) * (1 - THREE.MathUtils.smoothstep(p, 0.36, 0.4));
   });
 
+  // relationship connections: from each project to its related work
+  const connections = useMemo(() => {
+    const out: { from: THREE.Vector3; to: THREE.Vector3; activeId: string; key: string }[] = [];
+    for (const b of builds) {
+      const s = SIG[b.id as string];
+      if (!s) continue;
+      for (const r of (b.rel as string[]) ?? []) {
+        const t = SIG[r];
+        if (!t) continue;
+        out.push({
+          from: new THREE.Vector3(...s.pos),
+          to: new THREE.Vector3(...t.pos),
+          activeId: b.id as string,
+          key: `${b.id}-${r}`,
+        });
+      }
+    }
+    return out;
+  }, []);
+
   return (
     <group>
       {builds.map((b) => {
@@ -244,6 +321,9 @@ export default function ProjectUniverse({ tier = 2 }: { tier?: number }) {
           />
         );
       })}
+      {connections.map((c) => (
+        <Flow key={c.key} from={c.from} to={c.to} activeId={c.activeId} />
+      ))}
     </group>
   );
 }

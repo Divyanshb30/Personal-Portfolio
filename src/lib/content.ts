@@ -251,6 +251,37 @@ export const stack = [
   { cap: "INFRASTRUCTURE", items: ["Git", "GitHub Actions", "MLflow", "DagsHub", "GCP Cloud Run", "CI/CD"] },
 ];
 
+// STACK reverses BUILD: technology -> the projects that use it (project ids).
+// Used by the STACK web to illuminate projects when a technology is focused.
+export const techProjects: Record<string, string[]> = {
+  Python: ["gpt", "agentic", "loan", "rag"],
+  TypeScript: ["dtu"],
+  JavaScript: ["dtu"],
+  PyTorch: ["gpt", "loan"],
+  TensorFlow: ["loan"],
+  Transformers: ["gpt", "rag"],
+  LangGraph: ["agentic"],
+  LangChain: ["agentic", "rag"],
+  "scikit-learn": ["loan"],
+  FAISS: ["rag"],
+  ChromaDB: ["dtu", "rag"],
+  BM25: ["rag"],
+  "Cross-Encoder": ["rag"],
+  Embeddings: ["dtu", "rag"],
+  FastAPI: ["agentic"],
+  Docker: ["agentic", "dtu", "loan"],
+  PostgreSQL: ["agentic"],
+  Redis: ["agentic"],
+  Airflow: ["agentic"],
+  React: ["dtu"],
+  "Next.js": ["dtu"],
+  Node: ["dtu"],
+  "GCP Cloud Run": ["loan"],
+  MLflow: ["loan"],
+  DagsHub: ["loan"],
+  "CI/CD": ["agentic", "rag"],
+};
+
 // JOURNEY — how he became who he is (a physical journey, not a project list).
 export const journey = [
   { year: "2021", title: "DTU", note: "Began B.Tech (ECE) at Delhi Technological University." },
