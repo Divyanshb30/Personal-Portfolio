@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { sigVert, sigFrag } from "./shaders/signatureShaders";
 import { randoms } from "@/lib/targets";
 import { builds } from "@/lib/content";
-import { film } from "@/lib/scroll";
+import { film, journeyDepth } from "@/lib/scroll";
 import { orb } from "@/lib/orb";
 import { director, selectProject, setHovered, FOCUS_POS } from "@/lib/director";
 
@@ -157,8 +157,10 @@ function Signature({
       outer.current.rotation.y += 0.0015 + intensity * 0.004;
     }
     // AWARE: title clarifies; FOCUSED: OPEN cue. Hidden in the focused world (DOM shows it).
-    if (titleRef.current) titleRef.current.visible = !focus && intensity > 0.34;
-    if (openRef.current) openRef.current.visible = !focus && intensity > 0.7;
+    // Gate by `win` too — titles belong to BUILD; without this they leak whenever the
+    // orb drifts near a signature in a later chapter (e.g. at the JOURNEY threshold).
+    if (titleRef.current) titleRef.current.visible = !focus && intensity > 0.34 && win > 0.05;
+    if (openRef.current) openRef.current.visible = !focus && intensity > 0.7 && win > 0.05;
 
     // report which project the orb is investigating (for relationships / brightening)
     if (near > 0.62 && !selected) setHovered(id);
@@ -265,6 +267,7 @@ function Flow({ from, to, activeId }: { from: THREE.Vector3; to: THREE.Vector3; 
 export default function ProjectUniverse({ tier = 2 }: { tier?: number }) {
   const base = tier >= 2 ? 1300 : 650;
   const windowRef = useRef({ v: 0 });
+  const root = useRef<THREE.Group>(null);
 
   // give the orb the projects to notice (curiosity steering)
   useEffect(() => {
@@ -280,6 +283,9 @@ export default function ProjectUniverse({ tier = 2 }: { tier?: number }) {
     const p = film.progress;
     windowRef.current.v =
       THREE.MathUtils.smoothstep(p, 0.23, 0.26) * (1 - THREE.MathUtils.smoothstep(p, 0.36, 0.4));
+    // during the JOURNEY drift the camera looks into the origin region — hide the
+    // whole universe (its titles show on orb-proximity regardless of the window).
+    if (root.current) root.current.visible = journeyDepth(p) < 0.02;
   });
 
   // relationship connections: from each project to its related work
@@ -303,7 +309,7 @@ export default function ProjectUniverse({ tier = 2 }: { tier?: number }) {
   }, []);
 
   return (
-    <group>
+    <group ref={root}>
       {builds.map((b) => {
         const sig = SIG[b.id as string];
         if (!sig) return null;

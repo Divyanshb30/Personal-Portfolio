@@ -7,9 +7,8 @@ import Rig from "./Rig";
 import Atmosphere from "./Atmosphere";
 import WorldWords from "./WorldWords";
 import StackWeb from "./StackWeb";
-import Dtu from "./Dtu";
 import ProjectUniverse from "./ProjectUniverse";
-import PhotoPlane from "./PhotoPlane";
+import Journey from "./Journey";
 import Post from "./Post";
 import ParticleEntity from "./ParticleEntity";
 import GLBFigure from "./GLBFigure";
@@ -33,7 +32,6 @@ function EntityRig({ count }: { count: number }) {
  */
 export default function World({ tier = 2, reduce = false }: { tier?: number; reduce?: boolean }) {
   const count = tier >= 2 ? 32000 : 12000;
-  void reduce;
 
   return (
     <>
@@ -52,9 +50,10 @@ export default function World({ tier = 2, reduce = false }: { tier?: number; red
       <WorldWords tier={tier} />
       <ProjectUniverse tier={tier} />
       <StackWeb />
-      <Dtu tier={tier} />
-      {/* reality breaks into the world during the DTU documentary (placeholder) */}
-      <PhotoPlane from={0.61} to={0.645} position={[0.6, 0.1, 1.2]} size={[3.6, 2.4]} />
+      {/* JOURNEY — orb-POV drift past a corridor of memories (left/right of the
+          flight path). Replaces the old DTU-network journey; the ERP + research
+          story now lives as memories you glide by. */}
+      <Journey reduce={reduce} />
 
       <Suspense fallback={null}>
         <EntityRig count={count} />

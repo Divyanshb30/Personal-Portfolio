@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { film, CHAPTERS } from "@/lib/scroll";
-import { identity, stack, journey, explore, now, profile, regions } from "@/lib/content";
+import { identity, stack, explore, now, profile, regions } from "@/lib/content";
 import Nav from "@/components/ui/Nav";
 
 /** 0 below a, 1 above b, smooth between. */
@@ -118,31 +118,11 @@ export default function Overlay() {
         </ul>
       </Beat>
 
-      {/* 05 JOURNEY — the DTU ERP documentary (the ecosystem grows in 3D).
-          The story is told as captions over the growing world; the arc frames it. */}
-      <Beat a={0.51} b={0.665} className="bottom-[13%] left-6 md:left-16">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.34em] text-smoke">DTU ERP · a system that kept growing</p>
-        <div className="flex flex-wrap gap-x-5 gap-y-1">
-          {journey.map((j) => (
-            <span key={j.year} className="font-mono text-[10px] tracking-[0.12em] text-faint">
-              <span className="text-smoke">{j.year}</span> {j.title}
-            </span>
-          ))}
-        </div>
-      </Beat>
-
-      {/* DTU documentary captions — change as the world grows */}
-      <Beat a={0.51} b={0.556} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
-        <p className="font-display text-[6vw] font-medium leading-tight tracking-[-0.02em] text-bone md:text-[2.4rem]">It started with one form.</p>
-      </Beat>
-      <Beat a={0.556} b={0.6} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
-        <p className="font-display text-[6vw] font-medium leading-tight tracking-[-0.02em] text-bone md:text-[2.4rem]">Then the problem kept growing.</p>
-      </Beat>
-      <Beat a={0.6} b={0.632} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
-        <p className="font-display text-[6vw] font-medium leading-tight tracking-[-0.02em] text-bone md:text-[2.4rem]">It became a department&rsquo;s platform.</p>
-      </Beat>
-      <Beat a={0.632} b={0.67} className="bottom-1/2 left-1/2 -translate-x-1/2 translate-y-1/2 text-center">
-        <p className="font-display text-[7vw] font-semibold leading-tight tracking-[-0.02em] text-bone md:text-[3rem]">2,000+ students. Still live.</p>
+      {/* 05 JOURNEY — orb-POV drift through the memory corridor (Journey.tsx).
+          All memory text lives in 3D space now; the DOM stays silent except for a
+          single faint cue that you are moving THROUGH memory, not reading a list. */}
+      <Beat a={0.512} b={0.55} className="bottom-[9%] left-1/2 -translate-x-1/2 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-[0.42em] text-faint/70">drifting back · through memory</p>
       </Beat>
 
       {/* 06 EXPLORE — deliberately broad (left; orb right) */}

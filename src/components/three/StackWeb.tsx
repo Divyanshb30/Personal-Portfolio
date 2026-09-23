@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { Text, Billboard } from "@react-three/drei";
 import * as THREE from "three";
 import { stack, techProjects } from "@/lib/content";
-import { film } from "@/lib/scroll";
+import { film, journeyDepth } from "@/lib/scroll";
 import { orb } from "@/lib/orb";
 
 /**
@@ -147,7 +147,7 @@ export default function StackWeb() {
     const waveP = THREE.MathUtils.smoothstep(p, 0.5, 0.55);
     nodeMat.uniforms.uWave.value = waveP > 0 ? waveP * 1.4 : -1;
 
-    if (group.current) group.current.visible = win > 0.001;
+    if (group.current) group.current.visible = win > 0.001 && journeyDepth(p) < 0.02;
 
     // nearest node to the orb -> contextual label (throttled to changes)
     if (win > 0.2) {

@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
-import { film } from "@/lib/scroll";
+import { film, journeyDepth } from "@/lib/scroll";
 
 /** Camera as storytelling device — one continuous path over the 8 chapters. */
 type Key = { at: number; pos: [number, number, number]; look: [number, number, number] };
@@ -27,6 +27,8 @@ const PATH: Key[] = [
 
 const tmpPos = new THREE.Vector3();
 const tmpLook = new THREE.Vector3();
+const driftPos = new THREE.Vector3();
+const driftLook = new THREE.Vector3();
 
 function sample(p: number, out: THREE.Vector3, key: "pos" | "look") {
   let a = PATH[0];
@@ -58,11 +60,33 @@ export default function Rig() {
     sample(p, tmpPos, "pos");
     tmpPos.x += film.px * 0.32; // living pointer parallax
     tmpPos.y += -film.py * 0.24;
-    state.camera.position.lerp(tmpPos, k);
 
     sample(p, tmpLook, "look");
+
+    // JOURNEY — the camera becomes the orb: it eases to a near-still drift
+    // station, looks down −Z into the dark, and gains inertial sway + roll so it
+    // feels like BEING the orb (not a dolly). The memory corridor streams past.
+    const jd = journeyDepth(p);
+    let roll = 0;
+    if (jd > 0.001) {
+      const t = state.clock.elapsedTime;
+      const glance = film.journeyGlanceX; // −1 left … +1 right
+      driftPos.set(
+        Math.sin(t * 0.19) * 0.18 + film.px * 0.55 + glance * 0.5, // lean toward it
+        Math.cos(t * 0.16) * 0.12 - film.py * 0.42 + 0.05,
+        3 // DRIFT_Z — must match Journey's corridor math
+      );
+      // look ahead down the corridor, turning the head toward the passing memory
+      driftLook.set(film.px * 0.7 + glance * 1.15, -film.py * 0.55, 3 - 10);
+      tmpPos.lerp(driftPos, jd);
+      tmpLook.lerp(driftLook, jd);
+      roll = (Math.sin(t * 0.23) * 0.03 - glance * 0.02) * jd; // slight bank into the turn
+    }
+
+    state.camera.position.lerp(tmpPos, k);
     look.current.lerp(tmpLook, k);
     state.camera.lookAt(look.current);
+    state.camera.rotation.z = roll; // lookAt zeroes roll; re-apply after
   });
 
   return null;

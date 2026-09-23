@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { film, journeyDepth } from "@/lib/scroll";
 
 export default function Cursor() {
   const dot = useRef<HTMLDivElement>(null);
@@ -29,9 +30,13 @@ export default function Cursor() {
       rx += (mx - rx) * 0.16;
       ry += (my - ry) * 0.16;
       scale += (targetScale - scale) * 0.16;
+      // fade the reticle out during the JOURNEY drift — you ARE the orb, not a pointer
+      const o = String(1 - journeyDepth(film.progress) * 0.9);
       if (ring.current) {
         ring.current.style.transform = `translate3d(${rx - 18}px, ${ry - 18}px, 0) scale(${scale})`;
+        ring.current.style.opacity = o;
       }
+      if (dot.current) dot.current.style.opacity = o;
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { entityVert, entityFrag } from "./shaders/entityShaders";
 import { sphere, network, clusters3, randoms, word } from "@/lib/targets";
-import { film } from "@/lib/scroll";
+import { film, journeyDepth } from "@/lib/scroll";
 import { orb, stepOrb } from "@/lib/orb";
 import { director, FOCUS_POS } from "@/lib/director";
 import { builds } from "@/lib/content";
@@ -168,12 +168,15 @@ export default function ParticleEntity({
 
     // finale: the dust entity fades as the solid human takes over
     const fade = 1 - THREE.MathUtils.smoothstep(p, 0.95, 0.995);
+    // JOURNEY: the orb BECOMES the camera POV — the visible dust dissolves so the
+    // world goes black and only the memory corridor remains.
+    const drift = 1 - journeyDepth(p);
 
     material.uniforms.uTime.value = t;
     material.uniforms.uMorph.value = s.morph;
     material.uniforms.uScatter.value = scatter;
     material.uniforms.uEnergy.value = energy;
-    material.uniforms.uOpacity.value = 0.72 * fade;
+    material.uniforms.uOpacity.value = 0.72 * fade * drift;
     material.uniforms.uPointer.value.set(film.px * 3.4, -film.py * 2.1, 0);
 
     // MOTION: the orb is a living body — the target is set by the beat / by BUILD

@@ -45,7 +45,33 @@ export const film = {
   tPointer: 0,
   /** lenis handle for programmatic navigation (set by the provider) */
   lenis: null as Lenis | null,
+  /** JOURNEY: signed glance (−1 left … +1 right) toward the passing memory */
+  journeyGlanceX: 0,
 };
+
+// JOURNEY — the orb-POV memory drift. The camera becomes the orb and the memory
+// corridor streams past. Window in film.progress; kept in sync with the scroll
+// section heights + neighbour chapters (stack ends ~0.49, explore begins ~0.67).
+export const JOURNEY = { start: 0.505, end: 0.66 } as const;
+
+/**
+ * How deep in the drift we are, 0..1. Fast ramp at entry (the world goes BLACK),
+ * hold through the middle, fast ramp back out. Everything that must dissolve for
+ * the POV (the dust orb, the chapter word) multiplies its opacity by (1 - this).
+ */
+export function journeyDepth(p: number): number {
+  const { start, end } = JOURNEY;
+  if (p <= start || p >= end) return 0;
+  const t = (p - start) / (end - start);
+  const w = Math.min(1, Math.min(t / 0.07, (1 - t) / 0.07));
+  return w * w * (3 - 2 * w);
+}
+
+/** Position within the journey window, 0..1 — drives the corridor's travel. */
+export function journeyLocal(p: number): number {
+  const { start, end } = JOURNEY;
+  return Math.max(0, Math.min(1, (p - start) / (end - start)));
+}
 
 /** Center progress of a chapter (arrival = 0 … contact = 1). */
 export function chapterProgress(c: Chapter): number {
