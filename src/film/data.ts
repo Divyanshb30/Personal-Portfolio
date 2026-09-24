@@ -88,7 +88,7 @@ export const PROJECTS: Project[] = [
     kind: "Engineering",
     metric: "0.9184 test AUC",
     line: "A stacking ensemble over ~1.8M LendingClub loans, SHAP-audited and drift-monitored.",
-    off: [5.6, -0.8, 1.6],
+    off: [5.6, -0.3, 1.6],
     sc: 1.1,
     uses: ["XGBoost", "PyTorch", "SHAP Explainability", "MLflow", "DagsHub", "Drift Monitoring (PSI/KS)", "GCP Cloud Run", "Docker", "FastAPI", "Streamlit"],
     links: [

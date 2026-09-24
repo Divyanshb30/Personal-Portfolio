@@ -39,7 +39,7 @@ export default function FilmStage() {
   const jumping = useRef(false);
   const covered = !ready || veil;
 
-  /** Cover the screen (dust gathers into a line), cut to the section, give it a beat, then reveal it (the line lets go). */
+  /** Cover the screen, cut to the section, hold long enough for a line or two, then reveal it. */
   const jump = useCallback((p: Place) => {
     const f = film.current;
     if (!f || jumping.current) return;
@@ -53,10 +53,10 @@ export default function FilmStage() {
           window.setTimeout(() => {
             setVeil(false);
             jumping.current = false;
-          }, Math.max(0, 1400 - (performance.now() - t0)));
+          }, Math.max(0, 2100 - (performance.now() - t0)));
         }),
       );
-    }, 480);
+    }, 450);
   }, []);
 
   useEffect(() => {

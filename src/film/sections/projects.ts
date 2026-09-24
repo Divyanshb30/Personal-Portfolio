@@ -434,7 +434,13 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
             lower.ly += oy + 12;
           }
       }
-      for (const pr of projs) pr.label.style.transform = `translate(${pr.lx.toFixed(1)}px, ${pr.ly.toFixed(1)}px)`;
+      // and every name stays inside the page, whatever its height
+      for (const pr of projs) {
+        const w = pr.label.offsetWidth || 260, h = pr.label.offsetHeight || 110;
+        pr.lx = clamp(pr.lx, 16, ctx.W - w - 16);
+        pr.ly = clamp(pr.ly, 84, ctx.H - h - 64);
+        pr.label.style.transform = `translate(${pr.lx.toFixed(1)}px, ${pr.ly.toFixed(1)}px)`;
+      }
       // the guide hovers by whichever project has your attention, then dives down the roots
       const dive = smooth(0.745, 0.8, G);
       const gs = 0.28 * smooth(0.53, 0.56, G) * (1 - smooth(0.785, 0.8, G));
