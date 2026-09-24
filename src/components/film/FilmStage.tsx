@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PLACES, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
-import { PROFILE } from "@/film/data";
+import { PROFILE, THINK } from "@/film/data";
 
 /**
  * Mounts the film: a fixed WebGL canvas, the words that live over it, and the section rail.
@@ -54,6 +54,15 @@ export default function FilmStage() {
             </h1>
             <div className="mono" style={{ marginTop: 26, color: "#ffc896" }}>{PROFILE.roles}</div>
             <p style={{ marginTop: 14, fontSize: 17, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 380 }}>{PROFILE.line}</p>
+          </section>
+          <section data-block="think" className="blk" style={{ left: 72, top: "27vh" }}>
+            <div className="mono sub">Think</div>
+            <h2 className="disp" style={{ fontSize: "clamp(44px,4.4vw,64px)", lineHeight: 1.02, marginTop: 16 }}>
+              How he
+              <br />
+              thinks
+            </h2>
+            <p style={{ marginTop: 22, fontSize: 17, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 340 }}>{THINK.line}</p>
           </section>
         </div>
         <div ref={labels} className="film-labels" />

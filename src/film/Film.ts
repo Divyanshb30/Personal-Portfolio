@@ -10,6 +10,7 @@ import { R, V, emberAt, gauss, smooth, COOL } from "./math";
 import { A_SPAN, OS, PLACES, PLACE_AT, filmT, placeAt, scrollFor, type Place } from "./layout";
 import { loadFigure } from "./figure";
 import { buildBeing } from "./sections/being";
+import { buildThink } from "./sections/think";
 
 export type FilmOptions = {
   canvas: HTMLCanvasElement;
@@ -50,6 +51,7 @@ export class Film {
   private rightV = V();
   private upV = V();
   private cleanup: (() => void)[] = [];
+  private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement };
 
   constructor(private opts: FilmOptions) {}
 
@@ -79,7 +81,7 @@ export class Film {
     if (this.disposed) return;
     const orbGeo = blobGeometry(9, 0.17), planetGeo = blobGeometry(21, 0.17);
     const being = buildBeing(ctx, fig, orbGeo, planetGeo);
-    this.sections.push(being);
+    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo));
 
     const keys: Key[] = [...firstHalfKeys()];
     this.director = new Director(keys);
@@ -90,6 +92,7 @@ export class Film {
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
 
+    this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer") };
     this.bindInput();
     const q = new URLSearchParams(location.search);
     if (q.has("s")) this.fix = +q.get("s")!;
@@ -184,9 +187,9 @@ export class Film {
     for (const sec of this.sections) sec.update(f);
 
     // words on the first screen, and the text layer drifting against the camera
-    block(ctx, "arrival").style.opacity = String(1 - smooth(0.02, 0.07, s));
-    block(ctx, "hint").style.opacity = String(1 - smooth(0.01, 0.05, s));
-    block(ctx, "layer").style.transform = `translate(${(-cam.x * 22 * calm).toFixed(1)}px, ${(cam.y * 14 * calm).toFixed(1)}px)`;
+    this.blocks.arrival.style.opacity = String(1 - smooth(0.02, 0.07, s));
+    this.blocks.hint.style.opacity = String(1 - smooth(0.01, 0.05, s));
+    this.blocks.layer.style.transform = `translate(${(-cam.x * 22 * calm).toFixed(1)}px, ${(cam.y * 14 * calm).toFixed(1)}px)`;
 
     const here = placeAt(GG, G);
     if (here !== this.place) {
