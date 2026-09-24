@@ -90,6 +90,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
     });
     const pts = new THREE.Points(g, m);
     pts.frustumCulled = false;
+    pts.renderOrder = 2; // drawn after the veil, so the veil dims only what lies beneath
     ctx.scene.add(pts);
   }
 
@@ -122,6 +123,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
     });
     const l = new THREE.LineSegments(g, m);
     l.frustumCulled = false;
+    l.renderOrder = 2;
     ctx.scene.add(l);
   }
 

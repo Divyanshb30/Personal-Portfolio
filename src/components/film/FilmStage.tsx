@@ -73,6 +73,12 @@ export default function FilmStage() {
               Everything it learned about how he thinks, turned into what he built.
             </p>
           </section>
+          <section data-block="journey" className="blk" style={{ left: 0, right: 0, top: "36%", textAlign: "center" }}>
+            <div className="mono sub">Journey · 2021 to now</div>
+            <h2 className="disp" style={{ fontSize: "clamp(44px,5.4vw,78px)", lineHeight: 1, marginTop: 22 }}>
+              What made him
+            </h2>
+          </section>
           <section data-block="stack" className="blk" style={{ left: 48, bottom: 84 }}>
             <div className="mono sub">Stack</div>
             <h2 className="disp" style={{ fontSize: 26, lineHeight: 1.1, marginTop: 8 }}>
