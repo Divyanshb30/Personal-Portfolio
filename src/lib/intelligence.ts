@@ -161,24 +161,24 @@ export async function ask(query: string): Promise<AskResult> {
 }
 
 export const SUGGESTIONS = [
-  "Show me your agentic systems",
+  "What is he building right now?",
   "Take me to the projects",
   "What research is published?",
   "How do I reach you?",
 ];
 
-import type { Chapter } from "./scroll";
+import type { Place } from "@/film/layout";
 
-/** Map an answer's topic to a chapter the AI can navigate the world to. */
-export function topicToChapter(topic: string | null): Chapter | null {
+/** Map an answer's topic to the part of the film the assistant can take the visitor to. */
+export function topicToChapter(topic: string | null): Place | null {
   if (!topic) return null;
   const t = topic.toLowerCase();
-  if (t.includes("research") || t.includes("erp")) return "journey";
-  if (t.includes("agent") || t.includes("platform") || t.includes("impact") || t.includes("intellicode") || t.includes("loan") || t.includes("transformer") || t.includes("project")) return "build";
-  if (t.includes("skill") || t.includes("stack")) return "stack";
-  if (t.includes("recognition")) return "explore";
-  if (t.includes("contact")) return "human";
-  if (t.includes("divyansh")) return "identity";
+  if (t.includes("research") || t.includes("erp") || t.includes("education") || t.includes("journey")) return "Journey";
+  if (t.includes("intellicode") || t.includes("loan") || t.includes("transformer") || t.includes("project") || t.includes("impact")) return "Projects";
+  if (t.includes("skill") || t.includes("stack")) return "Stack";
+  if (t.includes("agent") || t.includes("platform") || t.includes("amdocs") || t.includes("now")) return "Horizon";
+  if (t.includes("contact") || t.includes("resume")) return "Contact";
+  if (t.includes("divyansh")) return "Arrival";
   return null;
 }
 

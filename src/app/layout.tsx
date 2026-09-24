@@ -1,27 +1,13 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk, Martian_Mono } from "next/font/google";
+import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SmoothScroll from "@/components/providers/SmoothScroll";
-import Cursor from "@/components/ui/Cursor";
 
-// Display — monumental, humanist-industrial (person's name, scene titles)
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-bricolage",
-  display: "swap",
-});
-// Body/UI — clean workhorse
-const hanken = Hanken_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-hanken",
-  display: "swap",
-});
-// Instrument — telemetry, HUD labels, agent readouts
-const martian = Martian_Mono({
-  subsets: ["latin"],
-  variable: "--font-martian",
-  display: "swap",
-});
+// Display: a wide, mission-grade grotesk (set expanded via font-stretch)
+const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
+// Body
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+// Data, labels, instruments
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Divyansh Bansal — AI Engineer",
@@ -43,12 +29,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bricolage.variable} ${hanken.variable} ${martian.variable}`}
+      className={`${archivo.variable} ${geist.variable} ${geistMono.variable}`}
     >
-      <body className="grain">
-        <Cursor />
-        <SmoothScroll>{children}</SmoothScroll>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
