@@ -69,7 +69,7 @@ export default function FilmStage() {
         <div className="film-name disp">{PROFILE.name.toUpperCase()}</div>
         <div data-block="layer" className="film-layer">
           <section data-block="arrival" className="blk" style={{ left: 72, top: "30vh", opacity: 1 }}>
-            <div className="mono sub">An observer found him</div>
+            <div className="mono sub">Somewhere between curious and obsessed.</div>
             <h1 className="disp" style={{ fontSize: "clamp(56px,6.6vw,96px)", lineHeight: 0.98, marginTop: 18 }}>
               Divyansh
               <br />
@@ -81,9 +81,9 @@ export default function FilmStage() {
           <section data-block="think" className="blk" style={{ left: 72, top: "27vh" }}>
             <div className="mono sub">Think</div>
             <h2 className="disp" style={{ fontSize: "clamp(44px,4.4vw,64px)", lineHeight: 1.02, marginTop: 16 }}>
-              How he
+              The
               <br />
-              thinks
+              process
             </h2>
             <p style={{ marginTop: 22, fontSize: 17, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 340 }}>{THINK.line}</p>
           </section>
