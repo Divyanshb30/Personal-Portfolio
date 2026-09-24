@@ -9,18 +9,24 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "sw
 // Data, labels, instruments
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
+// What a shared link shows. The favicon, the home-screen icon and the share image live beside this file
+// (favicon.ico, apple-icon.png, opengraph-image.png, twitter-image.png) and are picked up by Next.
 export const metadata: Metadata = {
-  title: "Divyansh Bansal — AI Engineer",
-  description:
-    "AI Engineer building production agentic systems at Amdocs (AT&T). Five agents live in production, a published method, a transformer from scratch. Open to senior AI roles worldwide.",
-  metadataBase: new URL("https://divyanshbansal.vercel.app"),
+  metadataBase: new URL("https://www.divyansh-bansal.space"),
+  title: "Divyansh Bansal",
+  description: "Perpetually Curious",
   openGraph: {
-    title: "Divyansh Bansal — AI Engineer",
-    description:
-      "Production agentic AI systems, shipped at telecom scale. Open to senior AI roles worldwide.",
+    title: "Divyansh Bansal",
+    description: "Perpetually Curious",
+    url: "/",
+    siteName: "Divyansh Bansal",
     type: "website",
   },
-  icons: { icon: "/favicon.ico" },
+  twitter: {
+    card: "summary_large_image",
+    title: "Divyansh Bansal",
+    description: "Perpetually Curious",
+  },
 };
 
 export default function RootLayout({
