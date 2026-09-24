@@ -16,6 +16,8 @@ import { buildStack } from "./sections/stack";
 import { buildJourney } from "./sections/journey";
 import { buildHorizon } from "./sections/horizon";
 import { buildContact } from "./sections/contact";
+import { buildAmbient } from "./sections/ambient";
+import { makeOrb } from "./orb";
 
 export type FilmOptions = {
   canvas: HTMLCanvasElement;
@@ -100,9 +102,13 @@ export class Film {
     if (this.disposed) return;
     const orbGeo = blobGeometry(9, 0.17), planetGeo = blobGeometry(21, 0.17);
     const being = buildBeing(ctx, fig, orbGeo, planetGeo);
-    const projects = buildProjects(ctx, planetGeo);
-    const journey = buildJourney(ctx), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo);
-    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars), journey, horizon, contact);
+    // the small glass orb that travels from the work, through the stack, down the river of his years
+    const orb = makeOrb(ctx);
+    const projects = buildProjects(ctx, planetGeo, orb);
+    const journey = buildJourney(ctx, orb), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo);
+    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars, orb), journey, horizon, contact);
+    // the ambient moments, then the orb itself, last: it moves once whoever owns it has said where
+    this.sections.push(buildAmbient(ctx, orb), orb);
 
     const keys: Key[] = [...firstHalfKeys(), ...journey.keys, ...horizon.keys, ...contact.keys];
     this.director = new Director(keys);

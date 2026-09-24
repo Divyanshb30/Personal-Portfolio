@@ -4,10 +4,10 @@ import type { Ctx, Frame } from "../ctx";
 import type { Shot } from "../director";
 import { block, el } from "../ctx";
 import { DUST_FRAG, GLSL_FN, STIR_GLSL } from "../glsl";
-import { blobGeometry, glass } from "../helpers";
 import { R, TAU, V, clamp, emberAt, gauss, lerp, rng, smooth } from "../math";
 import { DIVE, PC, PJ, PL_R, planetRot } from "../layout";
 import { PROJECTS, type Project } from "../data";
+import type { Orb } from "../orb";
 
 const TEMPS = [[0.74, 0.84, 1.0], [1, 1, 1], [1, 0.9, 0.76]];
 
@@ -152,9 +152,10 @@ const panelHTML = (pr: Project) => `
  * PROJECTS. The planet's dust rises, top first, and settles into four named constellations, one
  * per project. One wide shot: hover brightens a constellation, a click flies the camera to it and
  * opens its story beside it. Esc, ✕ or any scroll closes it; scrolling on leads down into the stack.
- * The orb follows as a small glass guide, then dives down the roots into the stack.
+ * The orb follows as a small glass guide, then dives down the roots into the stack. Leave it alone
+ * by the transformer for a while and it wanders into the attention field, which notices it.
  */
-export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry) {
+export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Orb) {
   const projs = PROJECTS.map((pr) => {
     const center = PJ.clone().add(V(...pr.off));
     const grp = new THREE.Group();
@@ -194,7 +195,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry) {
     label.setAttribute("role", "button");
     label.setAttribute("aria-label", `Open ${pr.title}`);
     label.tabIndex = -1;
-    return { data: pr, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0 };
+    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0 };
   });
 
   // the rising dust: grains leave the planet's surface (top first) and settle on the stars and lines
@@ -257,16 +258,43 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry) {
   }
 
   // the orb, now small and glass, guiding you from project to project
-  const guide = new THREE.Group();
-  guide.add(new THREE.Mesh(blobGeometry(17, 0.14, 0.78, 40), glass()));
-  guide.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 3), new THREE.MeshBasicMaterial({ color: 0xff9a4a, toneMapped: false })));
-  guide.scale.setScalar(0);
-  ctx.scene.add(guide);
   const guideAt = projs.map((pr) => V(pr.box.max.x + 0.5, pr.box.max.y + 0.1, pr.center.z + 0.8));
+
+  // the transformer's attention, all of it at once, on the orb: a line from every token to it
+  const gpt = projs.find((pr) => pr.data.id === "gpt")!;
+  const attnU = { uOrb: { value: V() }, uAmt: { value: 0 } };
+  {
+    const p: number[] = [], e: number[] = [];
+    for (const q of gpt.local) {
+      p.push(q.x, q.y, q.z, q.x, q.y, q.z);
+      e.push(0, 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(p, 3));
+    g.setAttribute("aEnd", new THREE.Float32BufferAttribute(e, 1));
+    const m = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: attnU,
+      vertexShader: /* glsl */ `
+        attribute float aEnd; uniform vec3 uOrb; varying float vE;
+        void main(){ vE = aEnd; gl_Position = projectionMatrix * modelViewMatrix * vec4(mix(position, uOrb, aEnd), 1.0); }`,
+      fragmentShader: /* glsl */ `
+        uniform float uAmt; varying float vE;
+        void main(){ if (uAmt < 0.003) discard; gl_FragColor = vec4(vec3(1.0, 0.9, 0.78) * uAmt * mix(1.1, 0.25, vE), 1.0); }`,
+    });
+    const l = new THREE.LineSegments(g, m);
+    l.frustumCulled = false;
+    gpt.grp.add(l);
+  }
+  // left by the transformer, the orb drifts in among the tokens; a clock per visit, then a long rest
+  const EGG = { idle: 0, t: -1, wait: 6, fled: false };
+  const INTO = gpt.grp.localToWorld(V(0.26, 0.23, 0.35)), QUERY = gpt.grp.localToWorld(gpt.local[14].clone());
 
   // picking: hover a constellation to brighten it, click to fly in and read its story
   const panel = block(ctx, "panel"), work = block(ctx, "work");
-  const PICK = { on: false, hover: -1, idx: -1, last: -1, amt: 0, at: 0, gp: guideAt[1].clone() };
+  const PICK = { on: false, hover: -1, idx: -1, last: -1, amt: 0, at: 0 };
   const open = (i: number) => {
     if (!PICK.on) return;
     PICK.idx = i;
@@ -307,7 +335,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry) {
       }
     });
   });
-  const tmp = V(), tmp2 = V(), home = V();
+  const tmp = V(), tmp2 = V(), home = V(), UPV = V(0, 1, 0);
   let wasOn = false;
 
   return {
@@ -376,13 +404,36 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry) {
       });
       // the guide hovers by whichever project has your attention, then dives down the roots
       const dive = smooth(0.745, 0.8, G);
-      home.copy(guideAt[PICK.idx >= 0 ? PICK.idx : PICK.hover >= 0 ? PICK.hover : 1]);
-      PICK.gp.lerp(home, 1 - Math.exp(-dt * 3));
-      guide.position.copy(PICK.gp).add(tmp.set(0, Math.sin(time * 1.3) * 0.06, 0)).lerp(DIVE, dive * dive);
       const gs = 0.28 * smooth(0.53, 0.56, G) * (1 - smooth(0.785, 0.8, G));
-      guide.scale.setScalar(gs);
-      guide.visible = gs > 0.001;
-      guide.rotation.y = time * 0.4;
+      home.copy(guideAt[PICK.idx >= 0 ? PICK.idx : PICK.hover >= 0 ? PICK.hover : 1]).add(tmp.set(0, Math.sin(time * 1.3) * 0.06, 0));
+
+      // the attention egg: it only runs while the orb is parked by the transformer and nobody is choosing
+      const parked = PICK.on && PICK.idx < 0 && PICK.hover < 0 && gs > 0.27 && !orb.still;
+      if (EGG.t < 0) {
+        EGG.idle = parked ? EGG.idle + dt : 0;
+        if (EGG.idle > EGG.wait) Object.assign(EGG, { t: 0, idle: 0, wait: 45, fled: false });
+      } else EGG.t = parked && EGG.t < 2.6 ? EGG.t + dt : -1;
+      const et = EGG.t, attn = et < 1.2 ? 0 : et < 1.3 ? 1 : Math.exp(-(et - 1.3) * 14);
+      attnU.uAmt.value = et < 0 ? 0 : attn;
+      gpt.lines.opacity *= 1 - 0.8 * attnU.uAmt.value;
+      gpt.stars.uniforms.uGain.value *= 1 + 0.5 * attnU.uAmt.value;
+
+      if (gs > 0.001) {
+        if (et >= 0 && et < 1.55) {
+          // wanders in, curious; holds still while every token turns to it; notices
+          const inn = smooth(0, 1.2, et);
+          orb.drive({ at: tmp.copy(home).lerp(INTO, inn), size: gs, look: QUERY, lookAmt: 0.5 + 0.5 * smooth(1.25, 1.35, et), pin: 0.6 * smooth(1.0, 1.2, et) });
+          if (et > 1.3 && et < 1.45) orb.squash(-0.3, UPV);
+        } else {
+          if (et >= 1.55 && !EGG.fled) {
+            EGG.fled = true;
+            orb.kick(tmp.copy(home).sub(INTO).normalize().multiplyScalar(7).add(tmp2.set(0, 2, 0)));
+          }
+          orb.drive({ at: tmp.copy(home).lerp(DIVE, dive * dive), size: gs, pin: dive * dive });
+        }
+        attnU.uOrb.value.copy(orb.pos);
+        gpt.grp.worldToLocal(attnU.uOrb.value);
+      }
       work.style.opacity = String(smooth(0.51, 0.525, G) * (1 - smooth(0.72, 0.735, G)) * (1 - PICK.amt));
     },
   };
