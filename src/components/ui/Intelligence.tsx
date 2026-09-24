@@ -47,7 +47,7 @@ export default function Intelligence() {
     if (chapter && isNavIntent(query)) {
       text += ` — taking you there.`;
       goTo(chapter);
-      setTimeout(() => setOpen(false), 900);
+      setTimeout(() => setOpen(false), 350);
     }
 
     setMsgs((m) => {
@@ -110,15 +110,14 @@ export default function Intelligence() {
               ))}
             </div>
 
-            {msgs.length === 0 && (
-              <div className="flex flex-wrap gap-2 px-4 pb-3">
-                {SUGGESTIONS.map((s) => (
-                  <button key={s} onClick={() => send(s)} className="border border-hair px-2.5 py-1.5 font-mono text-[10px] tracking-wide text-faint transition-colors hover:border-white/40 hover:text-bone">
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* the suggestions stay, so there is always somewhere to go next */}
+            <div className="flex flex-wrap gap-2 border-t border-hair px-4 py-3">
+              {SUGGESTIONS.map((s) => (
+                <button key={s} onClick={() => send(s)} disabled={busy} className="border border-hair px-2.5 py-1.5 font-mono text-[10px] tracking-wide text-faint transition-colors hover:border-white/40 hover:text-bone disabled:opacity-40">
+                  {s}
+                </button>
+              ))}
+            </div>
 
             <form onSubmit={(e) => { e.preventDefault(); send(value); }} className="flex items-center gap-2 border-t border-hair px-3 py-3">
               <input

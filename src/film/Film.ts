@@ -55,6 +55,7 @@ export class Film {
   private composer!: EffectComposer;
   private bloom!: UnrealBloomPass;
   private mask!: ReturnType<typeof photoMask>;
+  private orb!: ReturnType<typeof makeOrb>;
   private director!: Director;
   private sections: Section[] = [];
   private raf = 0;
@@ -105,7 +106,7 @@ export class Film {
     const orbGeo = blobGeometry(9, 0.17), planetGeo = blobGeometry(21, 0.17);
     const being = buildBeing(ctx, fig, orbGeo, planetGeo);
     // the small glass orb that travels from the work, through the stack, down the river of his years
-    const orb = makeOrb(ctx);
+    const orb = (this.orb = makeOrb(ctx));
     const projects = buildProjects(ctx, planetGeo, orb);
     const journey = buildJourney(ctx, orb), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo);
     this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars, orb), journey, horizon, contact);
@@ -175,10 +176,18 @@ export class Film {
     });
   }
 
-  /** Scroll the page to a section. */
+  /** Scroll the page to a section, gliding through everything between. */
   goTo(p: Place) {
     const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
     window.scrollTo({ top: scrollFor(PLACE_AT[p]) * max, behavior: "smooth" });
+  }
+
+  /** Cut straight to a section (behind the loading screen): no glide, and the orb appears where it belongs. */
+  jumpTo(p: Place) {
+    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    window.scrollTo({ top: scrollFor(PLACE_AT[p]) * max, behavior: "instant" });
+    this.sSmooth = this.fix ?? this.progress();
+    this.orb?.snap();
   }
 
   private tick = (now: number) => {

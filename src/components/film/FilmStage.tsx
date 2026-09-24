@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PLACES, TRACK_VH, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
-import { BUILD, CONTACT, JOURNEY, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
+import { BUILD, CONTACT, JOURNEY, LOADING_LINES, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
 
 /** The local time in New Delhi, for the landing's corner. */
 function useIST() {
@@ -32,6 +32,39 @@ export default function FilmStage() {
   const [touch, setTouch] = useState(false);
   const ist = useIST();
   const index = PLACES.indexOf(place) + 1;
+  // the loading screen: up while the film loads, and again to cover a jump between sections
+  const [veil, setVeil] = useState(false);
+  const [line, setLine] = useState(0);
+  const film = useRef<import("@/film/Film").Film | null>(null);
+  const jumping = useRef(false);
+  const covered = !ready || veil;
+
+  useEffect(() => {
+    if (!covered) return;
+    const n = LOADING_LINES.length;
+    const id = window.setInterval(() => setLine((i) => (i + 1 + Math.floor(Math.random() * (n - 1))) % n), 1600);
+    return () => window.clearInterval(id);
+  }, [covered]);
+
+  /** Cover the screen, cut to the section, give it a beat to settle, then reveal it. */
+  const jump = useCallback((p: Place) => {
+    const f = film.current;
+    if (!f || jumping.current) return;
+    jumping.current = true;
+    setVeil(true);
+    const t0 = performance.now();
+    window.setTimeout(() => {
+      f.jumpTo(p);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          window.setTimeout(() => {
+            setVeil(false);
+            jumping.current = false;
+          }, Math.max(0, 1100 - (performance.now() - t0)));
+        }),
+      );
+    }, 380);
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount, the server cannot know
@@ -40,14 +73,14 @@ export default function FilmStage() {
 
   useEffect(() => {
     let alive = true;
-    let film: import("@/film/Film").Film | null = null;
     (async () => {
       const { Film } = await import("@/film/Film");
       if (!alive || !canvas.current || !root.current || !labels.current) return;
-      film = new Film({ canvas: canvas.current, root: root.current, labels: labels.current, onPlace: setPlace, onReady: () => setReady(true) });
-      registerNav((p) => film?.goTo(p));
+      const f = new Film({ canvas: canvas.current, root: root.current, labels: labels.current, onPlace: setPlace, onReady: () => setReady(true) });
+      film.current = f;
+      registerNav(jump);
       try {
-        await film.init();
+        await f.init();
       } catch (e) {
         console.error(e);
         setFailed(true);
@@ -56,9 +89,10 @@ export default function FilmStage() {
     return () => {
       alive = false;
       registerNav(null);
-      film?.dispose();
+      film.current?.dispose();
+      film.current = null;
     };
-  }, []);
+  }, [jump]);
 
   return (
     <>
@@ -165,8 +199,14 @@ export default function FilmStage() {
           ))}
         </nav>
       </div>
-      <div className={`film-loading mono sub${ready ? " done" : ""}`} aria-hidden={ready}>
-        {failed ? "This film needs WebGL. Try a recent desktop browser." : "Gathering dust…"}
+      <div className={`film-loading mono sub${covered ? "" : " done"}${veil ? " jumping" : ""}`} aria-hidden={!covered}>
+        {failed ? (
+          "This film needs WebGL. Try a recent desktop browser."
+        ) : (
+          <span key={line} className="film-loading-line">
+            {LOADING_LINES[line]}
+          </span>
+        )}
       </div>
       <div className="film-track" style={{ height: `${TRACK_VH}vh` }} aria-hidden />
       {/* the whole story as plain text, for screen readers and search engines */}
