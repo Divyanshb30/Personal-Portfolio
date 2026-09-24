@@ -34,7 +34,7 @@ function glyphPoints(ctx: Ctx, ch: string, n: number) {
  * dust gathers into a question mark beside the orb, and the orb looks at it. Now and then a star
  * falls across the far sky. On the river, a stray spark drifts by and the orb, briefly, follows it.
  */
-export function buildAmbient(ctx: Ctx, orb: Orb) {
+export function buildAmbient(ctx: Ctx, orb: Orb, busy: () => number = () => 0) {
   const still = orb.still, panel = block(ctx, "panel");
   const cam = ctx.camera, right = V(), up = V(), fwd = V(), tmp = V(), tmp2 = V();
   let lastGG = -1, lastMove = 0;
@@ -119,9 +119,9 @@ export function buildAmbient(ctx: Ctx, orb: Orb) {
       fwd.negate();
       const toOrb = cam.position.distanceTo(orb.pos);
 
-      // the question mark: only for someone who has stopped to look, and not too often
-      const where = GG >= 0.515 && GG <= 0.8;
-      if (Q.t < 0 && !still && where && orb.visible && orb.free && SP.t < 0 && idle > 1.8 && time > Q.next) {
+      // the question mark: only for someone who has stopped to look, between memories, and rarely
+      const where = GG >= 0.515 && GG <= 0.8 && busy() < 0.2;
+      if (Q.t < 0 && !still && where && orb.visible && orb.free && SP.t < 0 && idle > 3 && time > Q.next) {
         if (!Q.glyph) {
           (qGeo.attributes.aGly.array as Float32Array).set(glyphPoints(ctx, "?", NQ));
           qGeo.attributes.aGly.needsUpdate = true;
@@ -143,7 +143,7 @@ export function buildAmbient(ctx: Ctx, orb: Orb) {
         if (orb.visible) orb.attend(qU.uA.value, 0.85 * smooth(0.9, 1.4, Q.t) * (1 - smooth(3.4, 3.9, Q.t)));
         if (Q.t > 5.6 || !where) {
           Q.t = -1;
-          Q.next = time + 35;
+          Q.next = time + 70;
           qU.uGain.value = 0;
         }
       }

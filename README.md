@@ -8,7 +8,7 @@ One continuous, scroll-directed film in three.js. There are no pages: the scroll
 | Think    | The orb flies as a comet and sheds four moons: Question, Understand, Iterate, Build. |
 | Build    | Four named constellations, one per project. Hover brightens one; a click flies the camera to it and opens its story. Esc, ✕ or a scroll closes it. |
 | Stack    | Every tool as a name in depth, laid out so that no two collide, over a veil that dims the river below. |
-| Journey  | The river of his years, with photo plates standing on its banks. The orb rides it on a route of its own and opens two of the memories. |
+| Journey  | The river of his years, with his photos suspended beside it, each in its own drift of amber dust. The orb rides it on a route of its own and opens two of the memories. |
 | Now      | A sun rising over the limb of a dark world: still building. |
 | Contact  | "Let's talk" comes in and the page ends there. The orb then forms on its own clock, and scrolling back up returns it to the light. |
 
@@ -48,7 +48,9 @@ The text blocks are React markup. The engine finds them by `data-block` and only
 All of the words are in `src/film/data.ts`, with facts taken from the résumé:
 
 - Each project's `problem`, `built` and `outcome` fields, and its `links`. They are written from the résumé.
-- Journey photos are in `public/photos`. Each memory's `photo` is `[src, cropX, cropY, cropW, cropH]`, and a memory with `photo: null` shows a "photo coming" plate.
+- Journey photos are in `public/photos`. Each memory's `photo` is `[src, cropX, cropY, cropW, cropH]`, and a memory with `photo: null` shows a "photo coming" card.
+- Photos get only a light editorial grade and skip the bloom and filmic tone mapping (see `src/film/post.ts`), so they stay true to the originals. The cinematic feel comes from the dust and depth around them.
+- To add a photo that isn't tied to a year, put it in `public/photos` and add it to `LOOSE_PHOTOS` in `data.ts`. It will drift through the Journey, small and dim.
 
 Résumés are in `public/resume`. The dust figure is `public/models/divyansh.glb` (Draco-compressed; the decoder is served from `public/draco`).
 

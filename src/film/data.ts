@@ -128,12 +128,14 @@ export const STACK: [string, string, string[], [number, number, number]][] = [
 ];
 export const LEAD_OF: Record<string, string> = { Transformers: "Hugging Face Transformers" };
 
-type Photo = [string, number, number, number, number];
+export type Photo = [string, number, number, number, number];
 export type Memory = {
   y: string;
   t: string;
   /** an optional key figure, set large */
   k?: string;
+  /** the photo's width in the world (default 3.3) */
+  w?: number;
   n: string;
   /** photo: [src, crop x, y, w, h]; null shows a "photo coming" plate */
   photo: Photo | null;
@@ -143,7 +145,7 @@ export type Memory = {
   h: number;
   win: [number, number];
   /** a second, smaller plate beside the first */
-  extra?: { photo: Photo; d: number; bank: number; h: number; w: number; look?: number };
+  extra?: { photo: Photo; d: number; bank: number; h: number; w: number };
 };
 
 export const MEMORIES: Memory[] = [
@@ -157,7 +159,7 @@ export const MEMORIES: Memory[] = [
     bank: 3.4,
     h: 1.4,
     win: [0.18, 0.285],
-    extra: { photo: ["/photos/library.jpg", 0, 0, 1206, 667], d: 62, bank: 2, h: 3.3, w: 1.8, look: 61 },
+    extra: { photo: ["/photos/library.jpg", 0, 0, 1206, 667], d: 62, bank: 2, h: 3.3, w: 1.8 },
   },
   {
     y: "2022",
@@ -165,11 +167,12 @@ export const MEMORIES: Memory[] = [
     n: "Started turning ideas into systems.",
     photo: ["/photos/builds.jpg", 0, 180, 960, 720],
     cap: "First builds · 2022",
-    d: 100,
-    bank: -3.6,
-    h: 0.4,
+    // side by side with the night portrait, well apart, both facing the level shot
+    d: 101,
+    bank: -2.6,
+    h: 1.0,
     win: [0.365, 0.45],
-    extra: { photo: ["/photos/night.jpg", 0, 180, 720, 960], d: 104, bank: -6.0, h: 1.2, w: 1.7 },
+    extra: { photo: ["/photos/night.jpg", 0, 180, 720, 960], d: 101, bank: -7.1, h: 1.1, w: 1.75 },
   },
   {
     y: "2024",
@@ -200,6 +203,7 @@ export const MEMORIES: Memory[] = [
     t: "Amdocs · AT&T",
     n: "AI software engineer on the AT&T account. Five agents, live in production.",
     photo: ["/photos/amdocs.jpg", 0, 60, 1280, 840],
+    w: 2.5,
     cap: "",
     d: 200,
     bank: 3.0,
@@ -207,6 +211,12 @@ export const MEMORIES: Memory[] = [
     win: [0.8, 0.9],
   },
 ];
+
+/**
+ * Photos that aren't tied to a year: they drift far off the river's banks through the Journey, small
+ * and dim. Add one by putting the file in public/photos and a line here: [src, crop x, y, w, h].
+ */
+export const LOOSE_PHOTOS: Photo[] = [];
 
 export const JOURNEY = { kicker: "Journey · 2021 → now", title: "It started somewhere." };
 

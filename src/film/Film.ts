@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { block, makeShared, type Ctx, type Frame, type Section } from "./ctx";
 import { Director, firstHalfKeys, type Key } from "./director";
 import { environment, points, blobGeometry } from "./helpers";
@@ -19,6 +18,7 @@ import { buildContact } from "./sections/contact";
 import { buildAmbient } from "./sections/ambient";
 import { buildArrival } from "./sections/arrival";
 import { makeOrb } from "./orb";
+import { finishPass, maskBloom, photoMask } from "./post";
 
 export type FilmOptions = {
   canvas: HTMLCanvasElement;
@@ -54,6 +54,7 @@ export class Film {
   private ctx!: Ctx;
   private composer!: EffectComposer;
   private bloom!: UnrealBloomPass;
+  private mask!: ReturnType<typeof photoMask>;
   private director!: Director;
   private sections: Section[] = [];
   private raf = 0;
@@ -109,16 +110,20 @@ export class Film {
     const journey = buildJourney(ctx, orb), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo);
     this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars, orb), journey, horizon, contact);
     // the landing's own life, the ambient moments, then the orb itself, last: it moves once whoever owns it has said where
-    this.sections.push(buildArrival(ctx, orb), buildAmbient(ctx, orb), orb);
+    this.sections.push(buildArrival(ctx, orb), buildAmbient(ctx, orb, () => journey.focus), orb);
 
     const keys: Key[] = [...firstHalfKeys(), ...journey.keys, ...horizon.keys, ...contact.keys];
     this.director = new Director(keys);
 
+    // photographs skip the bloom and the filmic grade: a mask of where they are, rendered each frame
+    this.mask = photoMask(renderer, scene, camera);
+    this.mask.setSize(W * renderer.getPixelRatio(), H * renderer.getPixelRatio());
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(scene, camera));
     this.bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.62, 0.55, 0.38);
+    maskBloom(this.bloom, this.mask.texture);
     this.composer.addPass(this.bloom);
-    this.composer.addPass(new OutputPass());
+    this.composer.addPass(finishPass(this.mask.texture, renderer.toneMappingExposure));
 
     this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress") };
     this.bindInput();
@@ -153,6 +158,7 @@ export class Film {
         c.H = H;
         c.renderer.setSize(W, H);
         this.composer.setSize(W, H);
+        this.mask.setSize(W * c.renderer.getPixelRatio(), H * c.renderer.getPixelRatio());
         c.camera.aspect = W / H;
         c.camera.updateProjectionMatrix();
         c.u.SCALE.value = (c.renderer.getPixelRatio() * H) / 900;
@@ -230,6 +236,7 @@ export class Film {
       this.opts.onPlace?.(here);
     }
 
+    this.mask.render();
     this.composer.render();
     this.adapt(dt);
     this.raf = requestAnimationFrame(this.tick);
@@ -266,6 +273,7 @@ export class Film {
       else mat?.dispose?.();
     });
     this.composer?.dispose();
+    this.mask?.dispose();
     this.ctx.renderer.dispose();
   }
 }

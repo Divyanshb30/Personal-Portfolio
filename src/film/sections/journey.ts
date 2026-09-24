@@ -3,10 +3,11 @@ import type { Ctx, Frame } from "../ctx";
 import type { Key } from "../director";
 import { block, el } from "../ctx";
 import { STIR_GLSL } from "../glsl";
-import { glowTex, points } from "../helpers";
+import { points, sprite } from "../helpers";
 import { COOL, R, TAU, UP, V, clamp, emberAt, gauss, lerp, rng, smooth } from "../math";
 import { JG, JO, JS0, JS1 } from "../layout";
-import { MEMORIES } from "../data";
+import { LOOSE_PHOTOS, MEMORIES } from "../data";
+import { FEATHER, PHOTO_LAYER } from "../post";
 import type { Orb } from "../orb";
 
 type Frame3 = { T: THREE.Vector3; R: THREE.Vector3; U: THREE.Vector3 };
@@ -42,34 +43,39 @@ const FACES: ((f: Frame3) => THREE.Vector3)[] = [
   (f) => f.T.clone().multiplyScalar(-1).addScaledVector(f.R, -0.3),
 ];
 
-/** Photos become ember duotones (black → ember → warm white) with a soft vignette. */
-async function duotone(src: string, crop: [number, number, number, number], outW = 1024) {
+/**
+ * Photos are shown as photographs: a restrained editorial grade only (a touch warmer, slightly muted,
+ * gentle contrast and highlight roll-off, lifted blacks, a little grain, a whisper of vignette). The
+ * cinematic part is the space around them, never the picture itself.
+ */
+async function editorial(src: string, crop: [number, number, number, number], outW = 1400) {
   const img = new Image();
   img.src = src;
   await img.decode();
-  const [sx, sy, sw, sh] = crop, w = outW, h = Math.round((outW * sh) / sw);
+  const [sx, sy, sw, sh] = crop, w = Math.min(outW, sw), h = Math.round((w * sh) / sw);
   const cv = document.createElement("canvas");
   cv.width = w;
   cv.height = h;
   const g = cv.getContext("2d")!;
   g.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
-  const d = g.getImageData(0, 0, w, h), px = d.data;
-  const stops: [number, number[]][] = [[0, [5, 5, 7]], [0.32, [52, 19, 7]], [0.58, [158, 70, 30]], [0.8, [250, 152, 84]], [1, [255, 234, 208]]];
-  const ramp = (t: number) => {
-    for (let k = 1; k < stops.length; k++)
-      if (t <= stops[k][0]) {
-        const [a, ca] = stops[k - 1], [b, cb] = stops[k], f = (t - a) / (b - a);
-        return ca.map((c, j) => c + (cb[j] - c) * f);
-      }
-    return stops[4][1];
+  const d = g.getImageData(0, 0, w, h), px = d.data, rnd = rng(sw * 7 + sh);
+  const tone = (c: number) => {
+    c = 0.5 + (c - 0.5) * 1.06; // a gentle lift in contrast
+    if (c > 0.85) c = 0.85 + (c - 0.85) * 0.62; // highlights roll off instead of clipping
+    return 0.02 + clamp(c, 0, 1) * 0.975; // blacks lifted a hair
   };
   for (let i = 0; i < px.length; i += 4) {
-    const x = (i / 4) % w, y = Math.floor(i / 4 / w), vig = 1 - 0.4 * Math.pow(Math.hypot(x / w - 0.5, y / h - 0.5) * 1.4, 2.2);
-    const lum = clamp(((0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255 - 0.06) * 1.18, 0, 1) * vig;
-    const c = ramp(lum);
-    px[i] = c[0];
-    px[i + 1] = c[1];
-    px[i + 2] = c[2];
+    const x = (i / 4) % w, y = Math.floor(i / 4 / w);
+    let r = (px[i] / 255) * 1.03, gg = px[i + 1] / 255, b = (px[i + 2] / 255) * 0.96; // warm white balance
+    const L = 0.2126 * r + 0.7152 * gg + 0.0722 * b;
+    r = L + (r - L) * 0.88;
+    gg = L + (gg - L) * 0.88;
+    b = L + (b - L) * 0.88;
+    const vig = 1 - 0.07 * smooth(0.38, 0.78, Math.hypot(x / w - 0.5, y / h - 0.5) * 1.3);
+    const grain = (rnd() - 0.5) * (4 / 255);
+    px[i] = clamp(tone(r) * vig + grain, 0, 1) * 255;
+    px[i + 1] = clamp(tone(gg) * vig + grain, 0, 1) * 255;
+    px[i + 2] = clamp(tone(b) * vig + grain, 0, 1) * 255;
   }
   g.putImageData(d, 0, 0);
   const t = new THREE.CanvasTexture(cv);
@@ -77,7 +83,7 @@ async function duotone(src: string, crop: [number, number, number, number], outW
   return t;
 }
 
-/** A warm plate that says a photo is on its way. */
+/** A quiet dark card that says a photo is on its way. */
 function placeholder(ctx: Ctx, cap: string) {
   const w = 1024, h = 680, cv = document.createElement("canvas");
   cv.width = w;
@@ -86,19 +92,15 @@ function placeholder(ctx: Ctx, cap: string) {
   t.colorSpace = THREE.SRGBColorSpace;
   const draw = () => {
     const g = cv.getContext("2d")!;
-    const bg = g.createRadialGradient(w / 2, h * 0.4, 0, w / 2, h / 2, w * 0.7);
-    bg.addColorStop(0, "#5a2a12");
-    bg.addColorStop(1, "#140a06");
+    const bg = g.createRadialGradient(w / 2, h * 0.45, 0, w / 2, h / 2, w * 0.7);
+    bg.addColorStop(0, "#1c1714");
+    bg.addColorStop(1, "#0b0a09");
     g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
-    g.strokeStyle = "rgba(255,200,160,.8)";
-    g.setLineDash([8, 10]);
-    g.lineWidth = 3;
-    g.strokeRect(24, 24, w - 48, h - 48);
     if (cap) {
       const mono = ctx.root.querySelector(".mono");
-      g.fillStyle = "rgba(255,225,195,.95)";
-      g.font = `500 30px ${mono ? getComputedStyle(mono).fontFamily : "monospace"}`;
+      g.fillStyle = "rgba(170,170,178,.8)";
+      g.font = `500 24px ${mono ? getComputedStyle(mono).fontFamily : "monospace"}`;
       g.textAlign = "center";
       g.fillText(`Photo coming · ${cap}`.toUpperCase(), w / 2, h / 2);
     }
@@ -109,6 +111,29 @@ function placeholder(ctx: Ctx, cap: string) {
   return t;
 }
 
+/** The soft edge every photo fades out through: no frame, no border, just into the dark. */
+let featherTexture: THREE.CanvasTexture | null = null;
+function featherTex() {
+  if (featherTexture) return featherTexture;
+  const n = 256, cv = document.createElement("canvas");
+  cv.width = cv.height = n;
+  const g = cv.getContext("2d")!, img = g.createImageData(n, n);
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      const u = (x + 0.5) / n, v = (y + 0.5) / n, e = Math.min(u, 1 - u, v, 1 - v);
+      const a = Math.round(smooth(0, FEATHER, e) * 255), k = (y * n + x) * 4;
+      img.data[k] = img.data[k + 1] = img.data[k + 2] = a;
+      img.data[k + 3] = 255;
+    }
+  g.putImageData(img, 0, 0);
+  featherTexture = new THREE.CanvasTexture(cv);
+  return featherTexture;
+}
+
+/**
+ * A photograph suspended in the river's space: feathered edges, no glow, drawn before the dust so the
+ * dust behind it is hidden and the dust in front of it drifts across. It floats a little on its own.
+ */
 function plate(ctx: Ctx, tex: THREE.Texture, aspect: number, w: number, pos: THREE.Vector3, face: THREE.Vector3) {
   let wid = w, hgt = wid / aspect;
   if (hgt > 2.3) {
@@ -119,15 +144,55 @@ function plate(ctx: Ctx, tex: THREE.Texture, aspect: number, w: number, pos: THR
   g.position.copy(pos);
   g.lookAt(pos.clone().add(face));
   ctx.scene.add(g);
-  const mat = new THREE.MeshBasicMaterial({ map: tex, color: 0x000000, side: THREE.DoubleSide });
-  g.add(new THREE.Mesh(new THREE.PlaneGeometry(wid, hgt), mat));
-  const glow = new THREE.Sprite(
-    new THREE.SpriteMaterial({ map: glowTex(), color: 0xff9a50, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }),
+  if ("anisotropy" in tex) tex.anisotropy = ctx.renderer.capabilities.getMaxAnisotropy();
+  const mat = new THREE.MeshBasicMaterial({ map: tex, color: 0x000000, alphaMap: featherTex(), transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(wid, hgt), mat);
+  mesh.renderOrder = -1;
+  mesh.layers.enable(PHOTO_LAYER);
+  // only the solid middle hides what is behind it; the feathered edge lets the dust drift through
+  const inset = 1 - 2 * FEATHER * 0.75;
+  const solid = new THREE.Mesh(new THREE.PlaneGeometry(wid * inset, hgt * inset), new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+  solid.position.z = -0.03; // just behind the picture, so the two never fight over depth
+  g.add(solid, mesh);
+  return { g, mat, wid, hgt, base: pos.clone(), quat: g.quaternion.clone(), seed: R() * TAU };
+}
+type Plate = ReturnType<typeof plate>;
+
+const corner = new THREE.Vector3();
+/** a photo's rectangle on screen, in CSS pixels, and whether it is in front of the camera */
+function rectOf(p: Plate, camera: THREE.PerspectiveCamera) {
+  let l = 1e9, t = 1e9, r = -1e9, b = -1e9, front = true;
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    p.g.localToWorld(corner.set((sx * p.wid) / 2, (sy * p.hgt) / 2, 0)).project(camera);
+    if (corner.z > 1) front = false;
+    const x = (corner.x * 0.5 + 0.5) * window.innerWidth, y = (-corner.y * 0.5 + 0.5) * window.innerHeight;
+    l = Math.min(l, x);
+    r = Math.max(r, x);
+    t = Math.min(t, y);
+    b = Math.max(b, y);
+  }
+  return { l, t, r, b, front };
+}
+
+/** Amber dust around (mostly behind) a photo, and a faint far haze: the photo's own atmosphere. */
+function surround(ctx: Ctx, p: Plate) {
+  p.g.updateMatrixWorld(true);
+  const m = p.g.matrixWorld, q = V();
+  const dust = points(
+    ctx,
+    620,
+    () => {
+      const front = R() < 0.22;
+      q.set((R() - 0.5) * p.wid * 1.7, (R() - 0.5) * p.hgt * 1.7, front ? 0.12 + R() * 0.7 : -0.15 - R() * 1.5);
+      return q.clone().applyMatrix4(m);
+    },
+    () => emberAt(0.28 + R() * 0.5).map((v) => v * 0.34),
+    () => 0.02 + R() * 0.04,
+    0.45,
   );
-  glow.scale.set(wid * 1.7, hgt * 1.5, 1);
-  glow.position.set(0, 0, -0.35);
-  g.add(glow);
-  return { g, mat, glow, wid, hgt };
+  const behind = V(0, 0, -1).applyQuaternion(p.g.quaternion);
+  const haze = sprite(ctx, 0xffb074, Math.max(p.wid, p.hgt) * 2.6, p.base.clone().addScaledVector(behind, 1.8), 0);
+  return { dust, haze };
 }
 
 const orbitPt = (c: THREE.Vector3, off: THREE.Vector3, ang: number, lift = 0) => off.clone().applyAxisAngle(UP, ang).add(c).add(V(0, lift, 0));
@@ -228,37 +293,56 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     () => 0.025 + R() * 0.06,
   );
 
-  // his memories, standing on the banks
+  // where a memory is filmed from, when its shot is set on the river rather than on the photo itself
+  const rp0 = (d: number, side: number, up: number) => river(d).addScaledVector(rframe(d).R, side).addScaledVector(rframe(d).U, up);
+  const HERO: (THREE.Vector3 | null)[] = [rp0(61, -0.4, 0.9), rp0(91.5, -4.8, 1.1), null, null, null];
+  /** which way a photo at `at` faces: toward its hero shot (with a slight turn), or its set direction */
+  const faceFor = (i: number, at: THREE.Vector3, f: Frame3) => {
+    const h = HERO[i];
+    if (!h) return FACES[i](f).normalize();
+    return h.clone().sub(at).normalize().applyAxisAngle(UP, (i % 2 ? -1 : 1) * 0.08);
+  };
+  const load = (pl: Plate, photo: [string, number, number, number, number], outW?: number) => {
+    const [src, ...crop] = photo;
+    editorial(src, crop as [number, number, number, number], outW).then((t) => {
+      t.anisotropy = ctx.renderer.capabilities.getMaxAnisotropy();
+      pl.mat.map = t;
+      pl.mat.needsUpdate = true;
+    }, console.error);
+  };
+
+  // his memories, suspended beside the river
   const plates = MEMORIES.map((m, i) => {
     const f = rframe(m.d), pos = river(m.d).addScaledVector(f.R, m.bank).addScaledVector(f.U, m.h);
     const aspect = m.photo ? m.photo[3] / m.photo[4] : 1024 / 680;
-    const p = plate(ctx, placeholder(ctx, m.photo ? "" : m.cap), aspect, 3.3, pos, FACES[i](f).normalize());
-    if (m.photo) {
-      const [src, ...crop] = m.photo;
-      duotone(src, crop as [number, number, number, number]).then((t) => {
-        p.mat.map = t;
-        p.mat.needsUpdate = true;
-      }, console.error);
-    }
-    let extra: ReturnType<typeof plate> | null = null;
+    const face = faceFor(i, pos, f);
+    const p = plate(ctx, placeholder(ctx, m.photo ? "" : m.cap), aspect, m.w ?? 3.3, pos, face);
+    if (m.photo) load(p, m.photo);
+    let extra: Plate | null = null;
     if (m.extra) {
-      const e = m.extra, fe = rframe(e.d), [src, ...crop] = e.photo;
+      const e = m.extra, fe = rframe(e.d);
       const at = river(e.d).addScaledVector(fe.R, e.bank).addScaledVector(fe.U, e.h);
-      // it faces the spot on the river it is filmed from, or else the same way as the memory's own plate
-      const face = e.look !== undefined ? river(e.look).addScaledVector(rframe(e.look).U, 1).sub(at).normalize() : FACES[i](fe).normalize();
-      const ep = plate(ctx, placeholder(ctx, ""), e.photo[3] / e.photo[4], e.w, at, face);
-      duotone(src, crop as [number, number, number, number], 700).then((t) => {
-        ep.mat.map = t;
-        ep.mat.needsUpdate = true;
-      }, console.error);
-      extra = ep;
+      extra = plate(ctx, placeholder(ctx, ""), e.photo[3] / e.photo[4], e.w, at, faceFor(i, at, fe));
+      load(extra, e.photo, 900);
     }
     const label = el(ctx, "mem", `<div class="yr">${m.y}</div><div class="mono t">${m.t}</div>${m.k ? `<div class="k">${m.k}</div>` : ""}<div class="n">${m.n}</div>`);
-    return { ...p, m, pos, extra, label };
+    return { ...p, m, pos, face, extra, label, env: surround(ctx, p), envX: extra ? surround(ctx, extra) : null, lx: NaN, ly: NaN };
+  });
+
+  // loose photos: any not tied to a year drift far off the banks, small and dim, like passing memories
+  const loose = LOOSE_PHOTOS.map((photo, k) => {
+    let d = 50 + ((k + 0.5) * 150) / Math.max(1, LOOSE_PHOTOS.length);
+    if (MEMORIES.some((m) => Math.abs(m.d - d) < 7)) d += 8;
+    const f = rframe(d), side = k % 2 ? 1 : -1, at = river(d).addScaledVector(f.R, side * (9 + R() * 4)).addScaledVector(f.U, -0.5 + R() * 3.5);
+    const face = river(d - 10).addScaledVector(rframe(d - 10).U, 1).sub(at).normalize();
+    const p = plate(ctx, placeholder(ctx, ""), photo[3] / photo[4], 1.2 + R() * 0.4, at, face);
+    load(p, photo, 700);
+    return p;
   });
 
   // the shots: sixteen setups on the journey's own clock
-  const MP = plates.map((p) => p.pos), FF = (i: number) => FACES[i](rframe(MEMORIES[i].d)).normalize();
+  const MP = plates.map((p) => p.pos), FF = (i: number) => plates[i].face.clone();
+  const MID22 = plates[1].extra ? plates[1].pos.clone().lerp(plates[1].extra.base, 0.5) : plates[1].pos.clone();
   const keys: Key[] = [
     { s: 0.0, name: "Journey · establishing", pos: JO.clone().add(V(0, 0.4, 11.5)), tgt: JO.clone(), fov: 40 },
     { s: 0.055, name: "Journey · establishing", pos: JO.clone().add(V(1.6, 0.5, 10.8)), tgt: JO.clone().add(V(1.6, 0, 0)), fov: 40 },
@@ -266,8 +350,8 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     { s: 0.19, name: "Ride the current", pos: river(52).addScaledVector(rframe(52).U, 1.0).addScaledVector(rframe(52).R, -0.6), tgt: MP[0].clone(), fov: 48, roll: -0.03 },
     { s: 0.25, name: "Pan past 2021", pos: river(61).addScaledVector(rframe(61).U, 0.9).addScaledVector(rframe(61).R, -0.4), tgt: MP[0].clone(), fov: 44, roll: 0.04 },
     { s: 0.3, name: "Ride the current", pos: river(70).addScaledVector(rframe(70).U, 1.3), tgt: river(84), fov: 50 },
-    { s: 0.37, name: "Crane up, overhead", pos: river(94).add(V(0, 21, 3)), tgt: river(99).add(V(0, 0, -1)), fov: 42 },
-    { s: 0.445, name: "Overhead drift, 2022", pos: river(104).add(V(0, 19, 3)), tgt: river(107).add(V(0, 0, -1)), fov: 42 },
+    { s: 0.37, name: "Level with 2022", pos: rp0(88, -4.8, 1.1), tgt: MID22.clone(), fov: 42 },
+    { s: 0.445, name: "Slow push in, 2022", pos: rp0(94.5, -4.85, 1.05), tgt: MID22.clone(), fov: 40 },
     { s: 0.505, name: "Swoop down, low angle on 2024", pos: MP[2].clone().addScaledVector(FF(2), 5).add(V(0, -1.9, 0)), tgt: MP[2].clone().add(V(0, 0.25, 0)), fov: 42, roll: 0.05 },
     { s: 0.585, name: "Slow push in", pos: MP[2].clone().addScaledVector(FF(2), 4.6).add(V(0, -0.9, 0)), tgt: MP[2].clone(), fov: 36 },
     { s: 0.655, name: "Track alongside, 2025", pos: river(158).addScaledVector(rframe(158).R, -11).add(V(0, 0.9, 0)), tgt: river(161), fov: 40 },
@@ -278,7 +362,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     { s: 1.0, name: "Toward the light", pos: river(214).add(V(0, 6, 0)).addScaledVector(rframe(214).T, -8), tgt: END.clone(), fov: 44 },
   ].map((k) => ({ ...k, s: JG(k.s) }));
 
-  const title = block(ctx, "journey"), tmp = V();
+  const title = block(ctx, "journey"), q1 = new THREE.Quaternion(), e1 = new THREE.Euler();
 
   // ---------------- the orb's own way down the river ----------------
   // Its route is scroll-driven (a second shot list, on the same journey clock as the camera's); the
@@ -388,8 +472,8 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         else if (current.done) orb.drive({ at: rp(d + 8, 0.8, 3.0 + 0.1 * Math.sin(t * 1.9), at), size: S, free: true });
         else orb.drive({ at: rp(d, 0, 0.35 + 0.15 * Math.sin(t * 1.7), at), size: S, free: true });
       } else if (j < 0.45) {
-        // far off, down the river, while you look down on 2022
-        orb.drive({ at: rp(lerp(106, 112, smooth(0.37, 0.45, j)), 0.9 * Math.sin(t * 0.5), 1.6, at), size: S, free: true });
+        // behind and between the two photos of 2022, drifting away down the river
+        orb.drive({ at: rp(lerp(103.5, 109, smooth(0.37, 0.45, j)), -4.85 + 0.5 * Math.sin(t * 0.5), 1.3 + 0.1 * Math.sin(t * 1.1), at), size: S, free: true });
       } else if (touch(touches[1], j, t)) {
         // the ERP
       } else if (j < 0.49) {
@@ -433,36 +517,73 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
   /** the journey owns the orb from just before the river comes into view to the end of it */
   const GGon = (GG: number, j: number) => GG >= 0.515 && j <= 1;
 
-  return {
+  const api = {
     keys,
     /** the river's brightness (Horizon dims it as the light takes over) */
     gain: riverU.uGain,
+    /** how much a memory is the subject right now (0..1): the ambient moments keep out of its way */
+    focus: 0,
     update(f: Frame) {
       const { GG, cam } = f, W = ctx.W, H = ctx.H, camera = ctx.camera;
       steer(f, (GG - JS0) / (JS1 - JS0));
       title.style.opacity = String(smooth(JG(-0.01), JG(0.0), GG) * (1 - smooth(JG(0.03), JG(0.075), GG)));
       title.style.transform = `translateY(${(-smooth(JG(0), JG(0.09), GG) * 50).toFixed(1)}px)`;
+      let focus = 0;
+      const float = (p: Plate, amt: number) => {
+        p.g.position.copy(p.base).y += Math.sin(f.time * 0.55 + p.seed) * 0.04 * amt;
+        p.g.quaternion.copy(p.quat).multiply(q1.setFromEuler(e1.set(Math.sin(f.time * 0.37 + p.seed) * 0.026 * amt, Math.sin(f.time * 0.29 + p.seed * 2) * 0.026 * amt, 0)));
+      };
+      for (const p of loose) {
+        float(p, 1);
+        p.mat.color.setScalar(0.45);
+      }
       plates.forEach((p, i) => {
         const [a, b] = p.m.win.map(JG), on = smooth(a - 0.008, a + 0.003, GG) * (1 - smooth(b - 0.003, b + 0.008, GG));
-        // it answers the orb's touch with a flash, and glows faintly, like a pulse, while the orb is inside
-        p.mat.color.setScalar(0.42 + 0.4 * on + 0.7 * flash[i]);
-        p.glow.material.opacity = 0.05 + 0.15 * on + 0.5 * flash[i] + 0.08 * inside[i] * (0.5 + 0.5 * Math.sin(f.time * 2.6));
-        p.g.scale.setScalar(1 + 0.035 * flash[i]);
-        if (p.extra) p.extra.mat.color.setScalar(0.35 + 0.3 * on);
+        focus = Math.max(focus, on);
+        // the orb's touch: a soft spill of light on the photo and the dust round it, never a flash
+        const spill = flash[i] + 0.35 * inside[i] * (0.5 + 0.5 * Math.sin(f.time * 2.6));
+        p.mat.color.setScalar(0.55 + 0.4 * on + 0.08 * spill);
+        float(p, 1 - 0.6 * on);
+        p.env.dust.gain.value = 0.35 + 0.65 * on + 0.6 * spill;
+        p.env.haze.material.opacity = 0.035 * on;
+        if (p.extra && p.envX) {
+          p.extra.mat.color.setScalar(0.5 + 0.4 * on);
+          float(p.extra, 1 - 0.6 * on);
+          p.envX.dust.gain.value = 0.35 + 0.65 * on;
+          p.envX.haze.material.opacity = 0.03 * on;
+        }
         if (on <= 0.001) {
           p.label.style.opacity = "0";
           return;
         }
-        // the words sit beside the plate, on whichever side has room
-        tmp.copy(p.pos).project(camera);
-        const x = (tmp.x * 0.5 + 0.5) * W, y = (-tmp.y * 0.5 + 0.5) * H, dist = camera.position.distanceTo(p.pos);
-        const half = (p.wid / 2 / (dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)))) * (H / 2), leftSide = x > W * 0.5;
-        const mw = p.label.offsetWidth || 330, narrow = W < 760;
-        const tx = narrow ? 24 : clamp(leftSide ? x - half - 40 - mw : x + half + 40, 48, W - mw - 230);
-        const ty = narrow ? H - p.label.offsetHeight - 40 : clamp(y - 60, 110, H - 260);
-        p.label.style.opacity = (tmp.z < 1 ? on : 0).toFixed(3);
-        p.label.style.transform = `translate(${(tx - cam.x * 22).toFixed(1)}px, ${(ty + (1 - on) * 20 + cam.y * 14).toFixed(1)}px)`;
+        // the words go where no photo is: beside the photos on whichever side has room, else below or above
+        const mw = p.label.offsetWidth || 330, mh = p.label.offsetHeight || 150, narrow = W < 760;
+        const rects = [rectOf(p, camera)];
+        if (p.extra) rects.push(rectOf(p.extra, camera));
+        const seen = rects.filter((r) => r.front);
+        let tx = 24, ty = H - mh - 40;
+        if (!narrow && seen.length) {
+          const u = seen.reduce((a, r) => ({ l: Math.min(a.l, r.l), t: Math.min(a.t, r.t), r: Math.max(a.r, r.r), b: Math.max(a.b, r.b) }), { l: 1e9, t: 1e9, r: -1e9, b: -1e9 });
+          const main = seen[0], cy = (main.t + main.b) / 2 - mh / 2, L = 48, R = W - 230 - mw, T = 96, B = H - 90 - mh;
+          const free = (x: number, y: number) => x >= L && x <= R && y >= T && y <= B && seen.every((r) => x + mw < r.l - 16 || x > r.r + 16 || y + mh < r.t - 16 || y > r.b + 16);
+          const tries: [number, number][] = [
+            [main.r + 40, cy], [main.l - 40 - mw, cy], [u.r + 40, cy], [u.l - 40 - mw, cy],
+            [clamp(main.l, L, R), main.b + 28], [clamp(main.l, L, R), main.t - 28 - mh], [L, B],
+          ];
+          const pick = tries.find(([x, y]) => free(x, clamp(y, T, B))) ?? tries[tries.length - 1];
+          tx = pick[0];
+          ty = clamp(pick[1], T, B);
+        }
+        // it slides to a new spot rather than jumping
+        if (!Number.isFinite(p.lx)) Object.assign(p, { lx: tx, ly: ty });
+        const k = f.fixed ? 1 : 1 - Math.exp(-f.dt * 6);
+        p.lx += (tx - p.lx) * k;
+        p.ly += (ty - p.ly) * k;
+        p.label.style.opacity = (seen.length || narrow ? on : 0).toFixed(3);
+        p.label.style.transform = `translate(${(p.lx - cam.x * 22).toFixed(1)}px, ${(p.ly + (1 - on) * 20 + cam.y * 14).toFixed(1)}px)`;
       });
+      api.focus = focus;
     },
   };
+  return api;
 }
