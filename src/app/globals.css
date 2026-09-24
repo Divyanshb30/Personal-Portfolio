@@ -260,6 +260,16 @@ html {
 .proj.hot .o {
   color: #ffd2a4;
 }
+/* the featured project: its kicker in ember, its name a size up */
+.proj.featured {
+  width: 300px;
+}
+.proj.featured .sub {
+  color: #ffc896;
+}
+.proj.featured .t {
+  font-size: 21px;
+}
 .film-panel {
   position: absolute;
   right: 150px;

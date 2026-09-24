@@ -50,7 +50,7 @@ All of the words are in `src/film/data.ts`, with facts taken from the résumé:
 - Each project's `problem`, `built` and `outcome` fields, and its `links`. They are written from the résumé.
 - Journey photos are in `public/photos`. Each memory's `photo` is `[src, cropX, cropY, cropW, cropH]`, and a memory with `photo: null` shows a "photo coming" card.
 - Photos get only a light editorial grade and skip the bloom and filmic tone mapping (see `src/film/post.ts`), so they stay true to the originals. The cinematic feel comes from the dust and depth around them.
-- To add a photo that isn't tied to a year, put it in `public/photos` and add it to `LOOSE_PHOTOS` in `data.ts`. It will drift through the Journey, small and dim.
+- To add a photo that isn't tied to a year, put it in `public/photos` and add it to `LOOSE_PHOTOS` in `data.ts`. It will drift through the Journey, small and dim. It finds a spot by itself, or you can place it with `d` (how far down the river), `bank` (across it) and `h` (height).
 
 Résumés are in `public/resume`. The dust figure is `public/models/divyansh.glb` (Draco-compressed; the decoder is served from `public/draco`).
 

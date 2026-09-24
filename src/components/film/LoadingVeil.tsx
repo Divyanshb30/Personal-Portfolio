@@ -48,7 +48,7 @@ export default function LoadingVeil({ covered, failed }: { covered: boolean; fai
     const a = window.setInterval(() => setDots((d) => (d % 3) + 1), 380);
     const b = window.setInterval(() => {
       if (!busy.current) setLine((i) => (i + 1 + Math.floor(Math.random() * (n - 1))) % n);
-    }, 1800);
+    }, 2500);
     return () => {
       window.clearInterval(a);
       window.clearInterval(b);

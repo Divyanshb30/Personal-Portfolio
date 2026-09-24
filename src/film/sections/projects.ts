@@ -57,6 +57,24 @@ function shape(id: Project["id"]) {
     }
     pulses.push([1, 0.6, 1], [8, 0.3, 1], [14, 0.7, 1], [11, 0.5, 1]);
   }
+  if (id === "agents") {
+    // an orchestrator at the core, five agents around it handing work on to each other, each with its tools
+    const c = add(0, 0, 0, 2.1), ring: number[] = [];
+    for (let k = 0; k < 5; k++) {
+      const a = (k * TAU) / 5 + Math.PI / 2;
+      ring.push(add(Math.cos(a) * 1.25, Math.sin(a) * 1.0, Math.sin(a) * 0.3, 1.15));
+    }
+    for (let k = 0; k < 5; k++) {
+      E.push([c, ring[k]]);
+      E.push([ring[k], ring[(k + 1) % 5]]);
+    }
+    for (let k = 0; k < 5; k++) {
+      const a = (k * TAU) / 5 + Math.PI / 2;
+      for (const o of [-0.22, 0.22]) E.push([ring[k], add(Math.cos(a + o) * 1.95, Math.sin(a + o) * 1.55, (r() - 0.5) * 0.5, 0.45 + r() * 0.2)]);
+    }
+    // work leaving the core for an agent, and agents passing it along
+    pulses.push([0, 0.55, 1], [4, 0.4, 1], [1, 0.5, 1], [5, 0.6, 1], [3, 0.35, 1], [8, 0.5, 1]);
+  }
   if (id === "dtu") {
     // a hub and the ring of modules around it
     const c = add(0, 0, 0, 1.3), ring: number[] = [];
@@ -142,13 +160,17 @@ const panelHTML = (pr: Project) => `
   <div class="sec"><div class="mono sub">What I built</div>${or(pr.built, "Placeholder: the system, its key decisions, and why they held up.")}</div>
   <div class="sec"><div class="mono sub">Outcome</div>${or(pr.outcome, "Placeholder: what changed after it shipped.")}</div>
   <div class="sec"><div class="mono sub">Built with</div><p>${pr.uses.map(esc).join(" · ")}</p></div>
-  <div style="margin-top:26px;display:flex;flex-wrap:wrap;gap:10px">${pr.links
-    .map((l) => `<a class="mono pill" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)} ↗</a>`)
-    .join("")}</div>`;
+  ${
+    pr.links.length
+      ? `<div style="margin-top:26px;display:flex;flex-wrap:wrap;gap:10px">${pr.links
+          .map((l) => `<a class="mono pill" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)} ↗</a>`)
+          .join("")}</div>`
+      : `<div class="mono sub" style="margin-top:26px">Proprietary · built at Amdocs for AT&amp;T</div>`
+  }`;
 
 /**
- * PROJECTS. The planet's dust rises, top first, and settles into four named constellations, one
- * per project. One wide shot: hover brightens a constellation, a click flies the camera to it and
+ * PROJECTS. The planet's dust rises, top first, and settles into named constellations, one per
+ * project, the featured one (his work at Amdocs) biggest and in the middle. One wide shot: hover brightens a constellation, a click flies the camera to it and
  * opens its story beside it. Esc, ✕ or any scroll closes it; scrolling on leads down into the stack.
  * The orb follows as a small glass guide, then dives down the roots into the stack. Leave it alone
  * by the transformer for a while and it wanders into the attention field, which notices it.
@@ -187,13 +209,13 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     const edgeWorld = sh.E.map(([a, b]) => [world[a], world[b]] as [THREE.Vector3, THREE.Vector3]);
     const label = el(
       ctx,
-      "proj",
+      pr.featured ? "proj featured" : "proj",
       `<div class="mono sub">${esc(pr.kind)}</div><div class="t">${esc(pr.title)}</div><div class="mono m">${esc(pr.metric)}</div><div class="mono o">Explore →</div>`,
     );
     label.setAttribute("role", "button");
     label.setAttribute("aria-label", `Open ${pr.title}`);
     label.tabIndex = -1;
-    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0 };
+    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0, lx: 0, ly: 0 };
   });
 
   // the rising dust: grains leave the planet's surface (top first) and settle on the stars and lines
@@ -389,7 +411,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         pr.lines.opacity = g;
         pr.tails.opacity = g;
         // names alternate above and below their constellations so neighbours never collide
-        const up = i === 1 || i === 3;
+        const up = pr.data.label ? pr.data.label === "above" : i === 1 || i === 3;
         tmp.set(pr.center.x, up ? pr.box.max.y + 0.3 : pr.box.min.y - 0.35, pr.center.z).project(ctx.camera);
         const px = (tmp.x * 0.5 + 0.5) * ctx.W, py = (-tmp.y * 0.5 + 0.5) * ctx.H - (up ? 92 : 0);
         tmp2.copy(pr.center).project(ctx.camera);
@@ -398,8 +420,21 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         pr.label.style.opacity = (tmp.z < 1 ? pick * (1 - PICK.amt) : 0).toFixed(3);
         pr.label.style.pointerEvents = PICK.on && PICK.idx < 0 ? "auto" : "none";
         pr.label.classList.toggle("hot", hot > 0);
-        pr.label.style.transform = `translate(${(px - 110).toFixed(1)}px, ${py.toFixed(1)}px)`;
+        pr.lx = px - 110;
+        pr.ly = py;
       });
+      // on a narrow screen names can still meet: nudge any that overlap apart, then place them
+      if (pick > 0.001) {
+        for (let a = 0; a < projs.length; a++)
+          for (let b = a + 1; b < projs.length; b++) {
+            const A = projs[a], B = projs[b], wa = A.label.offsetWidth, wb = B.label.offsetWidth, ha = A.label.offsetHeight, hb = B.label.offsetHeight;
+            const ox = Math.min(A.lx + wa, B.lx + wb) - Math.max(A.lx, B.lx), oy = Math.min(A.ly + ha, B.ly + hb) - Math.max(A.ly, B.ly);
+            if (ox <= 0 || oy <= 0) continue;
+            const lower = A.ly > B.ly ? A : B;
+            lower.ly += oy + 12;
+          }
+      }
+      for (const pr of projs) pr.label.style.transform = `translate(${pr.lx.toFixed(1)}px, ${pr.ly.toFixed(1)}px)`;
       // the guide hovers by whichever project has your attention, then dives down the roots
       const dive = smooth(0.745, 0.8, G);
       const gs = 0.28 * smooth(0.53, 0.56, G) * (1 - smooth(0.785, 0.8, G));

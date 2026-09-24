@@ -91,7 +91,9 @@ export default function FilmStage() {
     <>
       <canvas ref={canvas} className="film-canvas" aria-hidden />
       <div ref={root} className="film-ui">
-        <div className="film-name disp">{PROFILE.name.toUpperCase()}</div>
+        <div data-block="brand" className="film-name disp">
+          {PROFILE.name.toUpperCase()}
+        </div>
         <div data-block="layer" className="film-layer">
           <section data-block="arrival" className="blk" style={{ left: 72, top: "30vh", opacity: 1 }}>
             <div className="mono sub">Somewhere between curious and obsessed.</div>

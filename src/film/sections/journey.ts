@@ -330,11 +330,15 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
   });
 
   // loose photos: any not tied to a year drift far off the banks, small and dim, like passing memories
-  const loose = LOOSE_PHOTOS.map((photo, k) => {
-    let d = 50 + ((k + 0.5) * 150) / Math.max(1, LOOSE_PHOTOS.length);
-    if (MEMORIES.some((m) => Math.abs(m.d - d) < 7)) d += 8;
-    const f = rframe(d), side = k % 2 ? 1 : -1, at = river(d).addScaledVector(f.R, side * (9 + R() * 4)).addScaledVector(f.U, -0.5 + R() * 3.5);
-    const face = river(d - 10).addScaledVector(rframe(d - 10).U, 1).sub(at).normalize();
+  const loose = LOOSE_PHOTOS.map((lp, k) => {
+    const photo = lp.photo;
+    let d = lp.d ?? 50 + ((k + 0.5) * 150) / Math.max(1, LOOSE_PHOTOS.length);
+    if (lp.d === undefined && MEMORIES.some((m) => Math.abs(m.d - d) < 7)) d += 8;
+    const f = rframe(d), bank = lp.bank ?? (k % 2 ? 1 : -1) * (9 + R() * 4);
+    const at = river(d).addScaledVector(f.R, bank).addScaledVector(f.U, lp.h ?? -0.5 + R() * 3.5);
+    // placed by hand, it faces back across the river (where the camera travels); else, up the river
+    const fb = rframe(d - 4);
+    const face = (lp.bank !== undefined ? river(d - 4).addScaledVector(fb.R, -Math.sign(bank) * 10).addScaledVector(fb.U, 1) : river(d - 10).addScaledVector(rframe(d - 10).U, 1)).sub(at).normalize();
     const p = plate(ctx, placeholder(ctx, ""), photo[3] / photo[4], 1.2 + R() * 0.4, at, face);
     load(p, photo, 700);
     return p;

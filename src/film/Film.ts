@@ -71,7 +71,7 @@ export class Film {
   private rightV = V();
   private upV = V();
   private cleanup: (() => void)[] = [];
-  private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement; progress: HTMLElement; mood: HTMLElement };
+  private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement; progress: HTMLElement; mood: HTMLElement; brand: HTMLElement };
   /** the orb's mood in the corner: a new one must hold a moment before it shows */
   private moodShown = "";
   private moodCand = "";
@@ -131,7 +131,7 @@ export class Film {
     this.composer.addPass(this.bloom);
     this.composer.addPass(finishPass(this.mask.texture, renderer.toneMappingExposure));
 
-    this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress"), mood: block(ctx, "mood") };
+    this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress"), mood: block(ctx, "mood"), brand: block(ctx, "brand") };
     this.bindInput();
     const q = new URLSearchParams(location.search);
     if (q.has("s")) this.fix = +q.get("s")!;
@@ -241,6 +241,8 @@ export class Film {
 
     // words on the first screen, and the text layer drifting against the camera
     this.blocks.arrival.style.opacity = String(1 - smooth(0.02, 0.07, s));
+    // the small name in the corner waits until the big one has gone
+    this.blocks.brand.style.opacity = String(smooth(0.02, 0.07, s));
     this.blocks.hint.style.opacity = String(1 - smooth(0.01, 0.05, s));
     this.blocks.layer.style.transform = `translate(${(-cam.x * 22 * calm).toFixed(1)}px, ${(cam.y * 14 * calm).toFixed(1)}px)`;
     this.blocks.progress.style.transform = `scaleX(${Math.min(1, Math.max(0, window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight))).toFixed(4)})`;

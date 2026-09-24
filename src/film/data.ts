@@ -27,7 +27,11 @@ export const BUILD = {
 };
 
 export type Project = {
-  id: "rag" | "gpt" | "loan" | "dtu";
+  id: "rag" | "gpt" | "loan" | "dtu" | "agents";
+  /** the one to look at first: biggest, most central, its own label style */
+  featured?: boolean;
+  /** where its name sits (by default names alternate above and below) */
+  label?: "above" | "below";
   title: string;
   kind: string;
   metric: string;
@@ -49,7 +53,7 @@ export const PROJECTS: Project[] = [
     kind: "Intelligence",
     metric: "121 tests · CI-gated",
     line: "Hybrid retrieval and AST analysis over a codebase.",
-    off: [-7.2, 1.2, 2.2],
+    off: [-7.4, 1.4, 2.0],
     sc: 1.25,
     uses: ["Python", "FAISS", "BM25", "Cross-Encoder Reranking", "Hugging Face Transformers", "ChromaDB", "CI/CD Eval Gates", "GitHub Actions"],
     links: [
@@ -69,7 +73,7 @@ export const PROJECTS: Project[] = [
     kind: "Models",
     metric: "10.7M parameters · PyTorch",
     line: "A decoder-only transformer with no framework abstractions.",
-    off: [-2.2, 3.4, -3],
+    off: [-3.4, 4.0, -3],
     sc: 1.25,
     uses: ["PyTorch", "Python", "Tokenisation", "Sequence Modelling", "Text Generation"],
     links: [{ label: "Code", url: "https://github.com/Divyanshb30/GPT-from-Scratch" }],
@@ -84,8 +88,8 @@ export const PROJECTS: Project[] = [
     kind: "Engineering",
     metric: "0.9184 test AUC",
     line: "A stacking ensemble over ~1.8M LendingClub loans, SHAP-audited and drift-monitored.",
-    off: [3.8, 0.8, 1.2],
-    sc: 1.2,
+    off: [5.6, -0.8, 1.6],
+    sc: 1.1,
     uses: ["XGBoost", "PyTorch", "SHAP Explainability", "MLflow", "DagsHub", "Drift Monitoring (PSI/KS)", "GCP Cloud Run", "Docker", "FastAPI", "Streamlit"],
     links: [
       { label: "Code", url: "https://github.com/Divyanshb30/Loan-Risk-Intelligence" },
@@ -104,7 +108,7 @@ export const PROJECTS: Project[] = [
     kind: "Product",
     metric: "1,200+ users",
     line: "An ML-powered ERP for higher education, live across the university.",
-    off: [8.4, 2.8, -2],
+    off: [8.8, 3.2, -2],
     sc: 1.2,
     uses: ["ChromaDB", "Vector Embeddings", "Semantic Search", "Docker", "PostgreSQL"],
     links: [{ label: "Paper · Wiley", url: "https://doi.org/10.1002/spe.70060" }],
@@ -113,6 +117,24 @@ export const PROJECTS: Project[] = [
       "An ML-powered ERP with 8+ modules for accreditation automation, analytics and networking, and a semantic-retrieval pipeline (vector embeddings, ChromaDB). I co-founded it and led the architecture, the frontend and adoption across stakeholders.",
     outcome:
       "Preparation went from 25 days to 7 (about 72% less). 1,200+ users across the university, a paper in Wiley's Software: Practice and Experience, and DTU funding for continued development.",
+  },
+  {
+    id: "agents",
+    featured: true,
+    label: "below",
+    title: "Five-Agent Reconciliation Platform",
+    kind: "Featured · Amdocs · AT&T",
+    metric: "Live in production",
+    line: "Five AI agents that took over reconciliation work on the AT&T account.",
+    off: [0.8, 1.0, 1.2],
+    sc: 1.45,
+    uses: ["Python", "FastAPI", "Azure OpenAI (GPT-4.1)", "Agent Orchestration", "NL-to-SQL", "Structured Output Generation", "Redis", "PostgreSQL", "Vector Embeddings", "CI/CD Eval Gates"],
+    links: [],
+    problem: "Reconciliation on the AT&T account ran on manual work every week, across systems that had to agree exactly.",
+    built:
+      "Five agents on a custom Python/FastAPI runtime with Azure OpenAI (GPT-4.1), each with its own cost and latency budget, deterministic fallbacks and human-in-the-loop checkpoints. Underneath: a unified async LLM gateway (structured output, bounded self-repair, circuit-breaker failover), retrieval-grounded NL-to-SQL with schema pruning and dry-run self-correction, a hermetic CI-blocking evaluation gate, and a four-plane agent memory (Redis, PostgreSQL, embeddings, a procedural library) that drives a self-improving correction loop.",
+    outcome:
+      "All five agents are live in production on the AT&T account, taking over manual reconciliation work. The architecture earned production sign-off from cross-functional stakeholders.",
   },
 ];
 
@@ -214,9 +236,17 @@ export const MEMORIES: Memory[] = [
 
 /**
  * Photos that aren't tied to a year: they drift far off the river's banks through the Journey, small
- * and dim. Add one by putting the file in public/photos and a line here: [src, crop x, y, w, h].
+ * and dim. Add one by putting the file in public/photos and a line here: `photo` is [src, crop x, y,
+ * w, h]; `d` (how far down the river), `bank` (across it, + is the far side) and `h` (height) are
+ * optional, and without them it finds a spot of its own.
  */
-export const LOOSE_PHOTOS: Photo[] = [];
+export type LoosePhoto = { photo: Photo; d?: number; bank?: number; h?: number };
+export const LOOSE_PHOTOS: LoosePhoto[] = [
+  // a night out, between the first year and the first builds
+  { photo: ["/photos/cafe.jpg", 0, 0, 963, 1280], d: 82, bank: -6.5, h: 0.9 },
+  // the letter: across the river from the ERP's biggest year
+  { photo: ["/photos/letter.jpg", 0, 0, 960, 1280], d: 161, bank: 8, h: 2.5 },
+];
 
 export const JOURNEY = { kicker: "Journey · 2021 → now", title: "It started somewhere." };
 
