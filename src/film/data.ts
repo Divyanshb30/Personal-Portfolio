@@ -231,14 +231,15 @@ export const CONTACT = { kicker: "One last thing.", title: "Let's talk." };
 export const RESUME = "/resume/Divyansh_Bansal.pdf";
 
 /** what the loading screen says, one line at a time, while the film loads or jumps */
+/** (no end punctuation: the loading screen adds the dots, and keeps them filling in) */
 export const LOADING_LINES = [
-  "There's a lot going on back here.",
-  "Building the build.",
-  "Teaching the orb to behave.",
+  "There's a lot going on back here",
+  "Building the build",
+  "Teaching the orb to behave",
   "Initializing curiosity",
-  "Summoning the good parts.",
-  "A few variables are having a discussion.",
-  "We're about to make a lot of dots mean something.",
-  "The universe is currently compiling.",
-  "A moment of computational patience.",
+  "Summoning the good parts",
+  "A few variables are having a discussion",
+  "We're about to make a lot of dots mean something",
+  "The universe is currently compiling",
+  "A moment of computational patience",
 ];

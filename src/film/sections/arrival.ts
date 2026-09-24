@@ -1,19 +1,34 @@
 import type { Ctx, Frame } from "../ctx";
 import { block } from "../ctx";
 import { points } from "../helpers";
-import { COOL, R, V, emberAt, gauss, smooth } from "../math";
+import { COOL, R, V, emberAt, fbm, gauss, smooth } from "../math";
 import { FIG_X, O1 } from "../layout";
 import type { Orb } from "../orb";
 
 /**
- * ARRIVAL, around him. Depth: big soft motes drift between you and him, fine specks far behind.
+ * ARRIVAL, around him. Depth, all behind him: a faint cloud of grains far back, tiny specks nearer.
  * And the orb, small, waiting by his head before it becomes the Think orb. It is curious about the
  * cursor and shy of it up close, reacts when clicked, and wanders off to look at him when you go quiet.
  */
 export function buildArrival(ctx: Ctx, orb: Orb) {
-  // near motes (they fall far out of focus: soft bokeh) and fine specks far behind him
-  const near = points(ctx, 130, () => V(-3.2 + R() * 7.6, gauss() * 1.1, 2.4 + R() * 3.8), () => emberAt(0.25 + R() * 0.5).map((v) => v * 0.24), () => 0.16 + R() * 0.3, 0.5);
-  const far = points(ctx, 1600, () => V(-9 + R() * 22, gauss() * 3.2, -3 - R() * 12), () => (R() < 0.75 ? emberAt(0.2 + R() * 0.6) : COOL).map((v) => v * 0.42), () => 0.02 + R() * 0.035, 0.6);
+  // all of it behind him: a faint cloud made of grains (clumped by noise, no glow) far back, and a
+  // sparse field of tiny specks in front of it
+  const cloudAt = () => V(-14 + R() * 34, gauss() * 3.5, -16 - R() * 14);
+  const cloud = points(
+    ctx,
+    7000,
+    () => {
+      for (let k = 0; k < 40; k++) {
+        const p = cloudAt();
+        if (fbm(p.x * 0.11, p.y * 0.2, p.z * 0.11, 3) > 0.06 + R() * 0.22) return p;
+      }
+      return cloudAt();
+    },
+    () => (R() < 0.8 ? emberAt(0.15 + R() * 0.5) : COOL).map((v) => v * 0.14),
+    () => 0.1 + R() * 0.1,
+    0.25,
+  );
+  const far = points(ctx, 1400, () => V(-9 + R() * 22, gauss() * 3.2, -3 - R() * 12), () => (R() < 0.75 ? emberAt(0.2 + R() * 0.6) : COOL).map((v) => v * 0.3), () => 0.018 + R() * 0.022, 0.6);
 
   // home is up beside his head; on a tall, narrow screen (where his right side is cropped) it waits above him
   const HOME_WIDE = V(FIG_X + 1.4, 1.55, 0.3), HOME_TALL = V(FIG_X - 0.15, 2.6, 0.3), HOME = HOME_WIDE.clone();
@@ -66,9 +81,9 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
       const { s, G, time, mouse } = f;
       const cam = ctx.camera;
       const here = 1 - smooth(0.03, 0.08, G);
-      near.gain.value = here;
+      cloud.gain.value = here;
+      cloud.pts.visible = here > 0.001;
       far.gain.value = 0.35 + 0.65 * here;
-      near.pts.visible = here > 0.001;
       hud.style.opacity = String(1 - smooth(0.02, 0.07, s));
 
       // it owns the orb until it has handed itself to the Think orb

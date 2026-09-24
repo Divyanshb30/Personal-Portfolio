@@ -118,21 +118,40 @@ html {
   text-align: center;
   background: #050507;
   z-index: 90;
-  transition: opacity 0.6s var(--ease-out-expo), visibility 0.6s;
+  transition: opacity 0.8s ease, visibility 0.8s;
+}
+.film-loading.cover {
+  transition-duration: 0.45s;
 }
 .film-loading.done {
   opacity: 0;
   visibility: hidden;
-}
-.film-loading.jumping {
-  transition-duration: 0.35s;
 }
 .film-loading-line {
   display: inline-block;
   font-size: 12px;
   letter-spacing: 0.22em;
   line-height: 1.8;
+  transition: opacity 0.25s ease;
+}
+.film-loading-words {
+  display: inline-block;
   animation: loading-line 0.5s ease both;
+}
+/* the dots keep a fixed box, so the line never shifts as they fill in */
+.film-loading-dots {
+  display: inline-block;
+  width: calc(3ch + 0.66em);
+  text-align: left;
+}
+/* the dust the line dissolves into, and gathers out of */
+.film-loading-dust {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 91;
 }
 @keyframes loading-line {
   from {

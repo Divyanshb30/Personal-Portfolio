@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PLACES, TRACK_VH, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
-import { BUILD, CONTACT, JOURNEY, LOADING_LINES, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
+import { BUILD, CONTACT, JOURNEY, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
+import LoadingVeil from "./LoadingVeil";
 
 /** The local time in New Delhi, for the landing's corner. */
 function useIST() {
@@ -34,19 +35,11 @@ export default function FilmStage() {
   const index = PLACES.indexOf(place) + 1;
   // the loading screen: up while the film loads, and again to cover a jump between sections
   const [veil, setVeil] = useState(false);
-  const [line, setLine] = useState(0);
   const film = useRef<import("@/film/Film").Film | null>(null);
   const jumping = useRef(false);
   const covered = !ready || veil;
 
-  useEffect(() => {
-    if (!covered) return;
-    const n = LOADING_LINES.length;
-    const id = window.setInterval(() => setLine((i) => (i + 1 + Math.floor(Math.random() * (n - 1))) % n), 1600);
-    return () => window.clearInterval(id);
-  }, [covered]);
-
-  /** Cover the screen, cut to the section, give it a beat to settle, then reveal it. */
+  /** Cover the screen (dust gathers into a line), cut to the section, give it a beat, then reveal it (the line lets go). */
   const jump = useCallback((p: Place) => {
     const f = film.current;
     if (!f || jumping.current) return;
@@ -60,10 +53,10 @@ export default function FilmStage() {
           window.setTimeout(() => {
             setVeil(false);
             jumping.current = false;
-          }, Math.max(0, 1100 - (performance.now() - t0)));
+          }, Math.max(0, 1400 - (performance.now() - t0)));
         }),
       );
-    }, 380);
+    }, 480);
   }, []);
 
   useEffect(() => {
@@ -201,15 +194,7 @@ export default function FilmStage() {
           ))}
         </nav>
       </div>
-      <div className={`film-loading mono sub${covered ? "" : " done"}${veil ? " jumping" : ""}`} aria-hidden={!covered}>
-        {failed ? (
-          "This film needs WebGL. Try a recent desktop browser."
-        ) : (
-          <span key={line} className="film-loading-line">
-            {LOADING_LINES[line]}
-          </span>
-        )}
-      </div>
+      <LoadingVeil covered={covered} failed={failed} />
       <div className="film-track" style={{ height: `${TRACK_VH}vh` }} aria-hidden />
       {/* the whole story as plain text, for screen readers and search engines */}
       <article className="sr-only">
