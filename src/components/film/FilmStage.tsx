@@ -3,24 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PLACES, TRACK_VH, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
-import { BUILD, CONTACT, EXPLORE, JOURNEY, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
-
-/** One word at a time, each arriving out of a soft blur. */
-function CyclingWord({ words }: { words: string[] }) {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = window.setInterval(() => setI((n) => (n + 1) % words.length), 1900);
-    return () => window.clearInterval(t);
-  }, [words.length]);
-  return (
-    <>
-      <span key={i} className="cycle" aria-hidden>
-        {words[i]}
-      </span>
-      <span className="sr-only">{words.join(", ")}</span>
-    </>
-  );
-}
+import { BUILD, CONTACT, JOURNEY, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
 
 /** The local time in New Delhi, for the landing's corner. */
 function useIST() {
@@ -113,12 +96,6 @@ export default function FilmStage() {
             <div className="mono sub">{JOURNEY.kicker}</div>
             <h2 className="disp" style={{ fontSize: "clamp(44px,5.4vw,78px)", lineHeight: 1, marginTop: 22 }}>
               {JOURNEY.title}
-            </h2>
-          </section>
-          <section data-block="explore" className="blk" style={{ left: 16, right: 16, top: "30vh", textAlign: "center" }}>
-            <div className="mono sub">{EXPLORE.kicker}</div>
-            <h2 className="disp" style={{ fontSize: "clamp(40px,5vw,72px)", lineHeight: 1.05, marginTop: 20 }}>
-              <CyclingWord words={EXPLORE.words} />
             </h2>
           </section>
           <section data-block="now" className="blk" style={{ left: 16, right: 16, top: "16vh", textAlign: "center" }}>

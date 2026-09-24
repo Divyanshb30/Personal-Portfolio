@@ -9,7 +9,6 @@ One continuous, scroll-directed film in three.js. There are no pages: the scroll
 | Build    | Four named constellations, one per project. Hover brightens one; a click flies the camera to it and opens its story. Esc, ✕ or a scroll closes it. |
 | Stack    | Every tool as a name in depth, laid out so that no two collide, over a veil that dims the river below. |
 | Journey  | The river of his years, with photo plates standing on its banks. The orb rides it on a route of its own and opens two of the memories. |
-| Explore  | Out of the river and into the light, what he is obsessed with right now cycles by, one word at a time. |
 | Now      | A sun rising over the limb of a dark world: still building. |
 | Contact  | "Let's talk" comes in and the page ends there. The orb then forms on its own clock, and scrolling back up returns it to the light. |
 

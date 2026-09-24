@@ -8,9 +8,8 @@ import { JG } from "../layout";
 import { END } from "./journey";
 
 /**
- * EXPLORE and NOW. The river pours into a light; on the way into it, what he is obsessed with
- * right now cycles by, one word at a time. The light is a sun rising over the limb of a dark
- * world (the orb, grown vast), and over it: still building.
+ * NOW. The river pours into a light, and the light is a sun rising over the limb of a dark world
+ * (the orb, grown vast). Over it: still building.
  */
 export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
   const HR = 14, HPc = END.clone().add(V(2, -14.4, -3)), SUN = END.clone().sub(HPc).normalize();
@@ -60,7 +59,7 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
     { s: 0.865, name: "Horizon", pos: END.clone().add(V(-4.6, 1.5, 15.5)), tgt: END.clone().add(V(-4.4, -0.3, 0)), fov: 36 },
     { s: 0.9, name: "Horizon · slow push", pos: END.clone().add(V(-4.4, 1.35, 14.2)), tgt: END.clone().add(V(-4.3, -0.3, 0)), fov: 36 },
   ];
-  const explore = block(ctx, "explore"), now = block(ctx, "now");
+  const now = block(ctx, "now");
 
   return {
     keys,
@@ -72,7 +71,6 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
       sunGlow[0].material.opacity = 0.3 * sun;
       sunGlow[1].material.opacity = 0.85 * sun;
       riverGain.value = smooth(0.3, 0.36, GG) * (1 - 0.85 * smooth(0.91, 0.94, GG));
-      explore.style.opacity = String(smooth(0.803, 0.815, GG) * (1 - smooth(0.842, 0.852, GG)));
       now.style.opacity = String(smooth(0.858, 0.872, GG) * (1 - smooth(0.905, 0.918, GG)));
     },
   };

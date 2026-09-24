@@ -354,24 +354,6 @@ html {
   color: #b9b9c0;
 }
 
-/* explore: one word at a time */
-.cycle {
-  display: inline-block;
-  animation: cycle-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-@keyframes cycle-in {
-  from {
-    opacity: 0;
-    filter: blur(10px);
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    filter: none;
-    transform: none;
-  }
-}
-
 /* contact */
 .chip {
   border: 1px solid rgba(236, 236, 238, 0.22);
@@ -461,9 +443,6 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cycle {
-    animation-duration: 0.01s;
-  }
   .film-panel,
   .film-loading {
     transition: none;

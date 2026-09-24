@@ -210,12 +210,6 @@ export const MEMORIES: Memory[] = [
 
 export const JOURNEY = { kicker: "Journey · 2021 → now", title: "It started somewhere." };
 
-/** after the river: what he can't stop thinking about, one word at a time */
-export const EXPLORE = {
-  kicker: "Currently obsessed with",
-  words: ["Agentic systems", "LLMs", "Retrieval", "Reasoning", "System design"],
-};
-
 export const NOW = {
   kicker: "Now · Amdocs",
   title: "Still building.",

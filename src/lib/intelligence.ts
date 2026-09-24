@@ -191,8 +191,7 @@ export function placeFromQuery(query: string): Place | null {
     [/\b(journey|story|background|timeline|history|education)\b/, "Journey"],
     [/\b(contact|reach|email|hire|r[eé]sum[eé]|cv|talk)\b/, "Contact"],
     [/\b(think|thinks|thinking|approach|process)\b/, "Think"],
-    [/\b(explore|exploring|obsessed|interests?|curious)\b/, "Explore"],
-    [/\b(now|currently|current|today|amdocs|horizon)\b/, "Now"],
+    [/\b(now|currently|current|today|amdocs|horizon|explore|exploring|obsessed|interests?)\b/, "Now"],
     [/\b(home|start|beginning|arrival|top)\b/, "Arrival"],
   ];
   for (const [re, p] of named) if (re.test(q)) return p;

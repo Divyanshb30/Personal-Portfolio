@@ -30,10 +30,14 @@ export const SBUD = FRAC.map((a) => FL0 + (FL1 - FL0) * invSmooth(a));
 export const JS0 = 0.525, JS1 = 0.8;
 export const JG = (x: number) => JS0 + (JS1 - JS0) * x; // journey-local → film time
 
-// scroll → film time. Two dead stretches pass in a breath (the hold after Think, and after the Projects hold),
-// the stack runs about twice as fast as the rest, and the page ends soon after "Let's talk" is in
-// (the orb then forms on its own clock). Knots are [scroll units, film time].
-const SKN: [number, number][] = [[0, 0], [0.1725, 0.1725], [0.1785, 0.229], [0.2495, 0.3], [0.2555, 0.3625], [0.3294, 0.525], [0.7892, 0.965], [0.7972, 1]];
+// scroll → film time. Knots are [scroll units, film time]. From him to the Think planet runs 1.5x;
+// two dead stretches pass in a breath (the hold after Think, and after the Projects hold); the stack
+// runs about twice as fast; so does the climb out of the river into the light; and the page ends soon
+// after "Let's talk" is in (the orb then forms on its own clock).
+const SKN: [number, number][] = [
+  [0, 0], [0.006, 0.006], [0.098, 0.144], [0.1265, 0.1725], [0.1325, 0.229], [0.2035, 0.3], [0.2095, 0.3625],
+  [0.2834, 0.525], [0.5708, 0.8], [0.5979, 0.852], [0.716, 0.965], [0.724, 1],
+];
 const SEND = SKN[SKN.length - 1][0];
 /** the scroll track's height: 88vh of track per 0.01 scroll units keeps the pace the film was tuned at */
 export const TRACK_VH = Math.round(SEND * 8802);
@@ -56,7 +60,7 @@ export const scrollFor = (t: number) => {
   return 1;
 };
 
-export const PLACES = ["Arrival", "Think", "Build", "Stack", "Journey", "Explore", "Now", "Contact"] as const;
+export const PLACES = ["Arrival", "Think", "Build", "Stack", "Journey", "Now", "Contact"] as const;
 export type Place = (typeof PLACES)[number];
 /** where each section settles, in film time */
 export const PLACE_AT: Record<Place, number> = {
@@ -65,23 +69,20 @@ export const PLACE_AT: Record<Place, number> = {
   Build: 0.28,
   Stack: 0.49,
   Journey: 0.53,
-  Explore: 0.826,
   Now: 0.885,
   Contact: 0.965,
 };
 export const placeAt = (GG: number, G: number): Place =>
   GG >= 0.94
     ? "Contact"
-    : GG >= 0.852
+    : GG >= 0.8
       ? "Now"
-      : GG >= 0.8
-        ? "Explore"
-        : GG >= 0.512
-          ? "Journey"
-          : G < 0.126
-            ? "Arrival"
-            : G < 0.465
-              ? "Think"
-              : G < 0.745
-                ? "Build"
-                : "Stack";
+      : GG >= 0.512
+        ? "Journey"
+        : G < 0.126
+          ? "Arrival"
+          : G < 0.465
+            ? "Think"
+            : G < 0.745
+              ? "Build"
+              : "Stack";
