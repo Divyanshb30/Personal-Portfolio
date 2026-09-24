@@ -16,19 +16,19 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
   const cloudAt = () => V(-14 + R() * 34, gauss() * 3.5, -16 - R() * 14);
   const cloud = points(
     ctx,
-    7000,
+    9000,
     () => {
-      for (let k = 0; k < 40; k++) {
+      for (let k = 0; k < 80; k++) {
         const p = cloudAt();
-        if (fbm(p.x * 0.11, p.y * 0.2, p.z * 0.11, 3) > 0.06 + R() * 0.22) return p;
+        if (fbm(p.x * 0.09, p.y * 0.18, p.z * 0.09, 3) > 0.16 + R() * 0.16) return p;
       }
       return cloudAt();
     },
-    () => (R() < 0.8 ? emberAt(0.15 + R() * 0.5) : COOL).map((v) => v * 0.14),
+    () => (R() < 0.8 ? emberAt(0.15 + R() * 0.5) : COOL).map((v) => v * 0.7),
     () => 0.1 + R() * 0.1,
     0.25,
   );
-  const far = points(ctx, 1400, () => V(-9 + R() * 22, gauss() * 3.2, -3 - R() * 12), () => (R() < 0.75 ? emberAt(0.2 + R() * 0.6) : COOL).map((v) => v * 0.3), () => 0.018 + R() * 0.022, 0.6);
+  const far = points(ctx, 1400, () => V(-9 + R() * 22, gauss() * 3.2, -3 - R() * 12), () => (R() < 0.75 ? emberAt(0.2 + R() * 0.6) : COOL).map((v) => v * 0.6), () => 0.02 + R() * 0.026, 0.6);
 
   // home is up beside his head; on a tall, narrow screen (where his right side is cropped) it waits above him
   const HOME_WIDE = V(FIG_X + 1.4, 1.55, 0.3), HOME_TALL = V(FIG_X - 0.15, 2.6, 0.3), HOME = HOME_WIDE.clone();
