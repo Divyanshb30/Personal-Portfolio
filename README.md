@@ -8,7 +8,7 @@ One continuous, scroll-directed film in three.js. There are no pages: the scroll
 | Think    | The orb flies as a comet and sheds four moons: Question, Understand, Iterate, Build. |
 | Build    | Four named constellations, one per project. Hover brightens one; a click flies the camera to it and opens its story. Esc, ✕ or a scroll closes it. |
 | Stack    | Every tool as a name in depth, laid out so that no two collide, over a veil that dims the river below. |
-| Journey  | The river of his years, with photo plates standing on its banks. |
+| Journey  | The river of his years, with photo plates standing on its banks. The orb rides it on a route of its own and opens two of the memories. |
 | Explore  | Out of the river and into the light, what he is obsessed with right now cycles by, one word at a time. |
 | Now      | A sun rising over the limb of a dark world: still building. |
 | Contact  | "Let's talk" comes in and the page ends there. The orb then forms on its own clock, and scrolling back up returns it to the light. |
@@ -34,8 +34,10 @@ src/film/
   director.ts      the shot list for the first half, and the Director that eases between setups
   layout.ts        where everything sits in the world, the timeline, and scroll → film-time knots
   data.ts          everything the film says (projects, stack, memories, résumés)
+  orb.ts           the small glass orb: one body (spring, squash and stretch, gaze, cursor, sparks) that Projects, Stack and Journey take turns to direct
   ctx.ts glsl.ts helpers.ts math.ts figure.ts nav.ts
   sections/        one module per section; each builds its part of the world and updates it every frame
+                   (ambient.ts holds the small things that happen on their own)
 src/components/film/FilmStage.tsx   mounts the canvas, the text blocks, the section rail
 src/components/ui/Intelligence.tsx  the Ask assistant
 ```

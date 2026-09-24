@@ -5,6 +5,7 @@ import { DUST_FRAG, STIR_GLSL } from "../glsl";
 import { R, TAU, V, clamp, emberAt, gauss, smooth } from "../math";
 import { DIVE, SF } from "../layout";
 import { LEAD_OF, STACK } from "../data";
+import type { Orb } from "../orb";
 
 type Tag = {
   el: HTMLElement;
@@ -30,8 +31,9 @@ type Tag = {
  * them and bursts into dust layers, and every tool rides those layers as a name, lead tools large.
  * Names are projected each frame and pushed apart so no two collide and all stay on the page.
  * A dark veil beneath the layers dims whatever lies below, and lifts on the way down to the river.
+ * The orb re-forms out of the layers and wanders the names, and it keeps drifting back to one of them.
  */
-export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Vector3[] }[]) {
+export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Vector3[] }[], orb: Orb) {
   const fieldAt = (o: [number, number, number]) => SF.clone().add(V(o[0] * 1.12, o[1] * 1.55, o[2] * 1.1));
   const toolPos: Record<string, THREE.Vector3> = {};
   const tags: Tag[] = [];
@@ -51,6 +53,10 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       toolPos[t] = q;
     });
   }
+  // not a technology; the orb is fond of it anyway
+  tag("Coffee", SF.clone().add(V(4.4, -0.5, 1.6)), false, 6);
+  const coffee = tags[tags.length - 1];
+  coffee.el.classList.add("coffee");
 
   // dust sheets: the layers the names ride on, grown out of the orb as it dives in
   const NSH = Math.round(16000 * ctx.quality);
@@ -136,6 +142,13 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
 
   const words = block(ctx, "stack"), tmp = V();
 
+  // the orb's time in the stack: where it re-forms, where the coffee sits on screen, its own clock
+  const REFORM = SF.clone().add(V(0.2, 1.0, 0.8)), EXIT = SF.clone().add(V(0.6, -7, -4)), UPV = V(0, 1, 0);
+  const cup = { at: V(), x: 0, y: 0, z: 0, ok: false }, wander = V(), aim = V();
+  let clock = 1.5, formed = false;
+  /** a point on screen, at the coffee's depth, back in the world */
+  const unproject = (x: number, y: number, out: THREE.Vector3) => out.set((x / ctx.W) * 2 - 1, -(y / ctx.H) * 2 + 1, cup.z).unproject(ctx.camera);
+
   return {
     update(f: Frame) {
       const { G, GG, dt } = f;
@@ -148,6 +161,31 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       sheetU.uG.value = smooth(0.785, 0.845, G);
       sheetU.uOut.value = smooth(0.505, 0.53, GG);
       words.style.opacity = String(smooth(0.83, 0.85, G) * (1 - smooth(0.502, 0.512, GG)));
+
+      // the orb gathers itself out of the layers, then keeps being drawn back to the coffee on a ~9s loop
+      if (G < 0.84) {
+        formed = false;
+        clock = 1.5;
+      }
+      if (G >= 0.845 && GG < 0.515) {
+        if (!formed) {
+          formed = true;
+          orb.burst(REFORM, 1.4, true);
+        }
+        clock += dt;
+        const t = f.time, c = clock % 9.5;
+        wander.set(Math.sin(t * 0.23) * 4.2, 0.4 + Math.sin(t * 0.41) * 0.9, 1.0 + Math.cos(t * 0.19) * 2.0).add(SF);
+        wander.lerp(REFORM, 1 - smooth(0.845, 0.9, G));
+        const pull = cup.ok ? smooth(3.2, 4.4, c) * (1 - smooth(8.2, 9.3, c)) : 0;
+        // it circles the word, then settles beside it and sips twice
+        const circ = smooth(4.4, 4.8, c) * (1 - smooth(6.0, 6.4, c)), a = t * 2.4;
+        const rx = coffee.w * 0.5 + 18, ry = coffee.h * 0.5 + 16;
+        unproject(cup.x + Math.cos(a) * rx * circ + (1 - circ) * (rx - 4), cup.y + Math.sin(a) * ry * circ - (1 - circ) * 10, aim);
+        const leave = smooth(0.503, 0.515, GG);
+        const at = tmp.copy(wander).lerp(aim, pull).lerp(EXIT, leave);
+        orb.drive({ at, size: 0.3, look: cup.ok && (pull > 0.2 || GG > 0.5) ? cup.at : null, lookAmt: 0.8, glow: 0.35, free: pull < 0.01 && leave < 0.01 });
+        if ((c > 6.6 && c < 6.75) || (c > 7.3 && c < 7.45)) orb.squash(-0.25, UPV);
+      }
 
       const tv = smooth(0.8, 0.84, G) * (1 - smooth(0.501, 0.509, GG));
       if (tv <= 0) {
@@ -206,6 +244,12 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         t.el.style.filter = `blur(${t.blur.toFixed(2)}px)`;
         t.el.style.transform = `translate(${(t.sx + t.ox).toFixed(1)}px, ${(t.sy + t.oy).toFixed(1)}px) translate(-50%, -50%) scale(${t.sc.toFixed(3)})`;
       }
+      // where the coffee actually landed on screen, for the orb to find
+      cup.ok = !coffee.behind && tv * coffee.near > 0.3;
+      cup.x = coffee.sx + coffee.ox;
+      cup.y = coffee.sy + coffee.oy;
+      cup.z = tmp.copy(coffee.at).project(cam).z;
+      unproject(cup.x, cup.y, cup.at);
     },
   };
 }
