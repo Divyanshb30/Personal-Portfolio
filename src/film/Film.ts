@@ -17,6 +17,7 @@ import { buildJourney } from "./sections/journey";
 import { buildHorizon } from "./sections/horizon";
 import { buildContact } from "./sections/contact";
 import { buildAmbient } from "./sections/ambient";
+import { buildArrival } from "./sections/arrival";
 import { makeOrb } from "./orb";
 
 export type FilmOptions = {
@@ -68,7 +69,7 @@ export class Film {
   private rightV = V();
   private upV = V();
   private cleanup: (() => void)[] = [];
-  private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement };
+  private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement; progress: HTMLElement };
   /** visitors who ask for less motion get a much gentler cursor camera */
   private still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   /** frame-time probe: if the device struggles early on, render at a lower resolution */
@@ -107,8 +108,8 @@ export class Film {
     const projects = buildProjects(ctx, planetGeo, orb);
     const journey = buildJourney(ctx, orb), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo);
     this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars, orb), journey, horizon, contact);
-    // the ambient moments, then the orb itself, last: it moves once whoever owns it has said where
-    this.sections.push(buildAmbient(ctx, orb), orb);
+    // the landing's own life, the ambient moments, then the orb itself, last: it moves once whoever owns it has said where
+    this.sections.push(buildArrival(ctx, orb), buildAmbient(ctx, orb), orb);
 
     const keys: Key[] = [...firstHalfKeys(), ...journey.keys, ...horizon.keys, ...contact.keys];
     this.director = new Director(keys);
@@ -119,7 +120,7 @@ export class Film {
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
 
-    this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer") };
+    this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress") };
     this.bindInput();
     const q = new URLSearchParams(location.search);
     if (q.has("s")) this.fix = +q.get("s")!;
@@ -221,6 +222,7 @@ export class Film {
     this.blocks.arrival.style.opacity = String(1 - smooth(0.02, 0.07, s));
     this.blocks.hint.style.opacity = String(1 - smooth(0.01, 0.05, s));
     this.blocks.layer.style.transform = `translate(${(-cam.x * 22 * calm).toFixed(1)}px, ${(cam.y * 14 * calm).toFixed(1)}px)`;
+    this.blocks.progress.style.transform = `scaleX(${Math.min(1, Math.max(0, window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight))).toFixed(4)})`;
 
     const here = placeAt(GG, G);
     if (here !== this.place) {

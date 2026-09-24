@@ -22,6 +22,19 @@ function CyclingWord({ words }: { words: string[] }) {
   );
 }
 
+/** The local time in New Delhi, for the landing's corner. */
+function useIST() {
+  const [t, setT] = useState("");
+  useEffect(() => {
+    const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+    const tick = () => setT(fmt.format(new Date()));
+    tick();
+    const id = window.setInterval(tick, 10000);
+    return () => window.clearInterval(id);
+  }, []);
+  return t;
+}
+
 /**
  * Mounts the film: a fixed WebGL canvas, the words that live over it, and the section rail.
  * The page itself is a tall, empty scroll track; scroll position is the film's clock.
@@ -34,6 +47,8 @@ export default function FilmStage() {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [touch, setTouch] = useState(false);
+  const ist = useIST();
+  const index = PLACES.indexOf(place) + 1;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount, the server cannot know
@@ -148,6 +163,22 @@ export default function FilmStage() {
         </div>
         <div ref={labels} className="film-labels" />
         <aside data-block="panel" className="film-panel" role="dialog" aria-hidden="true" />
+        {/* quiet details on the first screen, and a progress line that stays */}
+        <div data-block="hud" className="film-hud mono sub" aria-hidden>
+          <div className="film-hud-l">
+            <div>New Delhi · 28.61°N 77.21°E</div>
+            <div className="film-hud-time">{ist ? `${ist} IST` : "\u00a0"}</div>
+          </div>
+          <div className="film-hud-r">Now · AI Software Engineer, Amdocs</div>
+        </div>
+        <div className="film-progress mono sub" aria-hidden>
+          <span>
+            {String(index).padStart(2, "0")} / {String(PLACES.length).padStart(2, "0")}
+          </span>
+          <span className="film-progress-track">
+            <span data-block="progress" className="film-progress-fill" />
+          </span>
+        </div>
         <div data-block="hint" className="mono sub film-hint">{touch ? "Scroll · tap the work" : "Scroll · move your cursor"}</div>
         <nav className="film-rail mono" aria-label="Sections">
           {PLACES.map((p) => (

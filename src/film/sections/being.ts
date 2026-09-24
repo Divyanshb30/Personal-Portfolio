@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.js";
 import type { Ctx, Frame } from "../ctx";
 import type { Figure } from "../figure";
-import { DUST_FRAG, GLSL_FN, HOLE_GLSL, STIR_GLSL, turnGLSL } from "../glsl";
+import { DENT_GLSL, DUST_FRAG, GLSL_FN, STIR_GLSL, turnGLSL } from "../glsl";
 import { R, V, emberAt, gauss, smooth } from "../math";
 import { ARC, FIG_X, FL0, FL1, FRAC, O1, ORB_R, PC, PL_R, planetRot, toPlanet } from "../layout";
 
@@ -102,7 +102,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
         uniform float uT1, uT2, uTime, uFocus, uScale, uFade; uniform vec3 uArc; uniform vec4 uAbsorb; varying vec3 vC; varying float vCoc;
         ${GLSL_FN}
         ${STIR_GLSL}
-        ${HOLE_GLSL}
+        ${DENT_GLSL}
         ${turnGLSL(FIG_X)}
         void main(){
           float d1 = aD1 * 0.35, s1 = smoothstep(0.0, 1.0, clamp((uT1 - d1) / (1.0 - d1), 0.0, 1.0));
@@ -115,11 +115,11 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
           float b = mix(mix(aLA, aLB, s1), aLB * 0.9 + step(aSeed, 0.22) * 0.1, s2) + 0.7 * f1 + 1.1 * moving;
           vec4 mv = modelViewMatrix * vec4(p, 1.0); float d = -mv.z;
           float st = stir(mv, d * s1, 22.0);
-          float rg = hole(mv, 1.0 - s1);
+          float dn = dent(mv, 1.0 - s1);
           float coc = clamp(abs(d - uFocus) * 0.045, 0.0, 1.0);
           gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 + 1.4 * (f1 + f2)) * (1.0 + coc * 2.0), 36.0); vCoc = coc;
           float gone = aGrp < 0.5 ? 0.0 : aGrp < 1.5 ? uAbsorb.x : aGrp < 2.5 ? uAbsorb.y : aGrp < 3.5 ? uAbsorb.z : uAbsorb.w;
-          vC = aCol * b * mix(1.0, 0.3, coc) * (1.0 + st * 0.5 + rg * 1.4) * (1.0 - gone) * uFade;
+          vC = aCol * b * mix(1.0, 0.3, coc) * (1.0 + st * 0.5) * (1.0 - 0.72 * dn) * (1.0 - gone) * uFade;
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: DUST_FRAG,
@@ -167,7 +167,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
         attribute vec3 aN; attribute float aD, aSeed, aSize; uniform float uT1, uTime, uScale, uFocus; varying vec3 vC; varying float vCoc;
         ${GLSL_FN}
         ${STIR_GLSL}
-        ${HOLE_GLSL}
+        ${DENT_GLSL}
         ${turnGLSL(FIG_X)}
         void main(){
           float tw0 = turnW(position); vec3 n = normalize(turnV(aN, tw0)), p = turnP(position);
@@ -177,10 +177,10 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
           col *= 0.85 + 0.2 * sin(uTime * 2.1 + aSeed * 60.0);
           float dis = clamp((uT1 * 1.7 - aD * 0.8) / 0.55, 0.0, 1.0);
           p += (vec3(0.25, 0.9, 0.3) + flow(p * 0.8 + uTime * 0.06) * 0.6) * dis * 1.3 + flow(p * 1.3 + uTime * 0.07) * 0.006;
-          vec4 mv = modelViewMatrix * vec4(p, 1.0); float d = -mv.z; float rg = hole(mv, 1.0);
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); float dn = dent(mv, 1.0); float d = -mv.z;
           float coc = clamp(abs(d - uFocus) * 0.05, 0.0, 1.0);
-          gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 + rg * 0.8) * (1.0 + coc * 2.0), 30.0); vCoc = coc;
-          vC = col * (1.0 + rg * 1.6) * (1.0 - dis) * mix(1.0, 0.35, coc);
+          gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 - 0.25 * dn) * (1.0 + coc * 2.0), 30.0); vCoc = coc;
+          vC = col * (1.0 - 0.76 * dn) * (1.0 - dis) * mix(1.0, 0.35, coc);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: DUST_FRAG,
@@ -219,9 +219,9 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
       const still = 1 - smooth(0.03, 0.08, f.G);
       ctx.u.TURN.uYaw.value = f.cam.x * 0.38 * still;
       ctx.u.TURN.uPitch.value = f.cam.y * 0.14 * still;
-      // the cursor clears a circle in him, only on the first screen
+      // the cursor presses a soft dent into him, only on the first screen
       const want = ctx.u.CUR.uActive.value * (1 - smooth(0.035, 0.07, f.G));
-      ctx.u.CUR.uHoleAmt.value += (want - ctx.u.CUR.uHoleAmt.value) * (1 - Math.exp(-f.dt * 5));
+      ctx.u.CUR.uDentAmt.value += (want - ctx.u.CUR.uDentAmt.value) * (1 - Math.exp(-f.dt * 5));
       u.uFade.value = 1 - smooth(0.46, 0.5, f.G);
     },
   };

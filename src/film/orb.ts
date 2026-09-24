@@ -84,7 +84,7 @@ export function makeOrb(ctx: Ctx) {
   const pos = V(), vel = V(), at = V(), look = V(), attendP = V(), gaze = V(), axis = V(0, 1, 0), sqAxis = V(0, 1, 0);
   const tmp = V(), tmp2 = V(), acc = V(), prev = V(), qInv = new THREE.Quaternion();
   let driven = false, size = 0, sizeV = 0, want = 0, wantLook = 0, hasLook = false, pin = 0, glowWant = 0.3;
-  let sq = 0, sqV = 0, sqWant = 0, attendLook = 0, attendPull = 0;
+  let sq = 0, sqV = 0, sqWant = 0, attendLook = 0, attendPull = 0, spinA = 0, spinV = 0, snapNext = false;
 
   const orb = {
     pos,
@@ -124,6 +124,23 @@ export function makeOrb(ctx: Ctx) {
     kick(v: THREE.Vector3) {
       vel.add(v);
     },
+    /** A twirl of the body (radians per second, decaying). */
+    spin(v: number) {
+      spinV += v;
+    },
+    /** Next frame, appear exactly where it is driven (after a jump, it shouldn't fly across the world). */
+    snap() {
+      snapNext = true;
+    },
+    /** Is this screen point (NDC) on the orb? */
+    hit(nx: number, ny: number) {
+      if (!root.visible || size < 0.02) return false;
+      const cam = ctx.camera;
+      tmp.copy(pos).project(cam);
+      if (tmp.z > 1) return false;
+      const d = cam.position.distanceTo(pos), rpx = (size / (d * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)))) * (ctx.H / 2);
+      return Math.hypot(((nx - tmp.x) * ctx.W) / 2, ((ny - tmp.y) * ctx.H) / 2) < rpx * 1.3 + 12;
+    },
     /** Fling sparks out from a point (or, with gather, draw them in to it). */
     burst(p: THREE.Vector3, amt = 1, gather = false) {
       if (still) return;
@@ -156,7 +173,8 @@ export function makeOrb(ctx: Ctx) {
         return;
       }
       // appearing somewhere new: it forms there, it doesn't fly in from wherever it vanished
-      if (!root.visible) {
+      if (!root.visible || snapNext) {
+        snapNext = false;
         pos.copy(at);
         vel.set(0, 0, 0);
         gaze.set(0, 0, 0);
@@ -207,7 +225,9 @@ export function makeOrb(ctx: Ctx) {
       const a = 1 + clamp(sq, -0.6, 1.2), p = 1 / Math.sqrt(a);
       shape.quaternion.setFromUnitVectors(Y, axis);
       shape.scale.set(p, a, p);
-      body.rotation.set(time * 0.13, time * 0.4, 0);
+      spinV *= Math.exp(-dt * 2.2);
+      spinA += spinV * dt;
+      body.rotation.set(time * 0.13, time * 0.4 + spinA, 0);
 
       // the gaze: its core slides toward what it looks at; by default, where it is going
       const g = tmp2.set(0, 0, 0);

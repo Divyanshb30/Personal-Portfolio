@@ -12,8 +12,9 @@ export type Shared = {
     uStir: U<number>;
     uActive: U<number>;
     uAspect: U<number>;
-    uHoleR: U<number>;
-    uHoleAmt: U<number>;
+    /** the soft dent the cursor presses into his figure: width (NDC-y) and strength */
+    uDentR: U<number>;
+    uDentAmt: U<number>;
   };
   TURN: { uYaw: U<number>; uPitch: U<number> };
 };
@@ -74,8 +75,8 @@ export function makeShared(W: number, H: number, pixelRatio: number): Shared {
       uStir: { value: 0 },
       uActive: { value: 0 },
       uAspect: { value: W / H },
-      uHoleR: { value: 0.085 },
-      uHoleAmt: { value: 0 },
+      uDentR: { value: 0.055 },
+      uDentAmt: { value: 0 },
     },
     TURN: { uYaw: { value: 0 }, uPitch: { value: 0 } },
   };

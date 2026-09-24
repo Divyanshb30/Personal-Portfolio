@@ -22,17 +22,23 @@ float stir(inout vec4 mv, float depth, float sharp){
 }
 `;
 
-/** On his figure the cursor clears a clean circle; the pushed grains pile into a lit ring. Needs uTime. */
-export const HOLE_GLSL = /* glsl */ `
-uniform float uHoleR, uHoleAmt;
-float hole(inout vec4 mv, float amt){
-  float a = uHoleAmt * amt; if (a < 0.001) return 0.0;
+/**
+ * On his figure the cursor presses a soft dent: grains under it sink away from the camera and part a
+ * little, with a gaussian falloff, so the spot reads as a darker hollow. No ring, no trail. Returns how
+ * deep the dent is at this grain (0..1), for the caller to darken it.
+ */
+export const DENT_GLSL = /* glsl */ `
+uniform float uDentR, uDentAmt;
+float dent(inout vec4 mv, float amt){
+  float a = uDentAmt * amt; if (a < 0.001) return 0.0;
   vec4 cp = projectionMatrix * mv; vec2 q = (cp.xy / cp.w - uMouse) * vec2(uAspect, 1.0);
-  float r = length(q) + 1e-5, ang = atan(q.y, q.x);
-  float R = uHoleR * (1.0 + 0.05 * sin(ang * 5.0 + uTime * 0.9) + 0.03 * sin(ang * 9.0 - uTime * 1.4));
-  float nr = r + R * exp(-(r * r) / (R * R) * 2.2) * a; vec2 dn = q / r * (nr - r) / vec2(uAspect, 1.0);
-  mv.x += dn.x * (-mv.z) / projectionMatrix[0][0]; mv.y += dn.y * (-mv.z) / projectionMatrix[1][1];
-  return exp(-pow((nr - R * 1.06) / (R * 0.2), 2.0)) * a;
+  float r2 = dot(q, q), w = exp(-r2 / (uDentR * uDentR)) * a;
+  if (w < 0.002) return 0.0;
+  vec2 dn = q / (sqrt(r2) + 1e-4) * uDentR * 0.45 * w / vec2(uAspect, 1.0);
+  float depth = -mv.z;
+  mv.x += dn.x * depth / projectionMatrix[0][0]; mv.y += dn.y * depth / projectionMatrix[1][1];
+  mv.z -= w * 0.45;
+  return w;
 }
 `;
 

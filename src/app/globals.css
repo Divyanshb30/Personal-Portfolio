@@ -469,3 +469,63 @@ html {
     transition: none;
   }
 }
+
+/* ---------- the landing's quiet corners, and the progress line ---------- */
+.film-hud {
+  position: absolute;
+  left: 48px;
+  right: 56px;
+  bottom: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  color: #6d6d75;
+  line-height: 1.9;
+}
+.film-hud-time {
+  color: #a9a9b0;
+}
+.film-hud-r {
+  margin-bottom: 30px;
+}
+.film-progress {
+  position: absolute;
+  right: 56px;
+  bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6d6d75;
+}
+.film-progress-track {
+  position: relative;
+  width: 120px;
+  height: 1px;
+  background: rgba(236, 236, 238, 0.12);
+  overflow: hidden;
+}
+.film-progress-fill {
+  position: absolute;
+  inset: 0;
+  background: #ffc896;
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+@media (max-width: 760px) {
+  .film-hud {
+    left: 24px;
+    right: 24px;
+    bottom: 76px;
+  }
+  .film-hud-l > div:first-child,
+  .film-hud-r {
+    display: none;
+  }
+  .film-progress {
+    right: 24px;
+    bottom: 76px;
+  }
+  .film-progress-track {
+    width: 64px;
+  }
+}
