@@ -49,7 +49,7 @@ export function makeOrb(ctx: Ctx) {
       const d = V(gauss(), gauss(), gauss()).normalize();
       D.set([d.x, d.y, d.z], i * 3);
       S[i] = 0.4 + Math.random() * 1.1;
-      Z[i] = 0.02 + Math.random() * 0.035;
+      Z[i] = 0.12 + Math.random() * 0.12;
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(D, 3));
@@ -70,7 +70,7 @@ export function makeOrb(ctx: Ctx) {
           vec4 mv = modelViewMatrix * vec4(p, 1.0); float d = -mv.z;
           float coc = clamp(abs(d - uFocus) * 0.045, 0.0, 1.0);
           gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 + coc * 2.0), 40.0); vCoc = coc;
-          vC = vec3(1.0, 0.66, 0.36) * 1.8 * a * mix(1.0, 0.35, coc); gl_Position = projectionMatrix * mv;
+          vC = vec3(1.0, 0.66, 0.36) * 2.6 * a * mix(1.0, 0.35, coc); gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: DUST_FRAG,
     });
@@ -140,7 +140,7 @@ export function makeOrb(ctx: Ctx) {
       // sparks and flash run on their own, whoever owns the orb
       if (sparkU.uAge.value >= 0) sparkU.uAge.value = sparkU.uAge.value > 1.8 ? -1 : sparkU.uAge.value + dt;
       flashAge += dt;
-      const fl = flashAge < 0.8 ? Math.exp(-flashAge * 7) * smooth(0, 0.05, flashAge) : 0;
+      const fl = flashAge < 0.9 ? Math.exp(-flashAge * 5) * smooth(0, 0.05, flashAge) : 0;
       flash.material.opacity = 0.9 * fl;
       flash.scale.setScalar(flashSize * (0.4 + 0.8 * smooth(0, 0.25, flashAge)));
       flash.visible = fl > 0.002;

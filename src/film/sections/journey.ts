@@ -144,7 +144,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     uTime: ctx.u.TIME,
     uL: { value: RL },
     uGain: { value: 1 },
-    // the current can surge: extra flow (accumulated, so streaks never jump), longer and brighter near uSurgeD
+    // the current can surge: extra flow (accumulated, so streaks never jump); near uSurgeD the streaks stretch and brighten a little
     uPhase: { value: 0 },
     uSurge: { value: 0 },
     uSurgeD: { value: 0 },
@@ -196,15 +196,16 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         ${STIR_GLSL}
         vec3 at(sampler2D s, float t){ return texture2D(s, vec2(clamp(t, 0.0, 1.0), 0.5)).xyz; }
         void main(){
-          float head = fract(aP.x + (uTime * (2.4 + aP.w * 1.6) + uPhase * (1.0 + aP.w)) / uL), len = position.y * (1.0 + uSurge * 1.6);
+          float head = fract(aP.x + (uTime * (2.4 + aP.w * 1.6) + uPhase * (1.0 + aP.w)) / uL);
+          float sg = uSurge * exp(-pow((head * uL - uSurgeD) / 10.0, 2.0)), len = position.y * (1.0 + sg * 0.35);
           float tt = head - (1.0 - position.x) * len, dd = tt * uL;
           vec3 R = at(tR, tt), U = at(tU, tt);
           float tw = dd * 0.08 + uTime * 0.05, s = aP.y * cos(tw) - aP.z * sin(tw) * 0.6, u = aP.z * cos(tw) + aP.y * sin(tw) * 0.35;
           vec3 p = at(tP, tt) + R * (s * (1.0 + 0.35 * sin(dd * 0.12)) + ${WAVE_R.toFixed(2)} * cos(dd * 0.21))
                  + U * (u + ${WAVE_U.toFixed(2)} * sin(dd * 0.33 + 0.6) + 0.12 * sin(dd * 0.9 + uTime * 0.4));
           vec4 mv = modelViewMatrix * vec4(p, 1.0); float d = -mv.z; float f = stir(mv, d, 9.0);
-          float ok = step(len, head), sg = uSurge * exp(-pow((dd - uSurgeD) / 12.0, 2.0));
-          vC = aColor * position.x * ok * smoothstep(0.5, 2.4, d) * exp(-max(d - 16.0, 0.0) * 0.035) * (1.0 + f * (0.25 + uStir * 0.45)) * (1.0 + sg * 1.6) * uGain;
+          float ok = step(len, head);
+          vC = aColor * position.x * ok * smoothstep(0.5, 2.4, d) * exp(-max(d - 16.0, 0.0) * 0.035) * (1.0 + f * (0.25 + uStir * 0.45)) * (1.0 + sg * 0.25) * uGain;
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: /* glsl */ `
@@ -289,7 +290,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
   const flash = MEMORIES.map(() => 0), inside = MEMORIES.map(() => 0);
   // the two memories it opens: it arrives first, touches the photo, the photo answers, it is drawn in
   const touches = [0, 2].map((i) => ({ i, a: MEMORIES[i].win[0], b: MEMORIES[i].win[1], face: FF(i), front: MP[i].clone().addScaledVector(FF(i), 0.75) }));
-  const amdocsSide = FF(4).cross(UPV).normalize(), STOP = rp(206, 0.4, 1.5, V()), SPLASH = rp(45, 0.6, 0, V());
+  const amdocsSide = FF(4).cross(UPV).normalize(), STOP = rp(215, -0.3, 1.6, V()), SPLASH = rp(45, 0.6, 0, V());
   const trig = { splash: false, shoot: false, flare: false };
   const current = { t: -1, done: false, boom: false };
   let phase = 0;
@@ -323,7 +324,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     else if (e > 3.05 && e < 3.15) orb.squash(0.7, fr.U);
     if (e >= 3.15 && !current.boom) {
       current.boom = true;
-      orb.burst(orb.pos, 1.3);
+      orb.burst(orb.pos, 1.7);
       orb.kick(o2.copy(fr.U).multiplyScalar(9));
     }
     rp(d + dT, dR, 0.35 + dU, at);
@@ -414,7 +415,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         o2.copy(MP[4]).addScaledVector(FF(4), Math.cos(0.6 - TAU) * 1.9).addScaledVector(amdocsSide, Math.sin(0.6 - TAU) * 1.9);
         at.copy(o2).lerp(STOP, smooth(0.89, 0.93, j)).lerp(END, go);
         look.copy(END).lerp(ctx.camera.position, back);
-        orb.drive({ at, size: 0.42 * (1 - smooth(0.968, 0.98, j)), look, lookAmt: 0.5 + 0.5 * back, pin: go, glow: 0.35 + 0.65 * go });
+        orb.drive({ at, size: 0.6 * (1 - smooth(0.968, 0.98, j)), look, lookAmt: 0.5 + 0.5 * back, pin: go, glow: 0.35 + 0.65 * go });
         if (back > 0.5) orb.squash(-0.12 * Math.sin(Math.PI * smooth(0.941, 0.947, j)), UPV);
         if (j >= 0.972 && !trig.flare) {
           trig.flare = true;
