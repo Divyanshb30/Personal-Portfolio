@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Divyansh Bansal: portfolio
 
-## Getting Started
+One continuous, scroll-directed film in three.js. There are no pages: the scroll position is the film's clock, and a camera director moves through a single world. An ember being carries the story, and it changes form in each section: his dust figure → the orb → a planet → constellations → layers of tools → a river through his years → a sun → the orb again.
 
-First, run the development server:
+| Section  | What happens |
+| -------- | ------------ |
+| Arrival  | His figure, made of ember dust. The cursor clears a small circle in it, and his head turns toward you. |
+| Think    | The orb flies as a comet and sheds four moons: Question, Understand, Iterate, Volume. |
+| Projects | Four named constellations. Hover brightens one; a click flies the camera to it and opens its story. Esc, ✕ or a scroll closes it. |
+| Stack    | Every tool as a name in depth, laid out so that no two collide, over a veil that dims the river below. |
+| Journey  | The river of his years, with photo plates standing on its banks. |
+| Horizon  | A sun rising over the limb of a dark world, with a single statement. |
+| Contact  | "Let's talk" comes in and the page ends there. The orb then forms on its own clock, and scrolling back up returns it to the light. |
+
+The cursor drives a spring camera with parallax. The Ask pill (top right) answers questions about his work and can take you to any section.
+
+## Running it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. For a production build, run `npm run build` and then `npm start`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The `?s=<0..1>` URL parameter freezes the film at a given moment, which is useful for reviewing a single shot (for example, `?s=0.3` is Projects).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Where things live
 
-## Learn More
+```
+src/film/
+  Film.ts          the engine: renderer, the scroll clock, the cursor spring camera, post-processing
+  director.ts      the shot list for the first half, and the Director that eases between setups
+  layout.ts        where everything sits in the world, the timeline, and scroll → film-time knots
+  data.ts          everything the film says (projects, stack, memories, résumés)
+  ctx.ts glsl.ts helpers.ts math.ts figure.ts nav.ts
+  sections/        one module per section; each builds its part of the world and updates it every frame
+src/components/film/FilmStage.tsx   mounts the canvas, the text blocks, the section rail
+src/components/ui/Intelligence.tsx  the Ask assistant
+```
 
-To learn more about Next.js, take a look at the following resources:
+The text blocks are React markup. The engine finds them by `data-block` and only drives their opacity and position.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Editing content
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All of the words are in `src/film/data.ts`. Placeholders are marked `TODO`:
 
-## Deploy on Vercel
+- Each project's `problem`, `built` and `outcome` fields. The side panel shows a placeholder until these are filled.
+- Photos for 2021 and 2022. Put them in `public/photos` and set `photo` (`[src, cropX, cropY, cropW, cropH]`) on those two memories.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Résumés are in `public/resume`. The dust figure is `public/models/divyansh.glb` (Draco-compressed; the decoder is served from `public/draco`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Performance
+
+Particle counts scale with a quality tier (desktop 1, weaker CPUs 0.7, phones 0.45). If the first few seconds render slowly, the film drops to 1× resolution. A `prefers-reduced-motion` setting calms the cursor camera.

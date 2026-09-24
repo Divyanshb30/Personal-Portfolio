@@ -290,7 +290,9 @@ export function buildJourney(ctx: Ctx) {
         tmp.copy(p.pos).project(camera);
         const x = (tmp.x * 0.5 + 0.5) * W, y = (-tmp.y * 0.5 + 0.5) * H, dist = camera.position.distanceTo(p.pos);
         const half = (p.wid / 2 / (dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)))) * (H / 2), leftSide = x > W * 0.5;
-        const tx = clamp(leftSide ? x - half - 40 - 330 : x + half + 40, 48, W - 560), ty = clamp(y - 60, 110, H - 260);
+        const mw = p.label.offsetWidth || 330, narrow = W < 760;
+        const tx = narrow ? 24 : clamp(leftSide ? x - half - 40 - mw : x + half + 40, 48, W - mw - 230);
+        const ty = narrow ? H - p.label.offsetHeight - 40 : clamp(y - 60, 110, H - 260);
         p.label.style.opacity = (tmp.z < 1 ? on : 0).toFixed(3);
         p.label.style.transform = `translate(${(tx - cam.x * 22).toFixed(1)}px, ${(ty + (1 - on) * 20 + cam.y * 14).toFixed(1)}px)`;
       }

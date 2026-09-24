@@ -155,6 +155,8 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         return;
       }
       const cam = ctx.camera, W = ctx.W, H = ctx.H, fd = ctx.u.FOCUS.value;
+      // page margins: the rail takes the right edge on wide screens
+      const narrow = W < 760, mL = narrow ? 16 : 48, mR = narrow ? 16 : 170, mT = narrow ? 80 : 92, mB = narrow ? 110 : 120;
       // project every name, then push the small ones apart; the big lead words mostly hold their place
       for (const t of tags) {
         tmp.copy(t.at).project(cam);
@@ -162,7 +164,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         t.behind = tmp.z > 1;
         t.sx = (tmp.x * 0.5 + 0.5) * W;
         t.sy = (-tmp.y * 0.5 + 0.5) * H;
-        t.sc = clamp(12.5 / d, 0.4, 2.4);
+        t.sc = clamp(12.5 / d, 0.4, 2.4) * (narrow ? 0.62 : 1);
         t.near = smooth(1.0, 2.2, d);
         t.blur = Math.min(3, Math.abs(d - fd) * 0.22);
         t.w = t.chars * (t.lead ? 0.68 : 0.56) * base * t.sc + 18;
@@ -170,7 +172,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         t.tx = 0;
         t.ty = 0;
       }
-      for (let it = 0; it < 14; it++) {
+      for (let it = 0; it < (narrow ? 28 : 14); it++) {
         for (let a = 0; a < tags.length; a++)
           for (let b = a + 1; b < tags.length; b++) {
             const A = tags[a], B = tags[b];
@@ -191,7 +193,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         // and every name stays on the page, clear of the chrome
         for (const t of tags) {
           if (t.behind) continue;
-          const x = clamp(t.sx + t.tx, 48 + t.w / 2, W - 170 - t.w / 2), y = clamp(t.sy + t.ty, 92 + t.h / 2, H - 120 - t.h / 2);
+          const x = clamp(t.sx + t.tx, mL + t.w / 2, W - mR - t.w / 2), y = clamp(t.sy + t.ty, mT + t.h / 2, H - mB - t.h / 2);
           t.tx = x - t.sx;
           t.ty = y - t.sy;
         }

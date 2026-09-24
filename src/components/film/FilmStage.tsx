@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PLACES, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
-import { HORIZON, PROFILE, RESUMES, THINK } from "@/film/data";
+import { HORIZON, MEMORIES, PROFILE, PROJECTS, RESUMES, STACK, THINK } from "@/film/data";
 
 /**
  * Mounts the film: a fixed WebGL canvas, the words that live over it, and the section rail.
@@ -16,6 +16,12 @@ export default function FilmStage() {
   const [place, setPlace] = useState<Place>("Arrival");
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [touch, setTouch] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount, the server cannot know
+    setTouch(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -135,7 +141,7 @@ export default function FilmStage() {
         </div>
         <div ref={labels} className="film-labels" />
         <aside data-block="panel" className="film-panel" role="dialog" aria-hidden="true" />
-        <div data-block="hint" className="mono sub film-hint">Scroll · move your cursor</div>
+        <div data-block="hint" className="mono sub film-hint">{touch ? "Scroll · tap the work" : "Scroll · move your cursor"}</div>
         <nav className="film-rail mono" aria-label="Sections">
           {PLACES.map((p) => (
             <button key={p} onClick={() => goTo(p)} className={p === place ? "on" : undefined} aria-current={p === place ? "true" : undefined}>
@@ -148,6 +154,44 @@ export default function FilmStage() {
         {failed ? "This film needs WebGL. Try a recent desktop browser." : "Gathering dust…"}
       </div>
       <div className="film-track" aria-hidden />
+      {/* the whole story as plain text, for screen readers and search engines */}
+      <article className="sr-only">
+        <p>{PROFILE.roles}. {PROFILE.line}</p>
+        <h2>{THINK.title}</h2>
+        <p>{THINK.line}</p>
+        <h2>Projects</h2>
+        <ul>
+          {PROJECTS.map((p) => (
+            <li key={p.id}>
+              <h3>{p.title}</h3>
+              <p>
+                {p.kind}. {p.line} {p.metric}. Built with {p.uses.join(", ")}.
+              </p>
+              {p.href && <a href={p.href}>{p.title} on GitHub</a>}
+            </li>
+          ))}
+        </ul>
+        <h2>Stack</h2>
+        <ul>
+          {STACK.map(([cap, , items]) => (
+            <li key={cap}>
+              {cap}: {items.join(", ")}
+            </li>
+          ))}
+        </ul>
+        <h2>Journey</h2>
+        <ul>
+          {MEMORIES.map((m) => (
+            <li key={m.y + m.t}>
+              {m.y}, {m.t}: {m.n}
+            </li>
+          ))}
+        </ul>
+        <h2>Now</h2>
+        <p>
+          {HORIZON.title.replace(/\n/g, " ")} {HORIZON.line.replace(/\n/g, " ")}
+        </p>
+      </article>
     </>
   );
 }

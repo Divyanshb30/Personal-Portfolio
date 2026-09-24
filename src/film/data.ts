@@ -131,7 +131,7 @@ export const MEMORIES: Memory[] = [
     y: "2025",
     t: "1,200+ users",
     n: "Live across the university. The method was published in Wiley, and DTU funded its next phase.",
-    photo: ["/photos/stakeholders.jpg", 120, 120, 1040, 390],
+    photo: ["/photos/stakeholders.jpg", 120, 110, 1040, 360],
     cap: "",
     d: 165,
     bank: -3.4,

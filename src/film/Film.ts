@@ -33,6 +33,16 @@ function qualityFor() {
 }
 
 /**
+ * Shots are composed for a landscape screen. On narrower screens, open the vertical field of view so
+ * more of the horizontal composition survives (fully down to aspect 0.75, then it simply crops).
+ */
+function fitFov(fov: number, aspect: number) {
+  if (aspect >= 1.6) return fov;
+  const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 1.6;
+  return THREE.MathUtils.radToDeg(2 * Math.atan(t / Math.max(aspect, 0.75)));
+}
+
+/**
  * The film: one continuous three.js world, directed by scroll. Sections build their part of the
  * world and update it each frame; the director places the camera; the cursor adds a sprung,
  * handheld parallax on top.
@@ -57,6 +67,10 @@ export class Film {
   private upV = V();
   private cleanup: (() => void)[] = [];
   private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement };
+  /** visitors who ask for less motion get a much gentler cursor camera */
+  private still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /** frame-time probe: if the device struggles early on, render at a lower resolution */
+  private probe = { n: 0, sum: 0, done: false };
 
   constructor(private opts: FilmOptions) {}
 
@@ -116,6 +130,7 @@ export class Film {
 
   private bindInput() {
     const onMove = (e: PointerEvent) => {
+      if (!this.ctx) return;
       const nx = (e.clientX / window.innerWidth) * 2 - 1, ny = -((e.clientY / window.innerHeight) * 2 - 1);
       this.stirRaw += Math.hypot(nx - this.mouse.x, ny - this.mouse.y);
       this.mouse.x = nx;
@@ -138,9 +153,11 @@ export class Film {
       }, 150);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", onMove, { passive: true }); // a tap also places the cursor
     window.addEventListener("resize", onResize);
     this.cleanup.push(() => {
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerdown", onMove);
       window.removeEventListener("resize", onResize);
     });
   }
@@ -168,7 +185,8 @@ export class Film {
     cam.x += cam.vx * dt;
     cam.vy += (STIFF * (m.y - cam.y) - DAMP * cam.vy) * dt;
     cam.y += cam.vy * dt;
-    const calm = 0.3 + 0.7 * smooth(0.03, 0.09, G); // Arrival holds still; the rest of the film swings
+    // Arrival holds still; the rest of the film swings (gently, for reduced motion)
+    const calm = (0.3 + 0.7 * smooth(0.03, 0.09, G)) * (this.still ? 0.25 : 1);
     const f: Frame = { dt, time: u.TIME.value, GG, G, s, cam, mouse: m, calm, fixed: this.fix !== null };
     for (const sec of this.sections) sec.shot?.(f, sh);
 
@@ -183,7 +201,7 @@ export class Film {
     camera.position.addScaledVector(this.rightV, cam.x * k).addScaledVector(this.upV, cam.y * k * 0.65);
     camera.lookAt(this.tmp.copy(sh.tgt).addScaledVector(this.rightV, cam.x * k * 0.14).addScaledVector(this.upV, cam.y * k * 0.1));
     camera.rotateZ(sh.roll - cam.vx * 0.028 * calm);
-    camera.fov = sh.fov;
+    camera.fov = fitFov(sh.fov, camera.aspect);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     u.FOCUS.value = sh.pos.distanceTo(sh.tgt);
@@ -205,8 +223,26 @@ export class Film {
     }
 
     this.composer.render();
+    this.adapt(dt);
     this.raf = requestAnimationFrame(this.tick);
   };
+
+  /** Watch a few seconds of frames once the film is running; drop to 1x resolution if they are slow. */
+  private adapt(dt: number) {
+    const p = this.probe;
+    if (p.done || this.fix !== null) return;
+    p.n++;
+    if (p.n < 60) return; // let shaders compile and the first frames settle
+    p.sum += dt;
+    if (p.n < 240) return;
+    p.done = true;
+    const r = this.ctx.renderer;
+    if (p.sum / (p.n - 60) > 1 / 38 && r.getPixelRatio() > 1) {
+      r.setPixelRatio(1);
+      this.composer.setPixelRatio(1);
+      this.ctx.u.SCALE.value = this.ctx.H / 900;
+    }
+  }
 
   dispose() {
     this.disposed = true;

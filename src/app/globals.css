@@ -378,3 +378,63 @@ html {
   white-space: nowrap;
   border: 0;
 }
+
+/* ---------- small screens: the rail folds away, words keep a 24px gutter ---------- */
+@media (max-width: 760px) {
+  .film-name {
+    left: 24px;
+    top: 28px;
+    font-size: 13px;
+  }
+  .film-rail {
+    display: none;
+  }
+  .film-layer .blk {
+    left: 24px !important;
+    right: 24px !important;
+    max-width: calc(100vw - 48px);
+  }
+  .film-layer .blk p {
+    max-width: none !important;
+  }
+  .film-hint {
+    bottom: 32px;
+    white-space: nowrap;
+  }
+  .bud {
+    width: min(320px, calc(100vw - 48px));
+  }
+  .bud .w {
+    font-size: 30px;
+  }
+  .proj {
+    width: 200px;
+  }
+  .proj .t {
+    font-size: 14px;
+  }
+  .mem {
+    width: calc(100vw - 48px);
+  }
+  .mem .yr {
+    font-size: 44px;
+  }
+  .tool.lead .big {
+    font-size: 34px;
+  }
+  .film-panel {
+    left: 12px;
+    right: 12px;
+    top: 76px;
+    bottom: 16px;
+    width: auto;
+    padding: 28px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-panel,
+  .film-loading {
+    transition: none;
+  }
+}

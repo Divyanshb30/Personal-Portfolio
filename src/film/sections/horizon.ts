@@ -13,6 +13,7 @@ import { END } from "./journey";
  */
 export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
   const HR = 14, HPc = END.clone().add(V(2, -14.4, -3)), SUN = END.clone().sub(HPc).normalize();
+  let world: THREE.Mesh;
   {
     const mat = new THREE.MeshPhysicalMaterial({ color: 0x030304, metalness: 0, roughness: 0.85, envMapIntensity: 0.12 });
     mat.onBeforeCompile = (sh) => {
@@ -30,13 +31,14 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
           `,
         );
     };
-    const pl = new THREE.Mesh(blobGeometry(33, 0.02, 0.6, 96), mat);
-    pl.scale.setScalar(HR);
-    pl.position.copy(HPc);
-    ctx.scene.add(pl);
+    world = new THREE.Mesh(blobGeometry(33, 0.02, 0.6, 96), mat);
+    world.scale.setScalar(HR);
+    world.position.copy(HPc);
+    world.visible = false;
+    ctx.scene.add(world);
   }
   // a thin atmosphere of dust on the lit edge
-  points(
+  const atmosphere = points(
     ctx,
     26000,
     () => {
@@ -63,10 +65,12 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
     keys,
     update(f: Frame) {
       const { GG } = f;
+      // the far set stays dark until the film gets near it (a wide phone lens would otherwise catch it early)
+      world.visible = atmosphere.pts.visible = GG > 0.74;
       const sun = smooth(JG(0.86), JG(0.95), GG) * (1 - 0.55 * smooth(0.915, 0.95, GG));
       sunGlow[0].material.opacity = 0.3 * sun;
       sunGlow[1].material.opacity = 0.85 * sun;
-      riverGain.value = 1 - 0.85 * smooth(0.91, 0.94, GG);
+      riverGain.value = smooth(0.3, 0.36, GG) * (1 - 0.85 * smooth(0.91, 0.94, GG));
       words.style.opacity = String(smooth(0.855, 0.87, GG) * (1 - smooth(0.905, 0.918, GG)));
     },
   };

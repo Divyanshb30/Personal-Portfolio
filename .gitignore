@@ -49,3 +49,6 @@ next-env.d.ts
 
 # raw source model (optimized copy ships in public/models)
 /src/3D model/
+
+# original photos (the site serves cropped copies from public/photos)
+/src/photos/
