@@ -174,9 +174,9 @@ export function topicToChapter(topic: string | null): Place | null {
   if (!topic) return null;
   const t = topic.toLowerCase();
   if (t.includes("research") || t.includes("erp") || t.includes("education") || t.includes("journey")) return "Journey";
-  if (t.includes("intellicode") || t.includes("loan") || t.includes("transformer") || t.includes("project") || t.includes("impact")) return "Projects";
+  if (t.includes("intellicode") || t.includes("loan") || t.includes("transformer") || t.includes("gpt") || t.includes("project") || t.includes("impact")) return "Build";
   if (t.includes("skill") || t.includes("stack")) return "Stack";
-  if (t.includes("agent") || t.includes("platform") || t.includes("amdocs") || t.includes("now")) return "Horizon";
+  if (t.includes("agent") || t.includes("platform") || t.includes("amdocs") || t.includes("now")) return "Now";
   if (t.includes("contact") || t.includes("resume")) return "Contact";
   if (t.includes("divyansh")) return "Arrival";
   return null;
@@ -186,12 +186,13 @@ export function topicToChapter(topic: string | null): Place | null {
 export function placeFromQuery(query: string): Place | null {
   const q = query.toLowerCase();
   const named: [RegExp, Place][] = [
-    [/\b(projects?|work|portfolio|built)\b/, "Projects"],
+    [/\b(projects?|work|portfolio|built|build|builds)\b/, "Build"],
     [/\b(stack|skills?|tools?|tech)\b/, "Stack"],
     [/\b(journey|story|background|timeline|history|education)\b/, "Journey"],
     [/\b(contact|reach|email|hire|r[eé]sum[eé]|cv|talk)\b/, "Contact"],
     [/\b(think|thinks|thinking|approach|process)\b/, "Think"],
-    [/\b(now|currently|current|today|amdocs|horizon)\b/, "Horizon"],
+    [/\b(explore|exploring|obsessed|interests?|curious)\b/, "Explore"],
+    [/\b(now|currently|current|today|amdocs|horizon)\b/, "Now"],
     [/\b(home|start|beginning|arrival|top)\b/, "Arrival"],
   ];
   for (const [re, p] of named) if (re.test(q)) return p;

@@ -1,23 +1,29 @@
-// Everything the film says. Placeholders are marked; replace them here.
+// Everything the film says. Facts follow the résumé (public/resume); edit them here.
 
 export const PROFILE = {
   name: "Divyansh Bansal",
   roles: "Engineer · Builder · Researcher",
-  line: "I build intelligent systems, and keep exploring what comes next.",
+  line: "AI, agentic systems and whatever seems interesting enough to break.",
   email: "divyanshb30@gmail.com",
   github: "https://github.com/Divyanshb30",
-  linkedin: "https://www.linkedin.com/in/divyansh-bansal",
+  linkedin: "https://www.linkedin.com/in/divyansh-bansal-873610229",
 };
 
 export const THINK = {
   title: "How he thinks",
-  line: "Ask the right question, understand it deeply, iterate until it holds, then produce at volume.",
+  line: "Ask the right question, stay with it, iterate until it holds, then make the useful thing real.",
   steps: [
     { word: "Question", line: "Start with the right question." },
-    { word: "Understand", line: "Understand it deeply." },
-    { word: "Iterate", line: "Iterate until it holds." },
-    { word: "Volume", line: "Then produce at volume." },
+    { word: "Understand", line: "Stay with it until the shape becomes clear." },
+    { word: "Iterate", line: "Build. Test. Break. Repeat." },
+    { word: "Build", line: "Make the useful thing real." },
   ],
+};
+
+export const BUILD = {
+  kicker: "Build",
+  title: "What I build",
+  line: "Questions become systems. Systems become things people can use.",
 };
 
 export type Project = {
@@ -30,8 +36,7 @@ export type Project = {
   off: [number, number, number];
   sc: number;
   uses: string[];
-  href: string | null;
-  // TODO(Divyansh): replace these three placeholders with the real write-ups
+  links: { label: string; url: string }[];
   problem: string;
   built: string;
   outcome: string;
@@ -43,56 +48,71 @@ export const PROJECTS: Project[] = [
     title: "IntelliCode · Hybrid RAG",
     kind: "Intelligence",
     metric: "121 tests · CI-gated",
-    line: "Retrieval over a codebase: FAISS, BM25 and cross-encoder reranking.",
+    line: "Hybrid retrieval and AST analysis over a codebase.",
     off: [-7.2, 1.2, 2.2],
     sc: 1.25,
-    uses: ["Python", "FAISS", "BM25", "Cross-Encoder Reranking", "Hugging Face Transformers", "ChromaDB", "CI/CD Eval Gates"],
-    href: "https://github.com/Divyanshb30/IntelliCode",
-    problem: "",
-    built: "",
-    outcome: "",
+    uses: ["Python", "FAISS", "BM25", "Cross-Encoder Reranking", "Hugging Face Transformers", "ChromaDB", "CI/CD Eval Gates", "GitHub Actions"],
+    links: [
+      { label: "Code", url: "https://github.com/Divyanshb30/IntelliCode" },
+      { label: "Live demo", url: "https://huggingface.co/spaces/Divb30/intellicode-rag" },
+    ],
+    problem:
+      "Finding the right code means matching exact identifiers and intent at the same time, and without measurement there is no way to tell which retrieval stage is actually helping.",
+    built:
+      "A hybrid RAG pipeline: dense FAISS and sparse BM25, fused with reciprocal rank fusion and reranked by a cross-encoder, answering with Qwen2.5-3B on Hugging Face ZeroGPU. Beside it, an async-aware AST analyser covering 12 anti-pattern classes, and a security scanner for injection, weak crypto and hardcoded secrets.",
+    outcome:
+      "A labelled evaluation harness (MRR@5, Recall@k, NDCG) measures each stage's lift, and 121 tests gate every change in GitHub Actions CI.",
   },
   {
     id: "gpt",
-    title: "Decoder-Only Transformer",
+    title: "GPT From Scratch",
     kind: "Models",
-    metric: "10.7M parameters",
-    line: "Attention, positional encoding and generation, built from scratch in PyTorch.",
+    metric: "10.7M parameters · PyTorch",
+    line: "A decoder-only transformer with no framework abstractions.",
     off: [-2.2, 3.4, -3],
     sc: 1.25,
     uses: ["PyTorch", "Python", "Tokenisation", "Sequence Modelling", "Text Generation"],
-    href: "https://github.com/Divyanshb30/GPT-from-Scratch",
-    problem: "",
-    built: "",
-    outcome: "",
+    links: [{ label: "Code", url: "https://github.com/Divyanshb30/GPT-from-Scratch" }],
+    problem: "Using transformers every day is not the same as understanding one. The only way to be sure was to build it with nothing hidden.",
+    built:
+      "A decoder-only transformer of about 10.7M parameters in raw PyTorch: multi-head self-attention, positional encoding, layer normalisation and autoregressive generation, all written by hand.",
+    outcome: "Training convergence and generation quality validated end to end on text corpora.",
   },
   {
     id: "loan",
     title: "Loan Risk Intelligence",
     kind: "Engineering",
     metric: "0.9184 test AUC",
-    line: "A stacking ensemble over ~1.8M loans, SHAP-audited and drift-monitored.",
+    line: "A stacking ensemble over ~1.8M LendingClub loans, SHAP-audited and drift-monitored.",
     off: [3.8, 0.8, 1.2],
     sc: 1.2,
-    uses: ["XGBoost", "PyTorch", "SHAP Explainability", "MLflow", "DagsHub", "Drift Monitoring (PSI/KS)", "GCP Cloud Run", "Docker"],
-    href: "https://github.com/Divyanshb30/Loan-Risk-Intelligence",
-    problem: "",
-    built: "",
-    outcome: "",
+    uses: ["XGBoost", "PyTorch", "SHAP Explainability", "MLflow", "DagsHub", "Drift Monitoring (PSI/KS)", "GCP Cloud Run", "Docker", "FastAPI", "Streamlit"],
+    links: [
+      { label: "Code", url: "https://github.com/Divyanshb30/Loan-Risk-Intelligence" },
+      { label: "API", url: "https://loan-risk-api-263185384265.us-central1.run.app/docs" },
+      { label: "Dashboard", url: "https://loan-risk-dashboard.streamlit.app/" },
+    ],
+    problem:
+      "Credit models trained on years of loans can quietly learn from the future. Across ~1.8M LendingClub loans, a 2016 underwriting regime shift leaks through any split that ignores time.",
+    built:
+      "A two-stage stacking ensemble (XGBoost and PyTorch) on year-stratified splits, audited with SHAP, and served from GCP Cloud Run (FastAPI, Docker) with live TreeSHAP explanations, a Streamlit dashboard and PSI/KS drift monitoring.",
+    outcome: "A test AUC of 0.9184, validated with McNemar's test (χ² = 194.8, p < 0.0001). The API and the dashboard are live.",
   },
   {
     id: "dtu",
     title: "DTU ERP Platform",
     kind: "Product",
     metric: "1,200+ users",
-    line: "A multiuser ERP for higher education: eight modules and semantic search.",
+    line: "An ML-powered ERP for higher education, live across the university.",
     off: [8.4, 2.8, -2],
     sc: 1.2,
     uses: ["ChromaDB", "Vector Embeddings", "Semantic Search", "Docker", "PostgreSQL"],
-    href: null,
-    problem: "",
-    built: "",
-    outcome: "",
+    links: [{ label: "Paper · Wiley", url: "https://doi.org/10.1002/spe.70060" }],
+    problem: "Preparing the university for accreditation took 25 days of manual work.",
+    built:
+      "An ML-powered ERP with 8+ modules for accreditation automation, analytics and networking, and a semantic-retrieval pipeline (vector embeddings, ChromaDB). I co-founded it and led the architecture, the frontend and adoption across stakeholders.",
+    outcome:
+      "Preparation went from 25 days to 7 (about 72% less). 1,200+ users across the university, a paper in Wiley's Software: Practice and Experience, and DTU funding for continued development.",
   },
 ];
 
@@ -108,28 +128,65 @@ export const STACK: [string, string, string[], [number, number, number]][] = [
 ];
 export const LEAD_OF: Record<string, string> = { Transformers: "Hugging Face Transformers" };
 
+type Photo = [string, number, number, number, number];
 export type Memory = {
   y: string;
   t: string;
+  /** an optional key figure, set large */
+  k?: string;
   n: string;
   /** photo: [src, crop x, y, w, h]; null shows a "photo coming" plate */
-  photo: [string, number, number, number, number] | null;
+  photo: Photo | null;
   cap: string;
   d: number;
   bank: number;
   h: number;
   win: [number, number];
-  extra?: { photo: [string, number, number, number, number]; d: number; bank: number; h: number; w: number };
+  /** a second, smaller plate beside the first */
+  extra?: { photo: Photo; d: number; bank: number; h: number; w: number; look?: number };
 };
 
 export const MEMORIES: Memory[] = [
-  { y: "2021", t: "DTU", n: "Began B.Tech in Electronics & Communication at Delhi Technological University.", photo: ["/photos/dtu.jpg", 0, 0, 1206, 660], cap: "DTU · 2021", d: 60, bank: 3.4, h: 1.4, win: [0.18, 0.285] },
-  { y: "2022", t: "First builds", n: "Started shipping real systems. Led the architecture and the frontend.", photo: ["/photos/builds.jpg", 0, 180, 960, 720], cap: "First builds · 2022", d: 100, bank: -3.6, h: 0.4, win: [0.365, 0.45] },
-  { y: "2024", t: "The ERP", n: "We set out to turn 25 days of accreditation paperwork into 7.", photo: ["/photos/team.jpg", 0, 380, 960, 620], cap: "", d: 128, bank: 3.0, h: 2.4, win: [0.5, 0.605] },
+  {
+    y: "2021",
+    t: "The beginning",
+    n: "Started B.Tech at Delhi Technological University.",
+    photo: ["/photos/dtu.jpg", 0, 0, 1206, 660],
+    cap: "DTU · 2021",
+    d: 60,
+    bank: 3.4,
+    h: 1.4,
+    win: [0.18, 0.285],
+    extra: { photo: ["/photos/library.jpg", 0, 0, 1206, 667], d: 62, bank: 2, h: 3.3, w: 1.8, look: 61 },
+  },
+  {
+    y: "2022",
+    t: "First builds",
+    n: "Started turning ideas into systems.",
+    photo: ["/photos/builds.jpg", 0, 180, 960, 720],
+    cap: "First builds · 2022",
+    d: 100,
+    bank: -3.6,
+    h: 0.4,
+    win: [0.365, 0.45],
+    extra: { photo: ["/photos/night.jpg", 0, 180, 720, 960], d: 104, bank: -6.0, h: 1.2, w: 1.7 },
+  },
+  {
+    y: "2024",
+    t: "The ERP",
+    k: "25 days → 7",
+    n: "We thought the process could be better. So we changed it.",
+    photo: ["/photos/team.jpg", 0, 380, 960, 620],
+    cap: "",
+    d: 128,
+    bank: 3.0,
+    h: 2.4,
+    win: [0.5, 0.605],
+  },
   {
     y: "2025",
-    t: "1,200+ users",
-    n: "Live across the university. The method was published in Wiley, and DTU funded its next phase.",
+    t: "DTU ERP",
+    n: "1,200+ users. A research paper. One university problem that got considerably larger.",
     photo: ["/photos/stakeholders.jpg", 120, 110, 1040, 360],
     cap: "",
     d: 165,
@@ -138,18 +195,33 @@ export const MEMORIES: Memory[] = [
     win: [0.655, 0.765],
     extra: { photo: ["/photos/report.jpg", 0, 180, 1280, 900], d: 171, bank: 2.6, h: 1.6, w: 2.0 },
   },
-  { y: "2025", t: "Amdocs · AT&T", n: "AI engineer, building for AT&T.", photo: ["/photos/amdocs.jpg", 0, 60, 1280, 840], cap: "", d: 200, bank: 3.0, h: 1.3, win: [0.8, 0.9] },
+  {
+    y: "2025",
+    t: "Amdocs · AT&T",
+    n: "AI software engineer on the AT&T account. Five agents, live in production.",
+    photo: ["/photos/amdocs.jpg", 0, 60, 1280, 840],
+    cap: "",
+    d: 200,
+    bank: 3.0,
+    h: 1.3,
+    win: [0.8, 0.9],
+  },
 ];
 
-export const HORIZON = {
-  kicker: "Now",
-  title: "Every road so far\nbends toward this light.",
-  line: "Today it rises at Amdocs, where he builds agentic AI\nthat earns its trust in production, for AT&T.",
+export const JOURNEY = { kicker: "Journey · 2021 → now", title: "It started somewhere." };
+
+/** after the river: what he can't stop thinking about, one word at a time */
+export const EXPLORE = {
+  kicker: "Currently obsessed with",
+  words: ["Agentic systems", "LLMs", "Retrieval", "Reasoning", "System design"],
 };
 
-export const RESUMES = [
-  { code: "India", file: "/resume/Divyansh_Bansal.pdf" },
-  { code: "UAE", file: "/resume/Divyansh_Bansal_UAE.pdf" },
-  { code: "UK", file: "/resume/Divyansh_Bansal_UK.pdf" },
-  { code: "Europe", file: "/resume/Divyansh_Bansal_EU.pdf" },
-];
+export const NOW = {
+  kicker: "Now · Amdocs",
+  title: "Still building.",
+  line: "Agentic AI for AT&T, LLM systems, research,\nand whatever problem seems worth solving next.",
+};
+
+export const CONTACT = { kicker: "One last thing.", title: "Let's talk." };
+
+export const RESUME = "/resume/Divyansh_Bansal.pdf";

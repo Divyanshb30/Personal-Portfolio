@@ -10,7 +10,7 @@ import { THINK } from "../data";
 
 /**
  * THINK. The dust gathers into the orb beside him; the orb loosens and flies as a comet, shedding
- * four pieces that condense into moons as their words appear (Question, Understand, Iterate, Volume);
+ * four pieces that condense into moons as their words appear (Question, Understand, Iterate, Build);
  * the rest arrives and becomes the planet, and the moons fall into orbit around it.
  */
 export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry, planetGeo: THREE.BufferGeometry) {

@@ -8,8 +8,8 @@ import { R, V, clamp, emberAt, fbm, gauss, smooth } from "../math";
 import { END } from "./journey";
 
 /** where the scroll hands over: past this "Let's talk" is in, and the orb forms on its own */
-const FORM_AT = 0.958, UNFORM_AT = 0.946;
-const FORM_SECS = 5, UNFORM_SECS = 2.2;
+const FORM_AT = 0.94, UNFORM_AT = 0.93;
+const FORM_SECS = 3.2, UNFORM_SECS = 1.8;
 
 /**
  * CONTACT. After the Horizon statement, scrolling brings "Let's talk" in and the page ends there.
@@ -92,9 +92,9 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry) {
       if (GG > FORM_AT) forming = true;
       else if (GG < UNFORM_AT) forming = false;
       form = clamp(form + (forming ? dt / FORM_SECS : -dt / UNFORM_SECS), 0, 1);
-      contactU.uF.value = 1.1 * smooth(0, 0.72, form);
-      const reveal = smooth(0.58, 0.95, form);
-      contactU.uHide.value = 0.88 * smooth(0.72, 1, form);
+      contactU.uF.value = 1.1 * smooth(0, 0.62, form);
+      const reveal = smooth(0.42, 0.9, form);
+      contactU.uHide.value = 0.88 * smooth(0.62, 1, form);
       skin.u.uReveal.value = reveal;
       orb.visible = reveal > 0.001;
       glow.material.opacity = 0.28 * reveal;

@@ -30,11 +30,15 @@ export const SBUD = FRAC.map((a) => FL0 + (FL1 - FL0) * invSmooth(a));
 export const JS0 = 0.525, JS1 = 0.8;
 export const JG = (x: number) => JS0 + (JS1 - JS0) * x; // journey-local → film time
 
-// scroll → film time: two dead stretches pass in a breath (the hold after Think, and after the Projects hold),
-// and the page ends soon after "Let's talk" is in (the orb then forms on its own clock)
-const SKN: [number, number][] = [[0, 0], [0.1725, 0.1725], [0.1785, 0.229], [0.2495, 0.3], [0.2555, 0.3625], [0.885, 0.965], [0.893, 1]];
+// scroll → film time. Two dead stretches pass in a breath (the hold after Think, and after the Projects hold),
+// the stack runs about twice as fast as the rest, and the page ends soon after "Let's talk" is in
+// (the orb then forms on its own clock). Knots are [scroll units, film time].
+const SKN: [number, number][] = [[0, 0], [0.1725, 0.1725], [0.1785, 0.229], [0.2495, 0.3], [0.2555, 0.3625], [0.3294, 0.525], [0.7892, 0.965], [0.7972, 1]];
+const SEND = SKN[SKN.length - 1][0];
+/** the scroll track's height: 88vh of track per 0.01 scroll units keeps the pace the film was tuned at */
+export const TRACK_VH = Math.round(SEND * 8802);
 export const filmT = (u: number) => {
-  u = Math.min(1, Math.max(0, u)) * 0.893;
+  u = Math.min(1, Math.max(0, u)) * SEND;
   for (let k = 1; k < SKN.length; k++)
     if (u <= SKN[k][0]) {
       const [a0, b0] = SKN[k - 1], [a1, b1] = SKN[k];
@@ -47,22 +51,37 @@ export const scrollFor = (t: number) => {
   for (let k = 1; k < SKN.length; k++)
     if (t <= SKN[k][1]) {
       const [a0, b0] = SKN[k - 1], [a1, b1] = SKN[k];
-      return (a0 + ((a1 - a0) * (t - b0)) / (b1 - b0)) / 0.893;
+      return (a0 + ((a1 - a0) * (t - b0)) / (b1 - b0)) / SEND;
     }
   return 1;
 };
 
-export const PLACES = ["Arrival", "Think", "Projects", "Stack", "Journey", "Horizon", "Contact"] as const;
+export const PLACES = ["Arrival", "Think", "Build", "Stack", "Journey", "Explore", "Now", "Contact"] as const;
 export type Place = (typeof PLACES)[number];
 /** where each section settles, in film time */
 export const PLACE_AT: Record<Place, number> = {
   Arrival: 0,
   Think: 0.155,
-  Projects: 0.28,
+  Build: 0.28,
   Stack: 0.49,
   Journey: 0.53,
-  Horizon: 0.88,
+  Explore: 0.826,
+  Now: 0.885,
   Contact: 0.965,
 };
 export const placeAt = (GG: number, G: number): Place =>
-  GG >= 0.94 ? "Contact" : GG >= 0.8 ? "Horizon" : GG >= 0.512 ? "Journey" : G < 0.126 ? "Arrival" : G < 0.465 ? "Think" : G < 0.745 ? "Projects" : "Stack";
+  GG >= 0.94
+    ? "Contact"
+    : GG >= 0.852
+      ? "Now"
+      : GG >= 0.8
+        ? "Explore"
+        : GG >= 0.512
+          ? "Journey"
+          : G < 0.126
+            ? "Arrival"
+            : G < 0.465
+              ? "Think"
+              : G < 0.745
+                ? "Build"
+                : "Stack";

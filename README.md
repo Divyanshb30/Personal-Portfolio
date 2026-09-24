@@ -5,11 +5,12 @@ One continuous, scroll-directed film in three.js. There are no pages: the scroll
 | Section  | What happens |
 | -------- | ------------ |
 | Arrival  | His figure, made of ember dust. The cursor clears a small circle in it, and his head turns toward you. |
-| Think    | The orb flies as a comet and sheds four moons: Question, Understand, Iterate, Volume. |
-| Projects | Four named constellations. Hover brightens one; a click flies the camera to it and opens its story. Esc, ✕ or a scroll closes it. |
+| Think    | The orb flies as a comet and sheds four moons: Question, Understand, Iterate, Build. |
+| Build    | Four named constellations, one per project. Hover brightens one; a click flies the camera to it and opens its story. Esc, ✕ or a scroll closes it. |
 | Stack    | Every tool as a name in depth, laid out so that no two collide, over a veil that dims the river below. |
 | Journey  | The river of his years, with photo plates standing on its banks. |
-| Horizon  | A sun rising over the limb of a dark world, with a single statement. |
+| Explore  | Out of the river and into the light, what he is obsessed with right now cycles by, one word at a time. |
+| Now      | A sun rising over the limb of a dark world: still building. |
 | Contact  | "Let's talk" comes in and the page ends there. The orb then forms on its own clock, and scrolling back up returns it to the light. |
 
 The cursor drives a spring camera with parallax. The Ask pill (top right) answers questions about his work and can take you to any section.
@@ -23,7 +24,7 @@ npm run dev
 
 Open http://localhost:3000. For a production build, run `npm run build` and then `npm start`.
 
-The `?s=<0..1>` URL parameter freezes the film at a given moment, which is useful for reviewing a single shot (for example, `?s=0.3` is Projects).
+The `?s=<0..1>` URL parameter freezes the film at a given moment, which is useful for reviewing a single shot (for example, `?s=0.3` is Build).
 
 ## Where things live
 
@@ -43,9 +44,9 @@ The text blocks are React markup. The engine finds them by `data-block` and only
 
 ## Editing content
 
-All of the words are in `src/film/data.ts`. Placeholders are marked `TODO`:
+All of the words are in `src/film/data.ts`, with facts taken from the résumé:
 
-- Each project's `problem`, `built` and `outcome` fields. The side panel shows a placeholder until these are filled.
+- Each project's `problem`, `built` and `outcome` fields, and its `links`. They are written from the résumé.
 - Journey photos are in `public/photos`. Each memory's `photo` is `[src, cropX, cropY, cropW, cropH]`, and a memory with `photo: null` shows a "photo coming" plate.
 
 Résumés are in `public/resume`. The dust figure is `public/models/divyansh.glb` (Draco-compressed; the decoder is served from `public/draco`).

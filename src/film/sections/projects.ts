@@ -142,11 +142,9 @@ const panelHTML = (pr: Project) => `
   <div class="sec"><div class="mono sub">What I built</div>${or(pr.built, "Placeholder: the system, its key decisions, and why they held up.")}</div>
   <div class="sec"><div class="mono sub">Outcome</div>${or(pr.outcome, "Placeholder: what changed after it shipped.")}</div>
   <div class="sec"><div class="mono sub">Built with</div><p>${pr.uses.map(esc).join(" · ")}</p></div>
-  ${
-    pr.href
-      ? `<a class="mono pill" style="margin-top:26px" href="${esc(pr.href)}" target="_blank" rel="noopener noreferrer">View on GitHub ↗</a>`
-      : `<div class="mono sub" style="margin-top:26px">Source is private</div>`
-  }`;
+  <div style="margin-top:26px;display:flex;flex-wrap:wrap;gap:10px">${pr.links
+    .map((l) => `<a class="mono pill" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)} ↗</a>`)
+    .join("")}</div>`;
 
 /**
  * PROJECTS. The planet's dust rises, top first, and settles into four named constellations, one
@@ -189,7 +187,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry) {
     const label = el(
       ctx,
       "proj",
-      `<div class="mono sub">${esc(pr.kind)}</div><div class="t">${esc(pr.title)}</div><div class="mono m">${esc(pr.metric)}</div><div class="mono o">Click to open ↗</div>`,
+      `<div class="mono sub">${esc(pr.kind)}</div><div class="t">${esc(pr.title)}</div><div class="mono m">${esc(pr.metric)}</div><div class="mono o">Explore →</div>`,
     );
     label.setAttribute("role", "button");
     label.setAttribute("aria-label", `Open ${pr.title}`);
@@ -265,7 +263,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry) {
   const guideAt = projs.map((pr) => V(pr.box.max.x + 0.5, pr.box.max.y + 0.1, pr.center.z + 0.8));
 
   // picking: hover a constellation to brighten it, click to fly in and read its story
-  const panel = block(ctx, "panel"), work = block(ctx, "work");
+  const panel = block(ctx, "panel"), work = block(ctx, "build");
   const PICK = { on: false, hover: -1, idx: -1, last: -1, amt: 0, at: 0, gp: guideAt[1].clone() };
   const open = (i: number) => {
     if (!PICK.on) return;

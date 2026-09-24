@@ -1,9 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PLACES, type Place } from "@/film/layout";
+import { PLACES, TRACK_VH, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
-import { HORIZON, MEMORIES, PROFILE, PROJECTS, RESUMES, STACK, THINK } from "@/film/data";
+import { BUILD, CONTACT, EXPLORE, JOURNEY, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
+
+/** One word at a time, each arriving out of a soft blur. */
+function CyclingWord({ words }: { words: string[] }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setI((n) => (n + 1) % words.length), 1900);
+    return () => window.clearInterval(t);
+  }, [words.length]);
+  return (
+    <>
+      <span key={i} className="cycle" aria-hidden>
+        {words[i]}
+      </span>
+      <span className="sr-only">{words.join(", ")}</span>
+    </>
+  );
+}
 
 /**
  * Mounts the film: a fixed WebGL canvas, the words that live over it, and the section rail.
@@ -70,37 +87,34 @@ export default function FilmStage() {
             </h2>
             <p style={{ marginTop: 22, fontSize: 17, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 340 }}>{THINK.line}</p>
           </section>
-          <section data-block="work" className="blk" style={{ left: 72, top: "16vh" }}>
-            <div className="mono sub">Projects</div>
+          <section data-block="build" className="blk" style={{ left: 72, top: "16vh" }}>
+            <div className="mono sub">{BUILD.kicker}</div>
             <h2 className="disp" style={{ fontSize: "clamp(40px,3.9vw,56px)", lineHeight: 1.02, marginTop: 14 }}>
-              The work
+              {BUILD.title}
             </h2>
-            <p style={{ marginTop: 16, fontSize: 16, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 320 }}>
-              Everything it learned about how he thinks, turned into what he built.
-            </p>
+            <p style={{ marginTop: 16, fontSize: 16, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 330 }}>{BUILD.line}</p>
           </section>
           <section data-block="journey" className="blk" style={{ left: 0, right: 0, top: "36%", textAlign: "center" }}>
-            <div className="mono sub">Journey · 2021 to now</div>
+            <div className="mono sub">{JOURNEY.kicker}</div>
             <h2 className="disp" style={{ fontSize: "clamp(44px,5.4vw,78px)", lineHeight: 1, marginTop: 22 }}>
-              What made him
+              {JOURNEY.title}
             </h2>
           </section>
-          <section data-block="horizon" className="blk" style={{ left: 16, right: 16, top: "16vh", textAlign: "center" }}>
-            <div className="mono sub">{HORIZON.kicker}</div>
-            <h2 className="disp" style={{ fontSize: "clamp(34px,3.8vw,54px)", lineHeight: 1.1, marginTop: 18, whiteSpace: "pre-line" }}>
-              {HORIZON.title}
+          <section data-block="explore" className="blk" style={{ left: 16, right: 16, top: "30vh", textAlign: "center" }}>
+            <div className="mono sub">{EXPLORE.kicker}</div>
+            <h2 className="disp" style={{ fontSize: "clamp(40px,5vw,72px)", lineHeight: 1.05, marginTop: 20 }}>
+              <CyclingWord words={EXPLORE.words} />
             </h2>
-            <p style={{ marginTop: 22, fontSize: 17, lineHeight: 1.6, color: "#c9c9cf", whiteSpace: "pre-line" }}>
-              {HORIZON.line.split("Amdocs").map((part, i) => (
-                <span key={i}>
-                  {i > 0 && <span style={{ color: "#ffb57a" }}>Amdocs</span>}
-                  {part}
-                </span>
-              ))}
-            </p>
+          </section>
+          <section data-block="now" className="blk" style={{ left: 16, right: 16, top: "16vh", textAlign: "center" }}>
+            <div className="mono sub">{NOW.kicker}</div>
+            <h2 className="disp" style={{ fontSize: "clamp(40px,4.4vw,64px)", lineHeight: 1.05, marginTop: 18 }}>
+              {NOW.title}
+            </h2>
+            <p style={{ marginTop: 22, fontSize: 17, lineHeight: 1.6, color: "#c9c9cf", whiteSpace: "pre-line" }}>{NOW.line}</p>
           </section>
           <section data-block="contact" className="blk" style={{ left: 72, top: "22vh" }} aria-label="Contact">
-            <div className="mono sub">It&apos;s listening</div>
+            <div className="mono sub">{CONTACT.kicker}</div>
             <h2 className="disp" style={{ fontSize: "clamp(56px,6.6vw,96px)", lineHeight: 0.98, marginTop: 18 }}>
               Let&apos;s
               <br />
@@ -121,16 +135,9 @@ export default function FilmStage() {
                 LinkedIn ↗
               </a>
             </div>
-            <div className="mono sub" style={{ marginTop: 32 }}>
-              Résumé
-            </div>
-            <div style={{ marginTop: 14 }}>
-              {RESUMES.map((r) => (
-                <a key={r.code} className="mono chip" href={r.file} target="_blank" rel="noopener noreferrer">
-                  {r.code}
-                </a>
-              ))}
-            </div>
+            <a className="mono chip" style={{ marginTop: 30 }} href={RESUME} target="_blank" rel="noopener noreferrer">
+              Résumé ↗
+            </a>
           </section>
           <section data-block="stack" className="blk" style={{ left: 48, bottom: 84 }}>
             <div className="mono sub">Stack</div>
@@ -153,21 +160,28 @@ export default function FilmStage() {
       <div className={`film-loading mono sub${ready ? " done" : ""}`} aria-hidden={ready}>
         {failed ? "This film needs WebGL. Try a recent desktop browser." : "Gathering dust…"}
       </div>
-      <div className="film-track" aria-hidden />
+      <div className="film-track" style={{ height: `${TRACK_VH}vh` }} aria-hidden />
       {/* the whole story as plain text, for screen readers and search engines */}
       <article className="sr-only">
-        <p>{PROFILE.roles}. {PROFILE.line}</p>
+        <p>
+          {PROFILE.roles}. {PROFILE.line}
+        </p>
         <h2>{THINK.title}</h2>
         <p>{THINK.line}</p>
-        <h2>Projects</h2>
+        <h2>{BUILD.title}</h2>
+        <p>{BUILD.line}</p>
         <ul>
           {PROJECTS.map((p) => (
             <li key={p.id}>
               <h3>{p.title}</h3>
               <p>
-                {p.kind}. {p.line} {p.metric}. Built with {p.uses.join(", ")}.
+                {p.kind}. {p.line} {p.metric}. {p.problem} {p.built} {p.outcome} Built with {p.uses.join(", ")}.
               </p>
-              {p.href && <a href={p.href}>{p.title} on GitHub</a>}
+              {p.links.map((l) => (
+                <a key={l.url} href={l.url}>
+                  {p.title}: {l.label}
+                </a>
+              ))}
             </li>
           ))}
         </ul>
@@ -179,18 +193,17 @@ export default function FilmStage() {
             </li>
           ))}
         </ul>
-        <h2>Journey</h2>
+        <h2>{JOURNEY.title}</h2>
         <ul>
           {MEMORIES.map((m) => (
             <li key={m.y + m.t}>
-              {m.y}, {m.t}: {m.n}
+              {m.y}, {m.t}: {m.k ? `${m.k}. ` : ""}
+              {m.n}
             </li>
           ))}
         </ul>
-        <h2>Now</h2>
-        <p>
-          {HORIZON.title.replace(/\n/g, " ")} {HORIZON.line.replace(/\n/g, " ")}
-        </p>
+        <h2>{NOW.title}</h2>
+        <p>{NOW.line.replace(/\n/g, " ")}</p>
       </article>
     </>
   );

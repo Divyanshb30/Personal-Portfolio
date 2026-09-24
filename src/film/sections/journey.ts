@@ -235,14 +235,17 @@ export function buildJourney(ctx: Ctx) {
     let extra: ReturnType<typeof plate> | null = null;
     if (m.extra) {
       const e = m.extra, fe = rframe(e.d), [src, ...crop] = e.photo;
-      const ep = plate(ctx, placeholder(ctx, ""), e.photo[3] / e.photo[4], e.w, river(e.d).addScaledVector(fe.R, e.bank).addScaledVector(fe.U, e.h), fe.R.clone().multiplyScalar(-1));
+      const at = river(e.d).addScaledVector(fe.R, e.bank).addScaledVector(fe.U, e.h);
+      // it faces the spot on the river it is filmed from, or else the same way as the memory's own plate
+      const face = e.look !== undefined ? river(e.look).addScaledVector(rframe(e.look).U, 1).sub(at).normalize() : FACES[i](fe).normalize();
+      const ep = plate(ctx, placeholder(ctx, ""), e.photo[3] / e.photo[4], e.w, at, face);
       duotone(src, crop as [number, number, number, number], 700).then((t) => {
         ep.mat.map = t;
         ep.mat.needsUpdate = true;
       }, console.error);
       extra = ep;
     }
-    const label = el(ctx, "mem", `<div class="yr">${m.y}</div><div class="mono t">${m.t}</div><div class="n">${m.n}</div>`);
+    const label = el(ctx, "mem", `<div class="yr">${m.y}</div><div class="mono t">${m.t}</div>${m.k ? `<div class="k">${m.k}</div>` : ""}<div class="n">${m.n}</div>`);
     return { ...p, m, pos, extra, label };
   });
 

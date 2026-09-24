@@ -9,7 +9,7 @@ export const profile = {
   email: "divyanshb30@gmail.com",
   socials: {
     github: "https://github.com/Divyanshb30",
-    linkedin: "https://www.linkedin.com/in/divyansh-bansal",
+    linkedin: "https://www.linkedin.com/in/divyansh-bansal-873610229",
   },
   availability: "Open to senior AI roles — relocating, anywhere.",
 };
