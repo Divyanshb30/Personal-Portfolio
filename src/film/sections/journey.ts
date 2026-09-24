@@ -2,12 +2,12 @@ import * as THREE from "three";
 import type { Ctx, Frame } from "../ctx";
 import type { Key } from "../director";
 import { block, el } from "../ctx";
-import { STIR_GLSL } from "../glsl";
+import { DUST_FRAG, GLSL_FN, STIR_GLSL, TORN, TORN_GLSL } from "../glsl";
 import { points, sprite } from "../helpers";
 import { COOL, R, TAU, UP, V, clamp, emberAt, gauss, lerp, rng, smooth } from "../math";
 import { JG, JO, JS0, JS1 } from "../layout";
 import { LOOSE_PHOTOS, MEMORIES } from "../data";
-import { FEATHER, PHOTO_LAYER } from "../post";
+import { PHOTO_LAYER } from "../post";
 import type { Orb } from "../orb";
 
 type Frame3 = { T: THREE.Vector3; R: THREE.Vector3; U: THREE.Vector3 };
@@ -56,7 +56,7 @@ async function editorial(src: string, crop: [number, number, number, number], ou
   const cv = document.createElement("canvas");
   cv.width = w;
   cv.height = h;
-  const g = cv.getContext("2d")!;
+  const g = cv.getContext("2d", { willReadFrequently: true })!; // read back again later for the edge dust
   g.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
   const d = g.getImageData(0, 0, w, h), px = d.data, rnd = rng(sw * 7 + sh);
   const tone = (c: number) => {
@@ -111,28 +111,10 @@ function placeholder(ctx: Ctx, cap: string) {
   return t;
 }
 
-/** The soft edge every photo fades out through: no frame, no border, just into the dark. */
-let featherTexture: THREE.CanvasTexture | null = null;
-function featherTex() {
-  if (featherTexture) return featherTexture;
-  const n = 256, cv = document.createElement("canvas");
-  cv.width = cv.height = n;
-  const g = cv.getContext("2d")!, img = g.createImageData(n, n);
-  for (let y = 0; y < n; y++)
-    for (let x = 0; x < n; x++) {
-      const u = (x + 0.5) / n, v = (y + 0.5) / n, e = Math.min(u, 1 - u, v, 1 - v);
-      const a = Math.round(smooth(0, FEATHER, e) * 255), k = (y * n + x) * 4;
-      img.data[k] = img.data[k + 1] = img.data[k + 2] = a;
-      img.data[k + 3] = 255;
-    }
-  g.putImageData(img, 0, 0);
-  featherTexture = new THREE.CanvasTexture(cv);
-  return featherTexture;
-}
-
 /**
- * A photograph suspended in the river's space: feathered edges, no glow, drawn before the dust so the
- * dust behind it is hidden and the dust in front of it drifts across. It floats a little on its own.
+ * A photograph suspended in the river's space, its edges coming apart like an old memory (no frame,
+ * no glow), drawn before the dust so the dust behind it is hidden and the dust in front of it drifts
+ * across. It floats a little on its own.
  */
 function plate(ctx: Ctx, tex: THREE.Texture, aspect: number, w: number, pos: THREE.Vector3, face: THREE.Vector3) {
   let wid = w, hgt = wid / aspect;
@@ -145,18 +127,118 @@ function plate(ctx: Ctx, tex: THREE.Texture, aspect: number, w: number, pos: THR
   g.lookAt(pos.clone().add(face));
   ctx.scene.add(g);
   if ("anisotropy" in tex) tex.anisotropy = ctx.renderer.capabilities.getMaxAnisotropy();
-  const mat = new THREE.MeshBasicMaterial({ map: tex, color: 0x000000, alphaMap: featherTex(), transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const mat = new THREE.MeshBasicMaterial({ map: tex, color: 0x000000, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  // the torn edge (the same one the photo mask in post.ts draws, so the grade follows it exactly)
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = ctx.u.TIME;
+    sh.vertexShader =
+      "varying vec2 vTornUv, vTornSize;\n" +
+      sh.vertexShader.replace("#include <uv_vertex>", "#include <uv_vertex>\nvTornUv = uv; vTornSize = abs(position.xy) * 2.0;\n");
+    sh.fragmentShader =
+      "varying vec2 vTornUv, vTornSize; uniform float uTime;\n" +
+      GLSL_FN +
+      TORN_GLSL +
+      sh.fragmentShader.replace("#include <alphamap_fragment>", "#include <alphamap_fragment>\ndiffuseColor.a *= torn(vTornUv, vTornSize, uTime);\n");
+  };
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(wid, hgt), mat);
   mesh.renderOrder = -1;
   mesh.layers.enable(PHOTO_LAYER);
-  // only the solid middle hides what is behind it; the feathered edge lets the dust drift through
-  const inset = 1 - 2 * FEATHER * 0.75;
-  const solid = new THREE.Mesh(new THREE.PlaneGeometry(wid * inset, hgt * inset), new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+  // only the solid middle hides what is behind it; the torn edge lets the dust drift through
+  const band = Math.min(wid, hgt) * TORN.width * 1.1;
+  const solid = new THREE.Mesh(new THREE.PlaneGeometry(wid - 2 * band, hgt - 2 * band), new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
   solid.position.z = -0.03; // just behind the picture, so the two never fight over depth
   g.add(solid, mesh);
   return { g, mat, wid, hgt, base: pos.clone(), quat: g.quaternion.clone(), seed: R() * TAU };
 }
 type Plate = ReturnType<typeof plate>;
+
+/**
+ * Dust coming off a photo's torn edge: specks in the photo's own colours peel away, drift out and then
+ * downstream with the river, and fade. They loop on the GPU; their colours arrive with the photo.
+ */
+function shedding(ctx: Ctx, p: Plate, count: number, downstream: THREE.Vector3) {
+  const n = Math.max(24, Math.round(count * ctx.quality)), still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const toLocal = p.quat.clone().invert();
+  const u = {
+    uTime: ctx.u.TIME,
+    uScale: ctx.u.SCALE,
+    uFocus: ctx.u.FOCUS,
+    uGain: { value: 0 },
+    uShed: { value: 0 },
+    uPuff: { value: 0 },
+    uStill: { value: still ? 1 : 0 },
+    uSize: { value: new THREE.Vector2(p.wid, p.hgt) },
+    uDown: { value: downstream.clone().applyQuaternion(toLocal) },
+    uUp: { value: UP.clone().applyQuaternion(toLocal) },
+  };
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 2), C = new Float32Array(n * 3), S = new Float32Array(n * 4);
+  const r = rng(Math.round(p.wid * 1000 + p.hgt * 7)), short = Math.min(p.wid, p.hgt), perim = 2 * (p.wid + p.hgt);
+  for (let i = 0; i < n; i++) {
+    // somewhere in the torn band, mostly right at the edge; position holds the speck's uv on the photo
+    const depth = Math.pow(r(), 1.6) * TORN.width * short;
+    // which side it leaves from, weighted by length, and where along it: [uv x, uv y, outward x, outward y]
+    let at = r() * perim, spot: [number, number, number, number];
+    if (at < p.wid) spot = [at / p.wid, depth / p.hgt, 0, -1];
+    else if ((at -= p.wid) < p.wid) spot = [at / p.wid, 1 - depth / p.hgt, 0, 1];
+    else if ((at -= p.wid) < p.hgt) spot = [depth / p.wid, at / p.hgt, -1, 0];
+    else spot = [1 - depth / p.wid, (at - p.hgt) / p.hgt, 1, 0];
+    P.set([spot[0], spot[1], 0], i * 3);
+    N.set([spot[2], spot[3]], i * 2);
+    S.set([r(), r(), r(), r()], i * 4);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(P, 3));
+  g.setAttribute("aNorm", new THREE.BufferAttribute(N, 2));
+  g.setAttribute("aCol", new THREE.BufferAttribute(C, 3));
+  g.setAttribute("aSeed", new THREE.BufferAttribute(S, 4));
+  const m = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: u,
+    vertexShader: /* glsl */ `
+      attribute vec2 aNorm; attribute vec3 aCol; attribute vec4 aSeed;
+      uniform float uTime, uScale, uFocus, uGain, uShed, uPuff, uStill; uniform vec2 uSize; uniform vec3 uDown, uUp;
+      varying vec3 vC; varying float vCoc;
+      ${GLSL_FN}
+      void main(){
+        float t = fract(uTime / (4.0 + aSeed.y * 2.0) + aSeed.x);
+        vec3 start = vec3((position.xy - 0.5) * uSize, 0.02);
+        // off the edge, then downstream with the river, rising a little and toward the camera
+        vec3 drift = vec3(aNorm * 0.32 * t * (1.0 + 1.6 * uPuff), 0.12 * t) + uDown * 1.35 * t * t + uUp * 0.22 * t
+                   + flow(start * 1.3 + vec3(0.0, 0.0, uTime * 0.07 + aSeed.z * 9.0)) * 0.16 * t;
+        vec4 mv = modelViewMatrix * vec4(start + drift * (1.0 - uStill), 1.0); float d = -mv.z;
+        float coc = clamp(abs(d - uFocus) * 0.05, 0.0, 1.0);
+        gl_PointSize = min((0.03 + aSeed.w * 0.04) * (260.0 * uScale / d) * (1.0 + coc * 3.0), 60.0); vCoc = coc;
+        float a = step(aSeed.z, uShed) * smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.45, 1.0, t)) * (1.0 + 1.2 * uPuff);
+        vC = aCol * a * uGain * mix(1.0, 0.3, coc);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: DUST_FRAG,
+  });
+  const pts = new THREE.Points(g, m);
+  pts.frustumCulled = false;
+  p.g.add(pts);
+  let ready = 0;
+  return {
+    u,
+    get ready() {
+      return ready;
+    },
+    /** each speck takes the colour of the pixel it peeled from */
+    colour(tex: THREE.Texture) {
+      const cv = tex.image as HTMLCanvasElement, px = cv.getContext("2d")!.getImageData(0, 0, cv.width, cv.height).data;
+      for (let i = 0; i < n; i++) {
+        const x = Math.min(cv.width - 1, Math.floor(P[i * 3] * cv.width)), y = Math.min(cv.height - 1, Math.floor((1 - P[i * 3 + 1]) * cv.height));
+        const k = (y * cv.width + x) * 4;
+        C.set([0, 1, 2].map((j) => Math.pow(px[k + j] / 255, 2.2) * 1.2), i * 3);
+      }
+      g.attributes.aCol.needsUpdate = true;
+      ready = 1;
+    },
+  };
+}
+type Shed = ReturnType<typeof shedding>;
 
 const corner = new THREE.Vector3();
 /** a photo's rectangle on screen, in CSS pixels, and whether it is in front of the camera */
@@ -302,12 +384,13 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     if (!h) return FACES[i](f).normalize();
     return h.clone().sub(at).normalize().applyAxisAngle(UP, (i % 2 ? -1 : 1) * 0.08);
   };
-  const load = (pl: Plate, photo: [string, number, number, number, number], outW?: number) => {
+  const load = (pl: Plate, photo: [string, number, number, number, number], outW?: number, shed?: Shed) => {
     const [src, ...crop] = photo;
     editorial(src, crop as [number, number, number, number], outW).then((t) => {
       t.anisotropy = ctx.renderer.capabilities.getMaxAnisotropy();
       pl.mat.map = t;
       pl.mat.needsUpdate = true;
+      shed?.colour(t);
     }, console.error);
   };
 
@@ -317,16 +400,18 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     const aspect = m.photo ? m.photo[3] / m.photo[4] : 1024 / 680;
     const face = faceFor(i, pos, f);
     const p = plate(ctx, placeholder(ctx, m.photo ? "" : m.cap), aspect, m.w ?? 3.3, pos, face);
-    if (m.photo) load(p, m.photo);
-    let extra: Plate | null = null;
+    const shed = shedding(ctx, p, 900, f.T);
+    if (m.photo) load(p, m.photo, undefined, shed);
+    let extra: Plate | null = null, shedX: Shed | null = null;
     if (m.extra) {
       const e = m.extra, fe = rframe(e.d);
       const at = river(e.d).addScaledVector(fe.R, e.bank).addScaledVector(fe.U, e.h);
       extra = plate(ctx, placeholder(ctx, ""), e.photo[3] / e.photo[4], e.w, at, faceFor(i, at, fe));
-      load(extra, e.photo, 900);
+      shedX = shedding(ctx, extra, 500, fe.T);
+      load(extra, e.photo, 900, shedX);
     }
     const label = el(ctx, "mem", `<div class="yr">${m.y}</div><div class="mono t">${m.t}</div>${m.k ? `<div class="k">${m.k}</div>` : ""}<div class="n">${m.n}</div>`);
-    return { ...p, m, pos, face, extra, label, env: surround(ctx, p), envX: extra ? surround(ctx, extra) : null, lx: NaN, ly: NaN };
+    return { ...p, m, pos, face, extra, label, shed, shedX, env: surround(ctx, p), envX: extra ? surround(ctx, extra) : null, lx: NaN, ly: NaN };
   });
 
   // loose photos: any not tied to a year drift far off the banks, small and dim, like passing memories
@@ -579,6 +664,14 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
           float(p.extra, 1 - 0.6 * on);
           p.envX.dust.gain.value = 0.35 + 0.65 * on;
           p.envX.haze.material.opacity = 0.03 * on;
+        }
+        // dust off the torn edges: a little always, more while it is the memory you're in, a puff at the orb's touch
+        p.shed.u.uShed.value = TORN.dust * (0.3 + 0.7 * on) + 0.25 * flash[i];
+        p.shed.u.uGain.value = p.shed.ready * (0.55 + 0.45 * on);
+        p.shed.u.uPuff.value = flash[i];
+        if (p.shedX) {
+          p.shedX.u.uShed.value = TORN.dust * (0.3 + 0.7 * on);
+          p.shedX.u.uGain.value = p.shedX.ready * (0.55 + 0.45 * on);
         }
         if (on <= 0.001) {
           p.label.style.opacity = "0";

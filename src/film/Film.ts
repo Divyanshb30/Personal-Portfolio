@@ -122,7 +122,7 @@ export class Film {
     this.director = new Director(keys);
 
     // photographs skip the bloom and the filmic grade: a mask of where they are, rendered each frame
-    this.mask = photoMask(renderer, scene, camera);
+    this.mask = photoMask(renderer, scene, camera, ctx.u.TIME);
     this.mask.setSize(W * renderer.getPixelRatio(), H * renderer.getPixelRatio());
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(scene, camera));

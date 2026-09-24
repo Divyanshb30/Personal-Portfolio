@@ -1,18 +1,17 @@
 import * as THREE from "three";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import type { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { GLSL_FN, TORN_GLSL } from "./glsl";
 
 /** Photographs are drawn on this layer too, so a mask of where they are can be rendered on its own. */
 export const PHOTO_LAYER = 2;
-/** how far in from each edge a photo fades into the dark (in UV) */
-export const FEATHER = 0.06;
 
 /**
  * Where the photographs are on screen. Rendered each frame at half resolution (photo quads only, as
- * white, feathered like the photos themselves), it lets the photos skip the bloom and the filmic tone
- * mapping, so they stay exactly the photographs they are.
+ * white, torn at the edges exactly like the photos themselves), it lets the photos skip the bloom and
+ * the filmic tone mapping, so they stay exactly the photographs they are.
  */
-export function photoMask(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
+export function photoMask(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, time: { value: number }) {
   const rt = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
   const mat = new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
@@ -20,17 +19,16 @@ export function photoMask(renderer: THREE.WebGLRenderer, scene: THREE.Scene, cam
     depthTest: false,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    uniforms: { uF: { value: FEATHER } },
+    uniforms: { uTime: time },
+    // a photo is a single quad centred on its origin, so its corners give its width and height
     vertexShader: /* glsl */ `
-      varying vec2 vUv;
-      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      varying vec2 vUv, vSize;
+      void main(){ vUv = uv; vSize = abs(position.xy) * 2.0; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: /* glsl */ `
-      uniform float uF; varying vec2 vUv;
-      void main(){
-        float e = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
-        float a = smoothstep(0.0, uF, e);
-        gl_FragColor = vec4(vec3(a), 1.0);
-      }`,
+      uniform float uTime; varying vec2 vUv, vSize;
+      ${GLSL_FN}
+      ${TORN_GLSL}
+      void main(){ gl_FragColor = vec4(vec3(torn(vUv, vSize, uTime)), 1.0); }`,
   });
   const clear = new THREE.Color();
   return {

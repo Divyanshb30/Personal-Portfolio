@@ -62,3 +62,26 @@ void main(){
   gl_FragColor = vec4(vC * a, a);
 }
 `;
+
+/**
+ * How a photograph's edge comes apart: how deep the torn band reaches (in short sides of the photo),
+ * how ragged it is, and how much of it drifts away as dust.
+ */
+export const TORN = { width: 0.09, fray: 0.55, dust: 0.06 };
+
+/**
+ * A photograph's torn edge: 1 where the picture is, 0 where it has come away. uv is the photo's own,
+ * size its width and height; the edge shifts very slowly with t. Needs GLSL_FN.
+ */
+export const TORN_GLSL = /* glsl */ `
+float torn(vec2 uv, vec2 size, float t){
+  vec2 m = min(uv, 1.0 - uv); float asp = size.x / size.y;
+  float e = min(m.x * asp, m.y) / min(asp, 1.0);
+  vec3 q = vec3(uv * vec2(asp, 1.0), 0.0);
+  float n1 = fbm(q * 4.5 + vec3(0.0, 0.0, t * 0.035)), n2 = fbm(q * 19.0 + vec3(7.0, 3.0, t * 0.05));
+  float f = e / ${TORN.width.toFixed(3)} + (n1 - 0.5) * ${(TORN.fray * 1.7).toFixed(3)} + (n2 - 0.5) * ${(TORN.fray * 0.5).toFixed(3)};
+  float a = smoothstep(0.2, 0.62, f);
+  float g = fract(sin(dot(floor(uv * vec2(asp, 1.0) * 260.0), vec2(127.1, 311.7))) * 43758.5453);
+  return a * mix(1.0, step(0.3, g + a), (1.0 - a) * ${TORN.fray.toFixed(3)});
+}
+`;
