@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ask, SUGGESTIONS, topicToChapter, isNavIntent, retrieve, type AskResult } from "@/lib/intelligence";
+import { ask, SUGGESTIONS, topicToChapter, placeFromQuery, isNavIntent, retrieve, type AskResult } from "@/lib/intelligence";
 import { goTo } from "@/film/nav";
 
 type Msg = { role: "you" | "intelligence"; text: string; pending?: boolean };
@@ -42,7 +42,7 @@ export default function Intelligence() {
 
     // world navigation: take the visitor there
     const topic = res.topic ?? retrieve(query)[0]?.doc.topic ?? null;
-    const chapter = topicToChapter(topic);
+    const chapter = placeFromQuery(query) ?? topicToChapter(topic);
     let text = res.text;
     if (chapter && isNavIntent(query)) {
       text += ` — taking you there.`;

@@ -14,6 +14,8 @@ import { buildThink } from "./sections/think";
 import { buildProjects } from "./sections/projects";
 import { buildStack } from "./sections/stack";
 import { buildJourney } from "./sections/journey";
+import { buildHorizon } from "./sections/horizon";
+import { buildContact } from "./sections/contact";
 
 export type FilmOptions = {
   canvas: HTMLCanvasElement;
@@ -85,10 +87,10 @@ export class Film {
     const orbGeo = blobGeometry(9, 0.17), planetGeo = blobGeometry(21, 0.17);
     const being = buildBeing(ctx, fig, orbGeo, planetGeo);
     const projects = buildProjects(ctx, planetGeo);
-    const journey = buildJourney(ctx);
-    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars), journey);
+    const journey = buildJourney(ctx), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo);
+    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars), journey, horizon, contact);
 
-    const keys: Key[] = [...firstHalfKeys(), ...journey.keys];
+    const keys: Key[] = [...firstHalfKeys(), ...journey.keys, ...horizon.keys, ...contact.keys];
     this.director = new Director(keys);
 
     this.composer = new EffectComposer(renderer);

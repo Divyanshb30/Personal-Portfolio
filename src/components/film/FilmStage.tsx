@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PLACES, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
-import { PROFILE, THINK } from "@/film/data";
+import { HORIZON, PROFILE, RESUMES, THINK } from "@/film/data";
 
 /**
  * Mounts the film: a fixed WebGL canvas, the words that live over it, and the section rail.
@@ -78,6 +78,53 @@ export default function FilmStage() {
             <h2 className="disp" style={{ fontSize: "clamp(44px,5.4vw,78px)", lineHeight: 1, marginTop: 22 }}>
               What made him
             </h2>
+          </section>
+          <section data-block="horizon" className="blk" style={{ left: 16, right: 16, top: "16vh", textAlign: "center" }}>
+            <div className="mono sub">{HORIZON.kicker}</div>
+            <h2 className="disp" style={{ fontSize: "clamp(34px,3.8vw,54px)", lineHeight: 1.1, marginTop: 18, whiteSpace: "pre-line" }}>
+              {HORIZON.title}
+            </h2>
+            <p style={{ marginTop: 22, fontSize: 17, lineHeight: 1.6, color: "#c9c9cf", whiteSpace: "pre-line" }}>
+              {HORIZON.line.split("Amdocs").map((part, i) => (
+                <span key={i}>
+                  {i > 0 && <span style={{ color: "#ffb57a" }}>Amdocs</span>}
+                  {part}
+                </span>
+              ))}
+            </p>
+          </section>
+          <section data-block="contact" className="blk" style={{ left: 72, top: "22vh" }} aria-label="Contact">
+            <div className="mono sub">It&apos;s listening</div>
+            <h2 className="disp" style={{ fontSize: "clamp(56px,6.6vw,96px)", lineHeight: 0.98, marginTop: 18 }}>
+              Let&apos;s
+              <br />
+              talk.
+            </h2>
+            <a
+              className="film-link"
+              href={`mailto:${PROFILE.email}`}
+              style={{ marginTop: 30, fontSize: 21, display: "inline-block", borderBottom: "1px solid rgba(255,200,150,.4)", paddingBottom: 6 }}
+            >
+              {PROFILE.email}
+            </a>
+            <div className="mono" style={{ marginTop: 24, display: "flex", gap: 26 }}>
+              <a className="film-link" style={{ color: "#ffc896" }} href={PROFILE.github} target="_blank" rel="noopener noreferrer">
+                GitHub ↗
+              </a>
+              <a className="film-link" style={{ color: "#ffc896" }} href={PROFILE.linkedin} target="_blank" rel="noopener noreferrer">
+                LinkedIn ↗
+              </a>
+            </div>
+            <div className="mono sub" style={{ marginTop: 32 }}>
+              Résumé
+            </div>
+            <div style={{ marginTop: 14 }}>
+              {RESUMES.map((r) => (
+                <a key={r.code} className="mono chip" href={r.file} target="_blank" rel="noopener noreferrer">
+                  {r.code}
+                </a>
+              ))}
+            </div>
           </section>
           <section data-block="stack" className="blk" style={{ left: 48, bottom: 84 }}>
             <div className="mono sub">Stack</div>

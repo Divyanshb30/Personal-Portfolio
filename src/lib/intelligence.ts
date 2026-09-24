@@ -182,6 +182,22 @@ export function topicToChapter(topic: string | null): Place | null {
   return null;
 }
 
+/** A place named in the query itself ("take me to the stack") wins over the answer's topic. */
+export function placeFromQuery(query: string): Place | null {
+  const q = query.toLowerCase();
+  const named: [RegExp, Place][] = [
+    [/\b(projects?|work|portfolio|built)\b/, "Projects"],
+    [/\b(stack|skills?|tools?|tech)\b/, "Stack"],
+    [/\b(journey|story|background|timeline|history|education)\b/, "Journey"],
+    [/\b(contact|reach|email|hire|r[eé]sum[eé]|cv|talk)\b/, "Contact"],
+    [/\b(think|thinks|thinking|approach|process)\b/, "Think"],
+    [/\b(now|currently|current|today|amdocs|horizon)\b/, "Horizon"],
+    [/\b(home|start|beginning|arrival|top)\b/, "Arrival"],
+  ];
+  for (const [re, p] of named) if (re.test(q)) return p;
+  return null;
+}
+
 /** True when the query asks to be taken/shown somewhere in the world. */
 export function isNavIntent(query: string): boolean {
   return /\b(show|take|go|see|navigate|open|jump|bring)\b/i.test(query);
