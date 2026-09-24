@@ -10,7 +10,7 @@ export const PROFILE = {
 };
 
 export const THINK = {
-  title: "How he thinks",
+  title: "The process",
   line: "Ask the right question, understand it deeply, iterate until it holds, then produce at volume.",
   steps: [
     { word: "Question", line: "Start with the right question." },
