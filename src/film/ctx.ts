@@ -53,6 +53,8 @@ export type Section = {
   update(f: Frame): void;
   /** optional: adjust the directed shot before the camera is placed */
   shot?(f: Frame, sh: import("./director").Shot): void;
+  /** optional: remove listeners the section added outside the scene */
+  dispose?(): void;
 };
 
 /** A text block rendered by React, found by data-block. */

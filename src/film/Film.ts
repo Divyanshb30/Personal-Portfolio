@@ -11,6 +11,8 @@ import { A_SPAN, OS, PLACES, PLACE_AT, filmT, placeAt, scrollFor, type Place } f
 import { loadFigure } from "./figure";
 import { buildBeing } from "./sections/being";
 import { buildThink } from "./sections/think";
+import { buildProjects } from "./sections/projects";
+import { buildStack } from "./sections/stack";
 
 export type FilmOptions = {
   canvas: HTMLCanvasElement;
@@ -81,7 +83,8 @@ export class Film {
     if (this.disposed) return;
     const orbGeo = blobGeometry(9, 0.17), planetGeo = blobGeometry(21, 0.17);
     const being = buildBeing(ctx, fig, orbGeo, planetGeo);
-    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo));
+    const projects = buildProjects(ctx, planetGeo);
+    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars));
 
     const keys: Key[] = [...firstHalfKeys()];
     this.director = new Director(keys);
@@ -205,6 +208,7 @@ export class Film {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     for (const c of this.cleanup) c();
+    for (const sec of this.sections) sec.dispose?.();
     if (!this.ctx) return;
     this.ctx.scene.traverse((o) => {
       const mesh = o as THREE.Mesh;

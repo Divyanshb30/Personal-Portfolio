@@ -64,8 +64,24 @@ export default function FilmStage() {
             </h2>
             <p style={{ marginTop: 22, fontSize: 17, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 340 }}>{THINK.line}</p>
           </section>
+          <section data-block="work" className="blk" style={{ left: 72, top: "16vh" }}>
+            <div className="mono sub">Projects</div>
+            <h2 className="disp" style={{ fontSize: "clamp(40px,3.9vw,56px)", lineHeight: 1.02, marginTop: 14 }}>
+              The work
+            </h2>
+            <p style={{ marginTop: 16, fontSize: 16, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 320 }}>
+              Everything it learned about how he thinks, turned into what he built.
+            </p>
+          </section>
+          <section data-block="stack" className="blk" style={{ left: 48, bottom: 84 }}>
+            <div className="mono sub">Stack</div>
+            <h2 className="disp" style={{ fontSize: 26, lineHeight: 1.1, marginTop: 8 }}>
+              What it runs on
+            </h2>
+          </section>
         </div>
         <div ref={labels} className="film-labels" />
+        <aside data-block="panel" className="film-panel" role="dialog" aria-hidden="true" />
         <div data-block="hint" className="mono sub film-hint">Scroll · move your cursor</div>
         <nav className="film-rail mono" aria-label="Sections">
           {PLACES.map((p) => (
