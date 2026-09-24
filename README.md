@@ -4,7 +4,7 @@ One continuous, scroll-directed film in three.js. There are no pages: the scroll
 
 | Section  | What happens |
 | -------- | ------------ |
-| Arrival  | His figure, made of ember dust. The cursor clears a small circle in it, and his head turns toward you. |
+| Arrival  | His figure, made of ember dust. The cursor presses a soft dent into it, and his head turns toward you. A small orb waits by his head: curious about the cursor, shy of a sudden one, it reacts when clicked and wanders over to look at him when you go quiet. |
 | Think    | The orb flies as a comet and sheds four moons: Question, Understand, Iterate, Build. |
 | Build    | Four named constellations, one per project. Hover brightens one; a click flies the camera to it and opens its story. Esc, ✕ or a scroll closes it. |
 | Stack    | Every tool as a name in depth, laid out so that no two collide, over a veil that dims the river below. |
@@ -12,7 +12,7 @@ One continuous, scroll-directed film in three.js. There are no pages: the scroll
 | Now      | A sun rising over the limb of a dark world: still building. |
 | Contact  | "Let's talk" comes in and the page ends there. The orb then forms on its own clock, and scrolling back up returns it to the light. |
 
-The cursor drives a spring camera with parallax. The Ask pill (top right) answers questions about his work and can take you to any section.
+The cursor drives a spring camera with parallax. The Ask pill (top right) answers questions about his work and can take you to any section. Jumps from Ask or the section rail happen behind the loading screen, which rotates through its lines (`LOADING_LINES` in `data.ts`).
 
 ## Running it
 

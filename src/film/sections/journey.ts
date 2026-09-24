@@ -529,6 +529,13 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
       title.style.opacity = String(smooth(JG(-0.01), JG(0.0), GG) * (1 - smooth(JG(0.03), JG(0.075), GG)));
       title.style.transform = `translateY(${(-smooth(JG(0), JG(0.09), GG) * 50).toFixed(1)}px)`;
       let focus = 0;
+      // the photos only exist once the film is near the river (a wide phone lens would catch them from far off)
+      const near = GG > 0.47;
+      for (const p of [...plates, ...loose]) p.g.visible = near;
+      for (const p of plates) {
+        if (p.extra) p.extra.g.visible = near;
+        for (const e of [p.env, p.envX]) if (e) e.dust.pts.visible = e.haze.visible = near;
+      }
       const float = (p: Plate, amt: number) => {
         p.g.position.copy(p.base).y += Math.sin(f.time * 0.55 + p.seed) * 0.04 * amt;
         p.g.quaternion.copy(p.quat).multiply(q1.setFromEuler(e1.set(Math.sin(f.time * 0.37 + p.seed) * 0.026 * amt, Math.sin(f.time * 0.29 + p.seed * 2) * 0.026 * amt, 0)));

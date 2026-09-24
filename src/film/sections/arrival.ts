@@ -15,7 +15,9 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
   const near = points(ctx, 130, () => V(-3.2 + R() * 7.6, gauss() * 1.1, 2.4 + R() * 3.8), () => emberAt(0.25 + R() * 0.5).map((v) => v * 0.24), () => 0.16 + R() * 0.3, 0.5);
   const far = points(ctx, 1600, () => V(-9 + R() * 22, gauss() * 3.2, -3 - R() * 12), () => (R() < 0.75 ? emberAt(0.2 + R() * 0.6) : COOL).map((v) => v * 0.42), () => 0.02 + R() * 0.035, 0.6);
 
-  const HOME = V(FIG_X + 0.95, 1.15, 0.3), HIDE = V(FIG_X + 0.3, 0.85, -0.8), PEEK = V(FIG_X + 0.62, 1.05, -0.4);
+  // home is up beside his head; on a tall, narrow screen (where his right side is cropped) it waits above him
+  const HOME_WIDE = V(FIG_X + 1.4, 1.55, 0.3), HOME_TALL = V(FIG_X - 0.15, 2.6, 0.3), HOME = HOME_WIDE.clone();
+  const HIDE = V(FIG_X + 0.3, 0.85, -0.8), PEEK = V(FIG_X + 0.62, 1.05, -0.4);
   const FACE = V(FIG_X - 0.05, 0.45, 0.35), SNIFF = V(FIG_X + 0.3, 0.5, 0.95), OTHER = V(FIG_X - 0.95, 0.35, 0.55);
   const SIZE = 0.13, UPV = V(0, 1, 0);
   const at = V(), look = V(), tmp = V(), cur = V(), right = V();
@@ -71,6 +73,7 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
 
       // it owns the orb until it has handed itself to the Think orb
       if (s > 0.165) return;
+      HOME.copy(ctx.W / ctx.H < 0.9 ? HOME_TALL : HOME_WIDE);
       if (Math.abs(mouse.x - st.lastMouse.x) + Math.abs(mouse.y - st.lastMouse.y) > 0.002 || Math.abs(s - st.lastS) > 1e-5) {
         if (st.mood === "wander") st.mood = "home";
         st.lastInput = time;
