@@ -140,7 +140,10 @@ export function buildAmbient(ctx: Ctx, orb: Orb, busy: () => number = () => 0) {
         const form = smooth(0.2, 1.6, Q.t) * (1 - smooth(3.8, 5.2, Q.t));
         qU.uForm.value = form;
         qU.uGain.value = smooth(0, 0.4, Q.t) * (1 - smooth(4.6, 5.6, Q.t));
-        if (orb.visible) orb.attend(qU.uA.value, 0.85 * smooth(0.9, 1.4, Q.t) * (1 - smooth(3.4, 3.9, Q.t)));
+        if (orb.visible) {
+          orb.attend(qU.uA.value, 0.85 * smooth(0.9, 1.4, Q.t) * (1 - smooth(3.4, 3.9, Q.t)));
+          if (form > 0.2) orb.feel("Wondering");
+        }
         if (Q.t > 5.6 || !where) {
           Q.t = -1;
           Q.next = time + 70;
@@ -194,6 +197,7 @@ export function buildAmbient(ctx: Ctx, orb: Orb, busy: () => number = () => 0) {
         if (orb.free) {
           orb.attend(spark.position, smooth(0.15, 0.4, e) * (1 - smooth(1.3, 1.45, e)), 0.45 * smooth(0.35, 0.7, e) * (1 - smooth(1.25, 1.35, e)));
           if (e > 1.35 && e < 1.5) orb.squash(-0.2, UPV);
+          if (e > 0.15 && e < 1.45) orb.feel("Distracted");
         }
         if (e > 2.6 || !river) {
           SP.t = -1;

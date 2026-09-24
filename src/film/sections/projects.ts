@@ -421,6 +421,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
           // wanders in, curious; holds still while every token turns to it; notices
           const inn = smooth(0, 1.2, et);
           orb.drive({ at: tmp.copy(home).lerp(INTO, inn), size: gs, look: QUERY, lookAmt: 0.5 + 0.5 * smooth(1.25, 1.35, et), pin: 0.6 * smooth(1.0, 1.2, et) });
+          orb.feel(et < 1.25 ? "Curious" : "Noticed");
           if (et > 1.3 && et < 1.45) orb.squash(-0.3, UPV);
         } else {
           if (et >= 1.55 && !EGG.fled) {
@@ -428,6 +429,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
             orb.kick(tmp.copy(home).sub(INTO).normalize().multiplyScalar(7).add(tmp2.set(0, 2, 0)));
           }
           orb.drive({ at: tmp.copy(home).lerp(DIVE, dive * dive), size: gs, pin: dive * dive });
+          orb.feel(dive > 0.1 ? "Diving" : et >= 1.55 ? "Startled" : PICK.idx >= 0 ? "Reading along" : PICK.hover >= 0 ? "Pointing" : "Guiding");
         }
         attnU.uOrb.value.copy(orb.pos);
         gpt.grp.worldToLocal(attnU.uOrb.value);

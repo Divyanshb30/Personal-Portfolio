@@ -392,6 +392,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     // to the surface, then through it; out again the way it went in
     at.copy(front).addScaledVector(face, -0.63 * reach - 0.2 * pull + 0.83 * out + 0.04 * Math.sin(time * 2.2) * (1 - reach));
     orb.drive({ at, size: S * (1 - pull * (1 - out)), look: MP[i], lookAmt: 0.9 * (1 - out), pin: Math.max(reach, pull) * (1 - out) });
+    orb.feel(out > 0.05 ? "Coming back out" : pull > 0.5 ? "Inside a memory" : "Reaching");
     if (pull > 0.02 && pull < 0.98 && out === 0) orb.squash(0.55 * Math.sin(Math.PI * pull), face);
     return true;
   };
@@ -445,6 +446,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         // it drops from the stack into the river, and lands with a splash
         const u = smooth(-0.036, 0.032, j);
         orb.drive({ at: rp(45, 0.6, 7 * (1 - u * u), at), size: S, look: river(52), lookAmt: 0.4, pin: 0.5 });
+        orb.feel("Splashing down");
         if (j >= 0.03 && !trig.splash) {
           trig.splash = true;
           orb.burst(SPLASH, 0.9);
@@ -455,6 +457,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         rp(d, 0.5 * Math.sin(t * 0.9), 0.35 + 0.18 * Math.sin(t * 1.7), at).lerp(touches[0].front, w);
         look.copy(river(d + 6)).lerp(MP[0], w);
         orb.drive({ at, size: S, look, lookAmt: 0.5 + 0.4 * w, free: w < 0.01 });
+        orb.feel(w > 0.3 ? "Getting there first" : "Riding the current");
       } else if (touch(touches[0], j, t)) {
         // the first memory
       } else if (j < 0.305) {
@@ -465,15 +468,24 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
           orb.kick(o2.copy(at).sub(orb.pos).normalize().multiplyScalar(11));
         }
         orb.drive({ at, size: S, free: true });
+        orb.feel("Racing ahead");
       } else if (j < 0.37 || (current.t >= 0 && j < 0.45)) {
         // (once it has started, the current's joke keeps the orb until it's told: past 0.40 it hurries)
         const d = lerp(82, 94, smooth(0.3, 0.37, j));
-        if (current.t >= 0) surge = currentGag(current.t, d, t);
-        else if (current.done) orb.drive({ at: rp(d + 8, 0.8, 3.0 + 0.1 * Math.sin(t * 1.9), at), size: S, free: true });
-        else orb.drive({ at: rp(d, 0, 0.35 + 0.15 * Math.sin(t * 1.7), at), size: S, free: true });
+        if (current.t >= 0) {
+          surge = currentGag(current.t, d, t);
+          orb.feel(current.t < 3.15 ? "Fighting the current" : "Free");
+        } else if (current.done) {
+          orb.drive({ at: rp(d + 8, 0.8, 3.0 + 0.1 * Math.sin(t * 1.9), at), size: S, free: true });
+          orb.feel("Free");
+        } else {
+          orb.drive({ at: rp(d, 0, 0.35 + 0.15 * Math.sin(t * 1.7), at), size: S, free: true });
+          orb.feel("Riding the current");
+        }
       } else if (j < 0.45) {
         // behind and between the two photos of 2022, drifting away down the river
         orb.drive({ at: rp(lerp(103.5, 109, smooth(0.37, 0.45, j)), -4.85 + 0.5 * Math.sin(t * 0.5), 1.3 + 0.1 * Math.sin(t * 1.1), at), size: S, free: true });
+        orb.feel("Drifting");
       } else if (touch(touches[1], j, t)) {
         // the ERP
       } else if (j < 0.49) {
@@ -481,21 +493,25 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         const w = smooth(0.45, 0.475, j);
         rp(112, 0.9 * Math.sin(t * 0.5), 1.6, at).lerp(o3.copy(touches[1].front).add(o2.set(0, 0.05 * Math.sin(t * 2.2), 0)), w);
         orb.drive({ at, size: S, look: ctx.camera.position, lookAmt: w });
+        orb.feel("Waiting for you");
       } else if (j < 0.655) {
         // out of the ERP, back into the stream and over to the far bank
         const u = smooth(0.612, 0.655, j);
         orb.drive({ at: rp(lerp(140, 152, u), lerp(0.5, 3.1, u), 0.6 + u, at).lerp(touches[1].front, 1 - smooth(0.605, 0.62, j)), size: S, free: true });
+        orb.feel("Crossing");
       } else if (j < 0.765) {
         // along the far bank, behind the report; it peeks out at the edge, and ducks back
         const d = j < 0.715 ? lerp(152, 171.2, smooth(0.655, 0.705, j)) : lerp(171.2, 186, smooth(0.735, 0.765, j));
         const peek = smooth(0.713, 0.72, j) * (1 - smooth(0.728, 0.735, j));
         rp(lerp(d, 172.35, peek), lerp(3.15, 2.85, peek), 1.6, at);
         orb.drive({ at, size: S, look: ctx.camera.position, lookAmt: peek, pin: 0.4 * peek });
+        orb.feel(peek > 0.3 ? "Peeking" : "Hiding");
       } else if (j < 0.89) {
         // round Amdocs, against the camera, passing behind it
         const th = 0.6 - TAU * smooth(0.815, 0.89, j), come = smooth(0.765, 0.815, j);
         o2.copy(MP[4]).addScaledVector(FF(4), Math.cos(th) * 1.9).addScaledVector(amdocsSide, Math.sin(th) * 1.9).add(o3.set(0, 0.25 * Math.sin(t * 1.3), 0));
         orb.drive({ at: rp(186, 3.1, 1.4, at).lerp(o2, come), size: S, free: come < 1 });
+        orb.feel("Orbiting");
       } else {
         // on toward the light; it stops short, looks back at you once, and goes in
         const go = smooth(0.955, 0.975, j), back = smooth(0.935, 0.941, j) * (1 - smooth(0.949, 0.955, j));
@@ -503,6 +519,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         at.copy(o2).lerp(STOP, smooth(0.89, 0.93, j)).lerp(END, go);
         look.copy(END).lerp(ctx.camera.position, back);
         orb.drive({ at, size: 0.6 * (1 - smooth(0.968, 0.98, j)), look, lookAmt: 0.5 + 0.5 * back, pin: go, glow: 0.35 + 0.65 * go });
+        orb.feel(back > 0.5 ? "Looking back" : "Into the light");
         if (back > 0.5) orb.squash(-0.12 * Math.sin(Math.PI * smooth(0.941, 0.947, j)), UPV);
         if (j >= 0.972 && !trig.flare) {
           trig.flare = true;

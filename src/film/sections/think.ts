@@ -6,6 +6,7 @@ import { blobGeometry, livingSkin, molten, glass, blackRim, banded, sprite, poke
 import { TAU, V, smooth, smoother } from "../math";
 import { BUD, FL0, FL1, O1, ORB_R, PC, PL_R, PLANET_UP, SBUD, orbitAt, planetRot, toPlanet } from "../layout";
 import type { Being } from "./being";
+import type { Orb } from "../orb";
 import { THINK } from "../data";
 
 /**
@@ -13,7 +14,7 @@ import { THINK } from "../data";
  * four pieces that condense into moons as their words appear (Question, Understand, Iterate, Build);
  * the rest arrives and becomes the planet, and the moons fall into orbit around it.
  */
-export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry, planetGeo: THREE.BufferGeometry) {
+export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry, planetGeo: THREE.BufferGeometry, orbMood: Orb) {
   const orbSkin = livingSkin(ctx, molten(), toPlanet);
   const orb = new THREE.Mesh(orbGeo, orbSkin.mat);
   orb.scale.setScalar(ORB_R);
@@ -79,6 +80,9 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
       planetGlow.material.opacity = 0.35 * plVis * (1 - smooth(0.465, 0.5, G));
       orbitLine.material.opacity = 0.22 * smooth(0.62, 0.68, s) * (1 - smooth(0.455, 0.48, G));
       poke(ctx, orb, orbSkin.u, ORB_R, f.mouse, dt, ray, tmp, tmp2, inv);
+      // the orb, grown: it is thinking, or on the move between its forms
+      if (s > FL0 && s < FL1 + 0.02) orbMood.feel("Flying");
+      else if (orbVis > 0.3 || plVis > 0.3) orbMood.feel("Thinking");
       poke(ctx, planet, planetSkin.u, PL_R, f.mouse, dt, ray, tmp, tmp2, inv);
 
       const toOrbit = smooth(0.57, 0.67, s), ab = [0, 0, 0, 0];

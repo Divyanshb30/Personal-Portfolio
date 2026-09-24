@@ -180,15 +180,17 @@ export default function FilmStage() {
             <div>New Delhi · 28.61°N 77.21°E</div>
             <div className="film-hud-time">{ist ? `${ist} IST` : "\u00a0"}</div>
           </div>
-          <div className="film-hud-r">Now · AI Software Engineer, Amdocs</div>
         </div>
         <div className="film-progress mono sub" aria-hidden>
-          <span>
-            {String(index).padStart(2, "0")} / {String(PLACES.length).padStart(2, "0")}
-          </span>
-          <span className="film-progress-track">
-            <span data-block="progress" className="film-progress-fill" />
-          </span>
+          <div data-block="mood" className="film-mood" />
+          <div className="film-progress-row">
+            <span>
+              {String(index).padStart(2, "0")} / {String(PLACES.length).padStart(2, "0")}
+            </span>
+            <span className="film-progress-track">
+              <span data-block="progress" className="film-progress-fill" />
+            </span>
+          </div>
         </div>
         <div data-block="hint" className="mono sub film-hint">{touch ? "Scroll · tap the work" : "Scroll · move your cursor"}</div>
         <nav className="film-rail mono" aria-label="Sections">

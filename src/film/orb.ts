@@ -84,7 +84,7 @@ export function makeOrb(ctx: Ctx) {
   const pos = V(), vel = V(), at = V(), look = V(), attendP = V(), gaze = V(), axis = V(0, 1, 0), sqAxis = V(0, 1, 0);
   const tmp = V(), tmp2 = V(), acc = V(), prev = V(), qInv = new THREE.Quaternion();
   let driven = false, size = 0, sizeV = 0, want = 0, wantLook = 0, hasLook = false, pin = 0, glowWant = 0.3;
-  let sq = 0, sqV = 0, sqWant = 0, attendLook = 0, attendPull = 0, spinA = 0, spinV = 0, snapNext = false;
+  let sq = 0, sqV = 0, sqWant = 0, attendLook = 0, attendPull = 0, spinA = 0, spinV = 0, snapNext = false, feeling = "";
 
   const orb = {
     pos,
@@ -92,6 +92,8 @@ export function makeOrb(ctx: Ctx) {
     still,
     /** true while visible and not in the middle of a beat of its own */
     free: false,
+    /** how it feels this frame, as named by whoever directs it ("" when it isn't around) */
+    mood: "",
     get size() {
       return size;
     },
@@ -124,6 +126,10 @@ export function makeOrb(ctx: Ctx) {
     kick(v: THREE.Vector3) {
       vel.add(v);
     },
+    /** Name its mood this frame (the last caller wins, so the ambient moments can override a section). */
+    feel(word: string) {
+      feeling = word;
+    },
     /** A twirl of the body (radians per second, decaying). */
     spin(v: number) {
       spinV += v;
@@ -154,6 +160,8 @@ export function makeOrb(ctx: Ctx) {
     },
     update(f: Frame) {
       const { dt, time, mouse } = f, cam = ctx.camera;
+      orb.mood = feeling;
+      feeling = "";
       // sparks and flash run on their own, whoever owns the orb
       if (sparkU.uAge.value >= 0) sparkU.uAge.value = sparkU.uAge.value > 1.8 ? -1 : sparkU.uAge.value + dt;
       flashAge += dt;

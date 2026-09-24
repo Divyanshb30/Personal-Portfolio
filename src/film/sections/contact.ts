@@ -6,6 +6,7 @@ import { DUST_FRAG, GLSL_FN, STIR_GLSL } from "../glsl";
 import { livingSkin, molten, poke, sprite } from "../helpers";
 import { R, V, clamp, emberAt, fbm, gauss, smooth } from "../math";
 import { END } from "./journey";
+import type { Orb } from "../orb";
 
 /** where the scroll hands over: past this "Let's talk" is in, and the orb forms on its own */
 const FORM_AT = 0.94, UNFORM_AT = 0.93;
@@ -16,7 +17,7 @@ const FORM_SECS = 3.2, UNFORM_SECS = 1.8;
  * Then, with no more scrolling, the light sends its dust across and the dust becomes the orb again,
  * molten, jelly under the cursor. Scrolling back up sends it home to the light.
  */
-export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry) {
+export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) {
   const CT = END.clone().add(V(-4.5, 0.4, 7)), OC = CT.clone().add(V(0, 0.3, 0)), OR = 1.05;
   const contactU = { uF: { value: 0 }, uHide: { value: 0 }, uTime: ctx.u.TIME, uScale: ctx.u.SCALE, uFocus: ctx.u.FOCUS, ...ctx.u.CUR };
   {
@@ -100,6 +101,7 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry) {
       glow.material.opacity = 0.28 * reveal;
       orb.rotation.set(time * 0.05, time * 0.08, 0);
       if (orb.visible) poke(ctx, orb, skin.u, OR, f.mouse, dt, ray, tmp, tmp2, inv);
+      if (form > 0.02) mood.feel(form < 0.95 ? "Forming" : "Listening");
     },
   };
 }

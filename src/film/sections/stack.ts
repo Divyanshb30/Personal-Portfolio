@@ -184,6 +184,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         const leave = smooth(0.503, 0.515, GG);
         const at = tmp.copy(wander).lerp(aim, pull).lerp(EXIT, leave);
         orb.drive({ at, size: 0.3, look: cup.ok && (pull > 0.2 || GG > 0.5) ? cup.at : null, lookAmt: 0.8, glow: 0.35, free: pull < 0.01 && leave < 0.01 });
+        orb.feel(leave > 0.05 ? "Diving" : circ > 0.3 ? "Circling the coffee" : pull > 0.5 && c > 6.4 ? "Sipping" : pull > 0.2 ? "Going for coffee" : "Wandering");
         if ((c > 6.6 && c < 6.75) || (c > 7.3 && c < 7.45)) orb.squash(-0.25, UPV);
       }
 

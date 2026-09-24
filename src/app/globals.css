@@ -486,17 +486,27 @@ html {
 .film-hud-time {
   color: #a9a9b0;
 }
-.film-hud-r {
-  margin-bottom: 30px;
-}
 .film-progress {
   position: absolute;
   right: 56px;
   bottom: 40px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  color: #6d6d75;
+}
+.film-progress-row {
+  display: flex;
   align-items: center;
   gap: 12px;
-  color: #6d6d75;
+}
+/* how the orb feels, right now */
+.film-mood {
+  color: #ffc896;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  white-space: nowrap;
 }
 .film-progress-track {
   position: relative;
@@ -518,8 +528,7 @@ html {
     right: 24px;
     bottom: 76px;
   }
-  .film-hud-l > div:first-child,
-  .film-hud-r {
+  .film-hud-l > div:first-child {
     display: none;
   }
   .film-progress {

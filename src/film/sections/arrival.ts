@@ -88,6 +88,7 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
         at.copy(HOME).lerp(O1, go * go * (3 - 2 * go));
         if (s > 0.14 && s < 0.146) orb.burst(O1, 0.9, true);
         orb.drive({ at, size: SIZE * (1 + go * 0.6) * (1 - gone), look: O1, lookAmt: 0.7 * go, pin: 0.25 * go });
+        orb.feel("Gathering");
         return;
       }
 
@@ -116,7 +117,7 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
         st.until = time;
       }
 
-      let size = SIZE, lookAmt = 0.5, pin = 0;
+      let size = SIZE, lookAmt = 0.5, pin = 0, mood = "Watching";
       look.copy(cam.position);
       switch (st.mood) {
         case "home": {
@@ -128,9 +129,13 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
             if (at.distanceTo(HOME) > 0.6) at.sub(HOME).setLength(0.6).add(HOME);
             look.copy(cur);
             lookAmt = 0.9;
+            mood = "Curious";
           }
           if (st.poofed && time < st.until + 0.3) orb.squash(0.35, cam.position.clone().sub(orb.pos));
-          if (time < st.until && st.clicks % 3 === 1) orb.squash(-0.45, tmp.copy(cam.position).sub(orb.pos));
+          if (time < st.until && st.clicks % 3 === 1) {
+            orb.squash(-0.45, tmp.copy(cam.position).sub(orb.pos));
+            mood = "Startled";
+          }
           break;
         }
         case "shy":
@@ -139,6 +144,7 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
           size = SIZE * 0.9;
           look.copy(cur);
           lookAmt = 0.3;
+          mood = "Shy";
           break;
         case "peek":
           // and peeks back out at you
@@ -146,11 +152,13 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
           look.copy(cur);
           lookAmt = 1;
           if (time - (st.until - 1.6) < 0.2) orb.squash(0.2, UPV);
+          mood = "Peeking";
           break;
         case "poof":
           at.copy(orb.pos);
           size = 0;
           pin = 1;
+          mood = "Startled";
           break;
         case "sulk":
           // turned away from you
@@ -158,6 +166,7 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
           right.setFromMatrixColumn(cam.matrixWorld, 0);
           look.copy(orb.pos).addScaledVector(right, 2).add(tmp.set(0, 0.3, -1));
           lookAmt = 1;
+          mood = "Sulking";
           break;
         case "wander": {
           // bored: it goes to look at him up close, sniffs, drifts round the other side, and back
@@ -170,10 +179,12 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
           else at.copy(OTHER).lerp(HOME, smooth(9.5, 14, loop));
           look.copy(loop < 6 ? FACE : at);
           lookAmt = loop < 6 ? 1 : 0.4;
+          mood = "Bored";
           break;
         }
       }
       orb.drive({ at, size, look, lookAmt, pin });
+      orb.feel(mood);
       // a pointer over it, so it reads as something you can poke
       if (orb.hit(mouse.x, mouse.y)) document.body.style.cursor = "pointer";
     },

@@ -71,7 +71,12 @@ export class Film {
   private rightV = V();
   private upV = V();
   private cleanup: (() => void)[] = [];
-  private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement; progress: HTMLElement };
+  private blocks!: { arrival: HTMLElement; hint: HTMLElement; layer: HTMLElement; progress: HTMLElement; mood: HTMLElement };
+  /** the orb's mood in the corner: a new one must hold a moment before it shows */
+  private moodShown = "";
+  private moodCand = "";
+  private moodSince = 0;
+  private moodSwap = 0;
   /** visitors who ask for less motion get a much gentler cursor camera */
   private still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   /** frame-time probe: if the device struggles early on, render at a lower resolution */
@@ -108,8 +113,8 @@ export class Film {
     // the small glass orb that travels from the work, through the stack, down the river of his years
     const orb = (this.orb = makeOrb(ctx));
     const projects = buildProjects(ctx, planetGeo, orb);
-    const journey = buildJourney(ctx, orb), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo);
-    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo), projects, buildStack(ctx, projects.stars, orb), journey, horizon, contact);
+    const journey = buildJourney(ctx, orb), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo, orb);
+    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo, orb), projects, buildStack(ctx, projects.stars, orb), journey, horizon, contact);
     // the landing's own life, the ambient moments, then the orb itself, last: it moves once whoever owns it has said where
     this.sections.push(buildArrival(ctx, orb), buildAmbient(ctx, orb, () => journey.focus), orb);
 
@@ -126,7 +131,7 @@ export class Film {
     this.composer.addPass(this.bloom);
     this.composer.addPass(finishPass(this.mask.texture, renderer.toneMappingExposure));
 
-    this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress") };
+    this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress"), mood: block(ctx, "mood") };
     this.bindInput();
     const q = new URLSearchParams(location.search);
     if (q.has("s")) this.fix = +q.get("s")!;
@@ -193,7 +198,8 @@ export class Film {
   private tick = (now: number) => {
     if (this.disposed) return;
     const ctx = this.ctx, u = ctx.u;
-    const dt = Math.min(0.05, (now - this.last) / 1000);
+    // (the first frame's timestamp can be a little earlier than the moment we started: never step backwards)
+    const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
     this.last = now;
     u.TIME.value = now / 1000;
     const target = this.progress();
@@ -239,6 +245,8 @@ export class Film {
     this.blocks.layer.style.transform = `translate(${(-cam.x * 22 * calm).toFixed(1)}px, ${(cam.y * 14 * calm).toFixed(1)}px)`;
     this.blocks.progress.style.transform = `scaleX(${Math.min(1, Math.max(0, window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight))).toFixed(4)})`;
 
+    this.showMood(u.TIME.value);
+
     const here = placeAt(GG, G);
     if (here !== this.place) {
       this.place = here;
@@ -250,6 +258,24 @@ export class Film {
     this.adapt(dt);
     this.raf = requestAnimationFrame(this.tick);
   };
+
+  /** The corner line that says how the orb feels: steady for 0.35s before it changes, with a quick crossfade. */
+  private showMood(time: number) {
+    const m = this.orb?.mood ?? "";
+    if (m !== this.moodCand) {
+      this.moodCand = m;
+      this.moodSince = time;
+    }
+    if (this.moodCand === this.moodShown || time - this.moodSince < 0.35) return;
+    this.moodShown = this.moodCand;
+    const el = this.blocks.mood, next = this.moodShown;
+    el.style.opacity = "0";
+    window.clearTimeout(this.moodSwap);
+    this.moodSwap = window.setTimeout(() => {
+      if (next) el.textContent = `Orb · ${next}`;
+      el.style.opacity = next ? "1" : "0";
+    }, 180);
+  }
 
   /** Watch a few seconds of frames once the film is running; drop to 1x resolution if they are slow. */
   private adapt(dt: number) {
@@ -272,6 +298,7 @@ export class Film {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     for (const c of this.cleanup) c();
+    window.clearTimeout(this.moodSwap);
     for (const sec of this.sections) sec.dispose?.();
     if (!this.ctx) return;
     this.ctx.scene.traverse((o) => {
