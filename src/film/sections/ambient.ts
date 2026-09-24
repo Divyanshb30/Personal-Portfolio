@@ -30,8 +30,8 @@ function glyphPoints(ctx: Ctx, ch: string, n: number) {
 }
 
 /**
- * The small things that happen on their own. When you stop scrolling in the stack or on the river,
- * a little of the dust gathers into a question mark, and the orb looks at it. Now and then a star
+ * The small things that happen on their own. When you stop scrolling on the river, a little of the
+ * dust gathers into a question mark beside the orb, and the orb looks at it. Now and then a star
  * falls across the far sky. On the river, a stray spark drifts by and the orb, briefly, follows it.
  */
 export function buildAmbient(ctx: Ctx, orb: Orb) {
@@ -60,7 +60,7 @@ export function buildAmbient(ctx: Ctx, orb: Orb) {
       const a = R() * Math.PI * 2, r = Math.sqrt(R()) * 1.1;
       S.set([Math.cos(a) * r, Math.sin(a) * r, gauss() * 0.4], i * 3);
       SD[i] = R();
-      Z[i] = 0.02 + R() * 0.03;
+      Z[i] = 0.16 + R() * 0.1;
     }
     qGeo.setAttribute("position", new THREE.BufferAttribute(S, 3));
     qGeo.setAttribute("aGly", new THREE.BufferAttribute(new Float32Array(NQ * 2), 2));
@@ -83,7 +83,7 @@ export function buildAmbient(ctx: Ctx, orb: Orb) {
           float coc = clamp(abs(d - uFocus) * 0.045, 0.0, 1.0);
           gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 + coc * 2.0), 30.0); vCoc = coc;
           float tw = 0.8 + 0.2 * sin(uTime * 3.0 + aSeed * 40.0);
-          vC = vec3(1.0, 0.72, 0.45) * (0.35 + 0.95 * e) * tw * uGain * mix(1.0, 0.35, coc); gl_Position = projectionMatrix * mv;
+          vC = vec3(1.0, 0.72, 0.45) * (0.5 + 1.3 * e) * tw * uGain * mix(1.0, 0.35, coc); gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: DUST_FRAG,
     });
@@ -120,7 +120,7 @@ export function buildAmbient(ctx: Ctx, orb: Orb) {
       const toOrb = cam.position.distanceTo(orb.pos);
 
       // the question mark: only for someone who has stopped to look, and not too often
-      const where = GG > 0.42 && GG < 0.8;
+      const where = GG >= 0.515 && GG <= 0.8;
       if (Q.t < 0 && !still && where && orb.visible && orb.free && SP.t < 0 && idle > 1.8 && time > Q.next) {
         if (!Q.glyph) {
           (qGeo.attributes.aGly.array as Float32Array).set(glyphPoints(ctx, "?", NQ));
