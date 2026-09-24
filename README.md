@@ -46,7 +46,7 @@ The text blocks are React markup. The engine finds them by `data-block` and only
 All of the words are in `src/film/data.ts`. Placeholders are marked `TODO`:
 
 - Each project's `problem`, `built` and `outcome` fields. The side panel shows a placeholder until these are filled.
-- Photos for 2021 and 2022. Put them in `public/photos` and set `photo` (`[src, cropX, cropY, cropW, cropH]`) on those two memories.
+- Journey photos are in `public/photos`. Each memory's `photo` is `[src, cropX, cropY, cropW, cropH]`, and a memory with `photo: null` shows a "photo coming" plate.
 
 Résumés are in `public/resume`. The dust figure is `public/models/divyansh.glb` (Draco-compressed; the decoder is served from `public/draco`).
 

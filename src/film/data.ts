@@ -122,10 +122,9 @@ export type Memory = {
   extra?: { photo: [string, number, number, number, number]; d: number; bank: number; h: number; w: number };
 };
 
-// TODO(Divyansh): photos for 2021 and 2022 go in public/photos; set `photo` on those two entries.
 export const MEMORIES: Memory[] = [
-  { y: "2021", t: "DTU", n: "Began B.Tech in Electronics & Communication at Delhi Technological University.", photo: null, cap: "DTU · 2021", d: 60, bank: 3.4, h: 1.4, win: [0.18, 0.285] },
-  { y: "2022", t: "First builds", n: "Started shipping real systems. Led the architecture and the frontend.", photo: null, cap: "First builds · 2022", d: 100, bank: -3.6, h: 0.4, win: [0.365, 0.45] },
+  { y: "2021", t: "DTU", n: "Began B.Tech in Electronics & Communication at Delhi Technological University.", photo: ["/photos/dtu.jpg", 0, 0, 1206, 660], cap: "DTU · 2021", d: 60, bank: 3.4, h: 1.4, win: [0.18, 0.285] },
+  { y: "2022", t: "First builds", n: "Started shipping real systems. Led the architecture and the frontend.", photo: ["/photos/builds.jpg", 0, 180, 960, 720], cap: "First builds · 2022", d: 100, bank: -3.6, h: 0.4, win: [0.365, 0.45] },
   { y: "2024", t: "The ERP", n: "We set out to turn 25 days of accreditation paperwork into 7.", photo: ["/photos/team.jpg", 0, 380, 960, 620], cap: "", d: 128, bank: 3.0, h: 2.4, win: [0.5, 0.605] },
   {
     y: "2025",
