@@ -44,6 +44,8 @@ export type Project = {
   problem: string;
   built: string;
   outcome: string;
+  /** more work from the same place, told briefly at the end of its story (no numbers) */
+  also?: { title: string; line: string; uses: string[] }[];
 };
 
 export const PROJECTS: Project[] = [
@@ -135,18 +137,37 @@ export const PROJECTS: Project[] = [
       "Five agents on a custom Python/FastAPI runtime with Azure OpenAI (GPT-4.1), each with its own cost and latency budget, deterministic fallbacks and human-in-the-loop checkpoints. Underneath: a unified async LLM gateway (structured output, bounded self-repair, circuit-breaker failover), retrieval-grounded NL-to-SQL with schema pruning and dry-run self-correction, a hermetic CI-blocking evaluation gate, and a four-plane agent memory (Redis, PostgreSQL, embeddings, a procedural library) that drives a self-improving correction loop.",
     outcome:
       "All five agents are live in production on the AT&T account, taking over manual reconciliation work. The architecture earned production sign-off from cross-functional stakeholders.",
+    also: [
+      {
+        title: "Databricks migration · leading",
+        line: "Moving a legacy Oracle PL/SQL subscriber-event pipeline to Azure Databricks: parsing inbound events, applying business rules and populating gold-layer tables for downstream use, rebuilt in PySpark on a bronze/silver/gold medallion architecture with Unity Catalog. Along the way, tuning the stored procedures that carry the daily load.",
+        uses: ["Databricks", "PySpark", "SQL", "Unity Catalog", "Medallion Architecture"],
+      },
+      {
+        title: "MCP automation agent",
+        line: "An MCP-based agent integrated with Apache Airflow, giving on-demand pause, resume and stop control over pipeline jobs during infrastructure maintenance windows.",
+        uses: ["MCP", "Apache Airflow", "Python"],
+      },
+    ],
   },
 ];
 
-/** [capability, lead tool, tools, position in the field] */
-export const STACK: [string, string, string[], [number, number, number]][] = [
+/** [capability, lead tool, tools, position in the field, a note under the lead (one line each)] */
+export const STACK: [string, string, string[], [number, number, number], string[]?][] = [
   ["AI & LLM Engineering", "LangGraph", ["Azure OpenAI (GPT-4.1)", "LangChain", "LangGraph", "MCP", "RAG", "Agent Orchestration"], [-4.4, 2.3, -1.2]],
   ["Machine Learning & Deep Learning", "PyTorch", ["PyTorch", "TensorFlow", "scikit-learn", "XGBoost", "LoRA / PEFT Fine-tuning", "SHAP Explainability", "Statistical Hypothesis Testing"], [0.6, 2.8, -2.8]],
   ["Retrieval & Search", "FAISS", ["FAISS", "ChromaDB", "Semantic Search", "Vector Embeddings", "BM25", "Cross-Encoder Reranking"], [4.8, 1.6, -0.6]],
-  ["Data & Infrastructure", "Python", ["Python", "FastAPI", "Docker", "GCP Cloud Run", "PostgreSQL", "Redis", "Apache Airflow"], [-1.4, 0.2, 1.6]],
+  [
+    "Data Engineering",
+    "Databricks",
+    ["Databricks", "PySpark", "SQL", "Unity Catalog", "Medallion Architecture", "Apache Airflow"],
+    [-1.4, 0.2, 1.6],
+    ["Certified Data Engineer Associate", "Certified Generative AI Engineer Associate"],
+  ],
+  ["Data & Infrastructure", "Python", ["Python", "FastAPI", "Docker", "GCP Cloud Run", "PostgreSQL", "Redis"], [-1.6, -0.4, -3.6]],
   ["Natural Language Processing", "Transformers", ["Hugging Face Transformers", "NL-to-SQL", "Text Generation", "Structured Output Generation", "Sequence Modelling", "Tokenisation"], [-5.2, -1.7, 0.4]],
   ["MLOps & Evaluation", "MLflow", ["MLflow", "DagsHub", "CI/CD Eval Gates", "Drift Monitoring (PSI/KS)", "Model Versioning"], [1.9, -1.3, 2.2]],
-  ["Tools & Languages", "Claude Code", ["Git", "GitHub Actions", "Claude Code", "GitHub Copilot", "Pandas", "NumPy", "Streamlit"], [5.4, -2.3, 1.0]],
+  ["Tools & Languages", "Git", ["Git", "GitHub Actions", "Claude Code", "GitHub Copilot", "Pandas", "NumPy", "Streamlit"], [5.4, -2.3, 1.0]],
 ];
 export const LEAD_OF: Record<string, string> = { Transformers: "Hugging Face Transformers" };
 
@@ -174,7 +195,7 @@ export const MEMORIES: Memory[] = [
   {
     y: "2021",
     t: "The beginning",
-    n: "Started B.Tech at Delhi Technological University.",
+    n: "B.Tech in Electronics and Communication Engineering at Delhi Technological University. CGPA 8.06.",
     photo: ["/photos/dtu.jpg", 0, 0, 1206, 660],
     cap: "DTU · 2021",
     d: 60,
@@ -223,7 +244,7 @@ export const MEMORIES: Memory[] = [
   {
     y: "2025",
     t: "Amdocs · AT&T",
-    n: "AI software engineer on the AT&T account. Five agents, live in production.",
+    n: "AI software engineer on the AT&T account. Five agents, live in production. I mentor engineers in agentic AI through hands-on workshops.",
     photo: ["/photos/amdocs.jpg", 0, 60, 1280, 840],
     w: 2.5,
     cap: "",

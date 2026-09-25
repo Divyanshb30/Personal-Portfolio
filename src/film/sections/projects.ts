@@ -161,6 +161,13 @@ const panelHTML = (pr: Project) => `
   <div class="sec"><div class="mono sub">Outcome</div>${or(pr.outcome, "Placeholder: what changed after it shipped.")}</div>
   <div class="sec"><div class="mono sub">Built with</div><p>${pr.uses.map(esc).join(" · ")}</p></div>
   ${
+    pr.also?.length
+      ? `<div class="sec also"><div class="mono sub">Also at Amdocs</div>${pr.also
+          .map((a) => `<h4>${esc(a.title)}</h4><p>${esc(a.line)}</p><p class="mono sub uses">${a.uses.map(esc).join(" · ")}</p>`)
+          .join("")}</div>`
+      : ""
+  }
+  ${
     pr.links.length
       ? `<div style="margin-top:26px;display:flex;flex-wrap:wrap;gap:10px">${pr.links
           .map((l) => `<a class="mono pill" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)} ↗</a>`)
@@ -337,7 +344,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     if (e.key === "Escape") close();
   };
   const onClick = (e: MouseEvent) => {
-    // only clicks on the open sky count, not on the rail, the Ask pill or the panel
+    // only clicks on the open sky count, not on the rail, the bar or the panel
     if (!PICK.on || PICK.idx >= 0 || e.target !== ctx.renderer.domElement) return;
     if (PICK.hover >= 0) open(PICK.hover);
   };
@@ -365,7 +372,8 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       document.body.style.cursor = "";
     },
     /** the projects' stars in world space, for the roots that drop to the stack */
-    stars: projs.map((pr) => ({ uses: pr.data.uses, world: pr.world })),
+    // the roots reach every tool a project was built with, and those of the work told beside it
+    stars: projs.map((pr) => ({ uses: [...new Set([...pr.data.uses, ...(pr.data.also ?? []).flatMap((a) => a.uses)])], world: pr.world })),
     shot(f: Frame, sh: Shot) {
       const { dt, mouse } = f;
       PICK.hover = -1;

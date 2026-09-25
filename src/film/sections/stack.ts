@@ -12,6 +12,8 @@ type Tag = {
   at: THREE.Vector3;
   lead: boolean;
   chars: number;
+  /** lines of small print under a lead name */
+  rows: number;
   sx: number;
   sy: number;
   sc: number;
@@ -37,13 +39,16 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
   const fieldAt = (o: [number, number, number]) => SF.clone().add(V(o[0] * 1.12, o[1] * 1.55, o[2] * 1.1));
   const toolPos: Record<string, THREE.Vector3> = {};
   const tags: Tag[] = [];
-  const tag = (html: string, at: THREE.Vector3, lead: boolean, chars: number) => {
+  const tag = (html: string, at: THREE.Vector3, lead: boolean, chars: number, rows = 0) => {
     const e = el(ctx, lead ? "tool lead" : "tool", html);
-    tags.push({ el: e, at, lead, chars, sx: 0, sy: 0, sc: 1, w: 0, h: 0, tx: 0, ty: 0, ox: 0, oy: 0, near: 1, blur: 0, behind: false });
+    tags.push({ el: e, at, lead, chars, rows, sx: 0, sy: 0, sc: 1, w: 0, h: 0, tx: 0, ty: 0, ox: 0, oy: 0, near: 1, blur: 0, behind: false });
   };
-  for (const [cap, lead, items, o] of STACK) {
+  for (const [cap, lead, items, o, note = []] of STACK) {
     const c = fieldAt(o);
-    tag(`<div class="mono cap">${cap}</div><div class="big">${lead}</div>`, c, true, lead.length);
+    const under = note.map((l) => `<div class="mono cap note">${l}</div>`).join("");
+    // (small print is about a quarter as wide per letter as the big name)
+    const chars = Math.max(lead.length, ...note.map((l) => Math.ceil(l.length * 0.26)));
+    tag(`<div class="mono cap">${cap}</div><div class="big">${lead}</div>${under}`, c, true, chars, note.length);
     toolPos[LEAD_OF[lead] || lead] = c;
     const rest = items.filter((t) => t !== lead && t !== LEAD_OF[lead]);
     rest.forEach((t, i) => {
@@ -195,7 +200,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       }
       const cam = ctx.camera, W = ctx.W, H = ctx.H, fd = ctx.u.FOCUS.value;
       // page margins: the rail takes the right edge on wide screens
-      const narrow = W < 760, mL = narrow ? 16 : 48, mR = narrow ? 16 : 170, mT = narrow ? 80 : 92, mB = narrow ? 110 : 120;
+      const narrow = W < 760, mL = narrow ? 16 : 48, mR = narrow ? 16 : 170, mT = narrow ? 80 : 92, mB = narrow ? 210 : 120;
       // project every name, then push the small ones apart; the big lead words mostly hold their place
       for (const t of tags) {
         tmp.copy(t.at).project(cam);
@@ -207,11 +212,12 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         t.near = smooth(1.0, 2.2, d);
         t.blur = Math.min(3, Math.abs(d - fd) * 0.22);
         t.w = t.chars * (t.lead ? 0.68 : 0.56) * base * t.sc + 18;
-        t.h = base * t.sc * (t.lead ? 1.9 : 1.5) + 6;
+        t.h = base * t.sc * (t.lead ? 1.9 : 1.5) + 6 + t.rows * 19 * t.sc;
         t.tx = 0;
         t.ty = 0;
       }
-      for (let it = 0; it < (narrow ? 28 : 14); it++) {
+      // (a phone has more names per inch, and needs more passes to settle them)
+      for (let it = 0; it < (narrow ? 60 : 14); it++) {
         for (let a = 0; a < tags.length; a++)
           for (let b = a + 1; b < tags.length; b++) {
             const A = tags[a], B = tags[b];
