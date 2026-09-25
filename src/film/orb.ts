@@ -18,6 +18,8 @@ export type Drive = {
   glow?: number;
   /** between beats: an ambient moment may borrow its attention */
   free?: boolean;
+  /** how much the cursor sways it: 1 = it shies from a restless one and leans toward one that lingers, 0 = none */
+  cursor?: number;
 };
 
 const STIFF = 14, DAMP = 4.4, MAX_V = 14;
@@ -84,7 +86,7 @@ export function makeOrb(ctx: Ctx) {
   const pos = V(), vel = V(), at = V(), look = V(), attendP = V(), gaze = V(), axis = V(0, 1, 0), sqAxis = V(0, 1, 0);
   const tmp = V(), tmp2 = V(), acc = V(), prev = V(), qInv = new THREE.Quaternion();
   let driven = false, size = 0, sizeV = 0, want = 0, wantLook = 0, hasLook = false, pin = 0, glowWant = 0.3;
-  let sq = 0, sqV = 0, sqWant = 0, attendLook = 0, attendPull = 0, spinA = 0, spinV = 0, snapNext = false, feeling = "";
+  let sq = 0, sqV = 0, sqWant = 0, attendLook = 0, attendPull = 0, spinA = 0, spinV = 0, snapNext = false, feeling = "", cursorAmt = 1;
 
   const orb = {
     pos,
@@ -111,6 +113,7 @@ export function makeOrb(ctx: Ctx) {
       pin = d.pin ?? 0;
       glowWant = d.glow ?? 0.3;
       orb.free = !!d.free;
+      cursorAmt = d.cursor ?? 1;
     },
     /** Squash (negative) or stretch (positive) along an axis, this frame. */
     squash(amt: number, ax: THREE.Vector3) {
@@ -199,7 +202,7 @@ export function makeOrb(ctx: Ctx) {
         tmp.copy(pos).project(cam);
         if (tmp.z < 1) {
           const px = Math.hypot(((mouse.x - tmp.x) * ctx.W) / 2, ((mouse.y - tmp.y) * ctx.H) / 2);
-          near = smooth(170, 50, px);
+          near = smooth(170, 50, px) * cursorAmt;
           if (near > 0) {
             const cur = tmp.set(mouse.x, mouse.y, tmp.z).unproject(cam);
             const restless = ctx.u.CUR.uStir.value > 0.03 ? 1 : -0.3;

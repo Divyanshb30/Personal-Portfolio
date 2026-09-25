@@ -1,14 +1,15 @@
 import type { Ctx, Frame } from "../ctx";
 import { block } from "../ctx";
 import { points } from "../helpers";
-import { COOL, R, V, emberAt, fbm, gauss, smooth } from "../math";
+import { COOL, R, V, clamp, emberAt, fbm, gauss, smooth } from "../math";
 import { FIG_X, O1 } from "../layout";
 import type { Orb } from "../orb";
 
 /**
  * ARRIVAL, around him. Depth, all behind him: a faint cloud of grains far back, tiny specks nearer.
  * And the orb, small, waiting by his head before it becomes the Think orb. It is curious about the
- * cursor and shy of it up close, reacts when clicked, and wanders off to look at him when you go quiet.
+ * cursor and shy of it up close, reacts when clicked, wanders off to look at him when you go quiet,
+ * and when the cursor rests on his name it comes over and reads it.
  */
 export function buildArrival(ctx: Ctx, orb: Orb) {
   // all of it behind him: a faint cloud made of grains (clumped by noise, no glow) far back, and a
@@ -37,14 +38,38 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
   const SIZE = 0.13, UPV = V(0, 1, 0);
   const at = V(), look = V(), tmp = V(), cur = V(), right = V();
   const hud = block(ctx, "hud");
+  // the words it reads: where the block, the kicker and the name sit in the text layer. Read from the page
+  // only when the screen or the fonts change; the layer's drift with the camera is added each frame
+  const layer = block(ctx, "layer"), words = block(ctx, "arrival"), kicker = words.firstElementChild as HTMLElement, name = words.querySelector("h1")!;
+  const txt = { l: 0, t: 0, r: 0, b: 0, gap: 0, nl: 0, nr: 0, nt: 0 };
+  let sizedAt = 0, sized = false;
+  document.fonts?.ready.then(() => (sized = false));
+  const measure = () => {
+    const lr = layer.getBoundingClientRect(), br = words.getBoundingClientRect(), kr = kicker.getBoundingClientRect();
+    const nr = name.getBoundingClientRect(), range = document.createRange();
+    range.selectNodeContents(name);
+    const letters = range.getBoundingClientRect();
+    txt.l = br.left - lr.left;
+    txt.r = br.right - lr.left;
+    txt.t = br.top - lr.top;
+    txt.b = br.bottom - lr.top;
+    txt.gap = (kr.bottom + nr.top) / 2 - lr.top + 2;
+    txt.nl = letters.left - lr.left;
+    txt.nr = letters.right - lr.left;
+    txt.nt = nr.top - lr.top;
+  };
+  // only with a mouse: on a touch screen there is no cursor to rest
+  const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   const st = {
-    mood: "home" as "home" | "shy" | "peek" | "poof" | "sulk" | "wander",
+    mood: "home" as "home" | "shy" | "peek" | "poof" | "sulk" | "wander" | "read",
     until: 0,
     clicks: 0,
     lastInput: 0,
     lastMouse: { x: 9, y: 9 },
     lastS: -1,
     poofed: false,
+    /** how long the cursor has rested on the words */
+    over: 0,
   };
 
   const onClick = (e: MouseEvent) => {
@@ -112,11 +137,32 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
       const active = ctx.u.CUR.uActive.value > 0;
       const px = active ? Math.hypot(((mouse.x - tmp.x) * ctx.W) / 2, ((mouse.y - tmp.y) * ctx.H) / 2) : 1e9;
       cur.set(mouse.x, mouse.y, tmp.z).unproject(cam);
-      const restless = ctx.u.CUR.uStir.value > 0.05;
+      const restless = ctx.u.CUR.uStir.value > 0.05, depth = tmp.z;
+
+      // is the cursor resting on the words? (they drift with the camera, just as the film moves them this frame)
+      const tx = -f.cam.x * 22 * f.calm, ty = f.cam.y * 14 * f.calm;
+      if (fine && s < 0.02 && (!sized || sizedAt !== ctx.W * 1e5 + ctx.H)) {
+        measure();
+        sizedAt = ctx.W * 1e5 + ctx.H;
+        sized = true;
+      }
+      const mx = (mouse.x * 0.5 + 0.5) * ctx.W, my = (0.5 - mouse.y * 0.5) * ctx.H;
+      const onWords = fine && active && s < 0.02 && sized && mx > txt.l + tx - 24 && mx < txt.r + tx + 24 && my > txt.t + ty - 24 && my < txt.b + ty + 24;
+      // the rest counts only while the cursor is calm there, and is forgotten the moment it leaves
+      st.over = onWords ? st.over + (ctx.u.CUR.uStir.value < 0.12 ? f.dt : 0) : 0;
 
       // mood changes
+      // resting on his name, it comes over to read it; leaving the words sends it home, and only a dart scares it off
+      if ((st.mood === "home" || st.mood === "wander") && st.over > 0.25 && time > st.until) {
+        st.mood = "read";
+      } else if (st.mood === "read" && st.over === 0) {
+        st.mood = "home";
+      } else if (st.mood === "read" && px < 90 && ctx.u.CUR.uStir.value > 0.3) {
+        st.mood = "shy";
+        st.until = time + 1.3;
+      }
       // a sudden cursor up close scares it behind his head; a slow one it lets come near (and be clicked)
-      if (st.mood === "home" && px < 90 && restless && time > st.until) {
+      else if (st.mood === "home" && px < 90 && restless && time > st.until) {
         st.mood = "shy";
         st.until = time + 1.3;
       } else if (st.mood === "shy" && time > st.until) {
@@ -151,6 +197,17 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
             orb.squash(-0.45, tmp.copy(cam.position).sub(orb.pos));
             mood = "Startled";
           }
+          break;
+        }
+        case "read": {
+          // it skims the gap between the kicker and his name, just ahead of the cursor, at its own depth,
+          // looking down at the letters
+          const x = clamp(mx + 14, txt.nl + tx + 16, txt.nr + tx - 16), y = txt.gap + ty;
+          at.set((x / ctx.W) * 2 - 1, 1 - (y / ctx.H) * 2, depth).unproject(cam);
+          look.set((x / ctx.W) * 2 - 1, 1 - ((txt.nt + ty + 30) / ctx.H) * 2, depth).unproject(cam);
+          size = 0.12;
+          lookAmt = 0.95;
+          mood = "Reading";
           break;
         }
         case "shy":
@@ -198,7 +255,8 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
           break;
         }
       }
-      orb.drive({ at, size, look, lookAmt, pin });
+      // (reading, it holds its line above the letters rather than leaning down to the cursor on them)
+      orb.drive({ at, size, look, lookAmt, pin, cursor: st.mood === "read" ? 0 : 1 });
       orb.feel(mood);
       // a pointer over it, so it reads as something you can poke
       if (orb.hit(mouse.x, mouse.y)) document.body.style.cursor = "pointer";
