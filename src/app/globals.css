@@ -289,6 +289,54 @@ html {
   outline-offset: 4px;
 }
 
+/* the cursor, with a mouse: an ember dot on the pointer and a hairline ring that trails it; the ring
+   opens over anything that can be clicked, and tightens as you press */
+html.film-cursor,
+html.film-cursor * {
+  cursor: none !important;
+}
+.film-cursor-dot,
+.film-cursor-ring {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 200;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s, width 0.25s, height 0.25s, margin 0.25s, background-color 0.25s, border-color 0.25s;
+  will-change: transform;
+}
+.film-cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: #ffd2a4;
+}
+.film-cursor-dot.hot {
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+}
+.film-cursor-ring {
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border: 1px solid rgba(255, 210, 164, 0.5);
+}
+.film-cursor-ring.hot {
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-color: rgba(255, 210, 164, 0.9);
+  background: rgba(255, 200, 150, 0.07);
+}
+.film-cursor-ring.down {
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+}
+
 /* words that live in the world */
 .blk {
   position: absolute;

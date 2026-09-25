@@ -5,6 +5,7 @@ import { PLACES, TRACK_VH, type Place } from "@/film/layout";
 import { registerNav, goTo } from "@/film/nav";
 import { BUILD, CONTACT, JOURNEY, MEMORIES, NOW, PROFILE, PROJECTS, RESUME, STACK, THINK } from "@/film/data";
 import LoadingVeil from "./LoadingVeil";
+import Cursor from "./Cursor";
 
 /** The local time in New Delhi, for the landing's corner. */
 function useIST() {
@@ -246,6 +247,7 @@ export default function FilmStage() {
         </nav>
       </div>
       <LoadingVeil covered={covered} failed={failed} quick={quick} />
+      <Cursor />
       <div className="film-track" style={{ height: `${TRACK_VH}vh` }} aria-hidden />
       {/* the whole story as plain text, for screen readers and search engines */}
       <article className="sr-only">
