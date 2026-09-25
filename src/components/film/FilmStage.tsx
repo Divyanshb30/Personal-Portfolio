@@ -19,8 +19,16 @@ function useIST() {
   return t;
 }
 
+/** The sections a link can open on (#work, #contact, …); the landing has none. */
+const SLUG: Partial<Record<Place, string>> = { Think: "think", Build: "work", Stack: "stack", Journey: "journey", Now: "now", Contact: "contact" };
+const placeOfHash = (hash: string): Place | null => {
+  const k = hash.replace(/^#/, "").toLowerCase();
+  if (k === "build") return "Build";
+  return PLACES.find((p) => SLUG[p] === k) ?? null;
+};
+
 /**
- * Mounts the film: a fixed WebGL canvas, the words that live over it, and the section rail.
+ * Mounts the film: a fixed WebGL canvas, the words that live over it, the section rail and the bar.
  * The page itself is a tall, empty scroll track; scroll position is the film's clock.
  */
 export default function FilmStage() {
@@ -35,28 +43,39 @@ export default function FilmStage() {
   const index = PLACES.indexOf(place) + 1;
   // the loading screen: up while the film loads, and again to cover a jump between sections
   const [veil, setVeil] = useState(false);
+  const [quick, setQuick] = useState(false);
   const film = useRef<import("@/film/Film").Film | null>(null);
   const jumping = useRef(false);
   const covered = !ready || veil;
 
-  /** Cover the screen, cut to the section, hold long enough for a line or two, then reveal it. */
-  const jump = useCallback((p: Place) => {
+  /**
+   * Cover the screen, cut to the section, then reveal it. From the rail the cover holds long enough
+   * for a line or two; from the bar it is quick, for someone who came for the work.
+   */
+  const jump = useCallback((p: Place, fast = false) => {
     const f = film.current;
     if (!f || jumping.current) return;
     jumping.current = true;
+    setQuick(fast);
     setVeil(true);
     const t0 = performance.now();
-    window.setTimeout(() => {
-      f.jumpTo(p);
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          window.setTimeout(() => {
-            setVeil(false);
-            jumping.current = false;
-          }, Math.max(0, 2100 - (performance.now() - t0)));
-        }),
-      );
-    }, 450);
+    window.setTimeout(
+      () => {
+        f.jumpTo(p);
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            window.setTimeout(
+              () => {
+                setVeil(false);
+                jumping.current = false;
+              },
+              Math.max(0, (fast ? 600 : 2100) - (performance.now() - t0)),
+            );
+          }),
+        );
+      },
+      fast ? 200 : 450,
+    );
   }, []);
 
   useEffect(() => {
@@ -69,7 +88,18 @@ export default function FilmStage() {
     (async () => {
       const { Film } = await import("@/film/Film");
       if (!alive || !canvas.current || !root.current || !labels.current) return;
-      const f = new Film({ canvas: canvas.current, root: root.current, labels: labels.current, onPlace: setPlace, onReady: () => setReady(true) });
+      const f = new Film({
+        canvas: canvas.current,
+        root: root.current,
+        labels: labels.current,
+        onPlace: setPlace,
+        onReady: () => {
+          // a link to a section (#work, #contact) opens there, behind the first loading screen
+          const p = placeOfHash(location.hash);
+          if (p) f.jumpTo(p);
+          setReady(true);
+        },
+      });
       film.current = f;
       registerNav(jump);
       try {
@@ -86,6 +116,14 @@ export default function FilmStage() {
       film.current = null;
     };
   }, [jump]);
+
+  // the address follows the visitor, so any moment can be linked to
+  useEffect(() => {
+    if (!ready) return;
+    const slug = SLUG[place], base = location.pathname + location.search;
+    const url = slug ? `${base}#${slug}` : base;
+    if (url !== base + location.hash) history.replaceState(history.state, "", url);
+  }, [place, ready]);
 
   return (
     <>
@@ -195,8 +233,20 @@ export default function FilmStage() {
             </button>
           ))}
         </nav>
+        {/* the fast path, for anyone short on time */}
+        <nav className="film-bar mono" aria-label="Quick links">
+          <button type="button" onClick={() => jump("Build", true)}>
+            Work
+          </button>
+          <a href={RESUME} target="_blank" rel="noopener noreferrer">
+            Résumé
+          </a>
+          <button type="button" onClick={() => jump("Contact", true)}>
+            Contact
+          </button>
+        </nav>
       </div>
-      <LoadingVeil covered={covered} failed={failed} />
+      <LoadingVeil covered={covered} failed={failed} quick={quick} />
       <div className="film-track" style={{ height: `${TRACK_VH}vh` }} aria-hidden />
       {/* the whole story as plain text, for screen readers and search engines */}
       <article className="sr-only">
@@ -214,6 +264,11 @@ export default function FilmStage() {
               <p>
                 {p.kind}. {p.line} {p.metric}. {p.problem} {p.built} {p.outcome} Built with {p.uses.join(", ")}.
               </p>
+              {p.also?.map((a) => (
+                <p key={a.title}>
+                  Also at Amdocs, {a.title}: {a.line} Built with {a.uses.join(", ")}.
+                </p>
+              ))}
               {p.links.map((l) => (
                 <a key={l.url} href={l.url}>
                   {p.title}: {l.label}
@@ -224,9 +279,10 @@ export default function FilmStage() {
         </ul>
         <h2>Stack</h2>
         <ul>
-          {STACK.map(([cap, , items]) => (
+          {STACK.map(([cap, , items, , note]) => (
             <li key={cap}>
               {cap}: {items.join(", ")}
+              {note ? `. ${note.join(", ")}` : ""}
             </li>
           ))}
         </ul>

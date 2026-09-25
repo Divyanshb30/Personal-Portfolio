@@ -46,11 +46,23 @@ body {
   outline: 1px solid rgba(255, 210, 170, 0.6);
   outline-offset: 3px;
 }
+/* a thin scrollbar, so the length of the film is never a secret */
 html {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 200, 150, 0.32) transparent;
 }
 ::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 200, 150, 0.32);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 200, 150, 0.55);
 }
 
 /* ---------- type ---------- */
@@ -127,6 +139,12 @@ html {
   opacity: 0;
   visibility: hidden;
 }
+.film-loading.quick {
+  transition-duration: 0.18s;
+}
+.film-loading.quick.done {
+  transition-duration: 0.3s;
+}
 .film-loading-line {
   display: inline-block;
   font-size: 12px;
@@ -180,6 +198,37 @@ html {
 }
 .film-rail button.on {
   color: #ffd2a4;
+}
+
+/* the bar: straight to the work, the résumé, or a hello */
+.film-bar {
+  position: absolute;
+  right: 56px;
+  top: 40px;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  pointer-events: auto;
+}
+.film-bar a,
+.film-bar button {
+  all: unset;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  line-height: 18px;
+  color: #a9a9b0;
+  transition: color 0.3s;
+}
+.film-bar a:hover,
+.film-bar button:hover {
+  color: #ffd2a4;
+}
+.film-bar a:focus-visible,
+.film-bar button:focus-visible {
+  outline: 1px solid rgba(255, 210, 170, 0.6);
+  outline-offset: 4px;
 }
 
 /* words that live in the world */
@@ -312,6 +361,20 @@ html {
   color: #6d6d75;
   font-style: italic;
 }
+/* the other work from the same place, told briefly */
+.film-panel .also h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ececee;
+  margin: 18px 0 0;
+}
+.film-panel .also p.uses {
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  line-height: 1.9;
+  color: #8f8f96;
+}
 :where(.film-panel) button,
 :where(.film-panel) a {
   all: unset;
@@ -356,6 +419,17 @@ html {
   font-size: 9px;
   color: #ffc896;
   margin-bottom: 6px;
+}
+/* small print under a lead name (the certifications) */
+.tool.lead .note {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #c9c9cf;
+  margin: 0;
+  line-height: 1.7;
+}
+.tool.lead .big + .note {
+  margin-top: 10px;
 }
 
 /* journey memories */
@@ -440,6 +514,16 @@ html {
   .film-rail {
     display: none;
   }
+  .film-bar {
+    right: 24px;
+    top: 21px;
+    gap: 16px;
+  }
+  .film-bar a,
+  .film-bar button {
+    letter-spacing: 0.16em;
+    padding: 6px 0;
+  }
   .film-layer .blk {
     left: 24px !important;
     right: 24px !important;
@@ -447,6 +531,10 @@ html {
   }
   .film-layer .blk p {
     max-width: none !important;
+  }
+  /* the stack's title sits above the progress line, not on it */
+  .film-layer [data-block="stack"] {
+    bottom: 132px !important;
   }
   .film-hint {
     bottom: 32px;

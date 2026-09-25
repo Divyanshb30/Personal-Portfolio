@@ -5,9 +5,10 @@ import { LOADING_LINES } from "@/film/data";
 
 /**
  * The loading screen: black, a line with dots that keep filling in, and a new line every beat or so,
- * even within one showing. It fades in to cover a jump and fades away when the film is there.
+ * even within one showing. It fades in to cover a jump and fades away when the film is there;
+ * a quick jump (from the bar) blinks it in and out.
  */
-export default function LoadingVeil({ covered, failed }: { covered: boolean; failed: boolean }) {
+export default function LoadingVeil({ covered, failed, quick = false }: { covered: boolean; failed: boolean; quick?: boolean }) {
   const [line, setLine] = useState(0);
   const [dots, setDots] = useState(1);
 
@@ -26,7 +27,7 @@ export default function LoadingVeil({ covered, failed }: { covered: boolean; fai
   }, [covered]);
 
   return (
-    <div className={`film-loading mono sub${covered ? " cover" : " done"}`} aria-hidden={!covered}>
+    <div className={`film-loading mono sub${covered ? " cover" : " done"}${quick ? " quick" : ""}`} aria-hidden={!covered}>
       {failed ? (
         "This film needs WebGL. Try a recent desktop browser."
       ) : (
