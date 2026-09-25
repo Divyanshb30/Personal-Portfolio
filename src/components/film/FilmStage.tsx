@@ -262,7 +262,7 @@ export default function FilmStage() {
             <li key={p.id}>
               <h3>{p.title}</h3>
               <p>
-                {p.kind}. {p.line} {p.metric}. {p.problem} {p.built} {p.outcome} Built with {p.uses.join(", ")}.
+                {p.kind}. {p.line} {p.metric}. {p.problem} {Array.isArray(p.built) ? p.built.join(" ") : p.built} {p.outcome} Built with {p.uses.join(", ")}.
               </p>
               {p.also?.map((a) => (
                 <p key={a.title}>

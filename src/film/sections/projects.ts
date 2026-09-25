@@ -157,7 +157,9 @@ const panelHTML = (pr: Project) => `
   <h3>${esc(pr.title)}</h3><p>${esc(pr.line)}</p>
   <div class="sec"><div class="mono sub">Result</div><div class="disp" style="font-size:28px;color:#ffc896;margin-top:10px">${esc(pr.metric)}</div></div>
   <div class="sec"><div class="mono sub">The problem</div>${or(pr.problem, "Placeholder: what was broken or slow, and for whom.")}</div>
-  <div class="sec"><div class="mono sub">What I built</div>${or(pr.built, "Placeholder: the system, its key decisions, and why they held up.")}</div>
+  <div class="sec"><div class="mono sub">What I built</div>${
+    Array.isArray(pr.built) ? `<ul>${pr.built.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : or(pr.built, "Placeholder: the system, its key decisions, and why they held up.")
+  }</div>
   <div class="sec"><div class="mono sub">Outcome</div>${or(pr.outcome, "Placeholder: what changed after it shipped.")}</div>
   <div class="sec"><div class="mono sub">Built with</div><p>${pr.uses.map(esc).join(" · ")}</p></div>
   ${

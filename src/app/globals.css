@@ -361,6 +361,31 @@ html {
   color: #6d6d75;
   font-style: italic;
 }
+/* what was built, a line at a time */
+.film-panel ul {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+.film-panel li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #a9a9b0;
+}
+.film-panel li + li {
+  margin-top: 8px;
+}
+.film-panel li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.72em;
+  width: 7px;
+  height: 1px;
+  background: #ffc896;
+}
 /* the other work from the same place, told briefly */
 .film-panel .also h4 {
   font-size: 15px;

@@ -34,8 +34,10 @@ and this site lets you *watch intelligence think and be held to account*.
   Unity Catalog) and an MCP/Airflow automation agent; mentors engineers in
   agentic AI.
 - Scale/impact (résumé): **75M records/day**, **40+ hrs/week automated**, 73% latency ↓,
-  59% prompt-token ↓. By choice, the site tells the Amdocs work **without
-  numbers**; it does show 1,200+ ERP users, 121 CI-gated tests and 0.9184 AUC.
+  59% prompt-token ↓. On the site the Amdocs work carries only 40+ stakeholders,
+  8 offline eval suites, and 1,000-reconciliation scale across 6 failure
+  archetypes; **no token, latency, volume or hours figures** (by choice). It also
+  shows 1,200+ ERP users, 121 CI-gated tests and 0.9184 AUC.
 - **Published research** — Wiley, *Software: Practice & Experience*,
   DOI 10.1002/spe.70060 (multiuser ERP for higher ed); ERP platform **funded by DTU**.
 - Projects: IntelliCode (hybrid RAG), Loan Risk Intelligence (0.9184 AUC),

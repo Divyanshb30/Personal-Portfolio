@@ -23,7 +23,7 @@ export const THINK = {
 export const BUILD = {
   kicker: "Build",
   title: "What I build",
-  line: "Questions become systems. Systems become things people can use.",
+  line: "From a transformer written by hand to five agents built for AT&T.",
 };
 
 export type Project = {
@@ -42,7 +42,8 @@ export type Project = {
   uses: string[];
   links: { label: string; url: string }[];
   problem: string;
-  built: string;
+  /** a paragraph, or a few lines shown as a list */
+  built: string | string[];
   outcome: string;
   /** more work from the same place, told briefly at the end of its story (no numbers) */
   also?: { title: string; line: string; uses: string[] }[];
@@ -126,17 +127,22 @@ export const PROJECTS: Project[] = [
     label: "below",
     title: "Five-Agent Reconciliation Platform",
     kind: "Featured · Amdocs · AT&T",
-    metric: "Live in production",
-    line: "Five AI agents that took over reconciliation work on the AT&T account.",
+    metric: "5 agents · CI eval gate",
+    line: "Five AI agents built to take over reconciliation work on the AT&T account.",
     off: [0.8, 1.0, 1.2],
     sc: 1.45,
     uses: ["Python", "FastAPI", "Azure OpenAI (GPT-4.1)", "Agent Orchestration", "NL-to-SQL", "Structured Output Generation", "Redis", "PostgreSQL", "Vector Embeddings", "CI/CD Eval Gates"],
     links: [],
     problem: "Reconciliation on the AT&T account ran on manual work every week, across systems that had to agree exactly.",
-    built:
-      "Five agents on a custom Python/FastAPI runtime with Azure OpenAI (GPT-4.1), each with its own cost and latency budget, deterministic fallbacks and human-in-the-loop checkpoints. Underneath: a unified async LLM gateway (structured output, bounded self-repair, circuit-breaker failover), retrieval-grounded NL-to-SQL with schema pruning and dry-run self-correction, a hermetic CI-blocking evaluation gate, and a four-plane agent memory (Redis, PostgreSQL, embeddings, a procedural library) that drives a self-improving correction loop.",
+    built: [
+      "Five agents on a custom Python/FastAPI runtime with Azure OpenAI (GPT-4.1), each with its own cost and latency budget, deterministic fallbacks and human-in-the-loop checkpoints.",
+      "A unified async LLM gateway: structured output, bounded self-repair, circuit-breaker failover and per-session cost gating.",
+      "Retrieval-grounded NL-to-SQL with schema pruning and dry-run self-correction.",
+      "A hermetic, CI-blocking evaluation gate: 8 offline suites, no external dependencies.",
+      "Four-plane agent memory (Redis, PostgreSQL, embeddings, a procedural library) driving a self-improving correction loop.",
+    ],
     outcome:
-      "All five agents are live in production on the AT&T account, taking over manual reconciliation work. The architecture earned production sign-off from cross-functional stakeholders.",
+      "Live in production on the AT&T account. Presented the architecture to 40+ cross-functional stakeholders. The evaluation gate blocks every change in CI, validated at 1,000-reconciliation scale across 6 failure archetypes.",
     also: [
       {
         title: "Databricks migration · leading",
@@ -244,7 +250,7 @@ export const MEMORIES: Memory[] = [
   {
     y: "2025",
     t: "Amdocs · AT&T",
-    n: "AI software engineer on the AT&T account. Five agents, live in production. I mentor engineers in agentic AI through hands-on workshops.",
+    n: "AI software engineer on the AT&T account. Five agents, each with a budget and a fallback. I mentor engineers in agentic AI through hands-on workshops.",
     photo: ["/photos/amdocs.jpg", 0, 60, 1280, 840],
     w: 2.5,
     cap: "",
@@ -274,7 +280,7 @@ export const JOURNEY = { kicker: "Journey · 2021 → now", title: "It started s
 export const NOW = {
   kicker: "Now · Amdocs",
   title: "Still building.",
-  line: "Agentic AI for AT&T, LLM systems, research,\nand whatever problem seems worth solving next.",
+  line: "Agentic AI on the AT&T account,\nand leading a migration from Oracle to Azure Databricks.",
 };
 
 export const CONTACT = { kicker: "One last thing.", title: "Let's talk." };
@@ -287,8 +293,9 @@ export const LOADING_LINES = [
   "There's a lot going on back here",
   "Building the build",
   "Teaching the orb to behave",
-  "Initializing curiosity",
-  "Summoning the good parts",
+  "Staying inside the latency budget",
+  "Waiting for the eval gate",
+  "Checking with a human",
   "A few variables are having a discussion",
   "We're about to make a lot of dots mean something",
   "The universe is currently compiling",
