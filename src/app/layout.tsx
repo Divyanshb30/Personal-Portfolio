@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 // Display: a wide, mission-grade grotesk (set expanded via font-stretch)
@@ -49,7 +50,11 @@ export default function RootLayout({
       lang="en"
       className={`${archivo.variable} ${geist.variable} ${geistMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* visitors and page views, counted by Vercel (no cookies) */}
+        <Analytics />
+      </body>
     </html>
   );
 }
