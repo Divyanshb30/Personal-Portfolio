@@ -40,7 +40,7 @@ src/film/
   sections/        one module per section; each builds its part of the world and updates it every frame
                    (ambient.ts holds the small things that happen on their own)
 src/components/film/FilmStage.tsx   mounts the canvas, the text blocks, the section rail, the bar and the deep links
-src/app/                            the page, and the icons and share image (real frames of the film)
+src/app/                            the page, the DB monogram icons, and the share image (a real frame of the film)
 ```
 
 The text blocks are React markup. The engine finds them by `data-block` and only drives their opacity and position.

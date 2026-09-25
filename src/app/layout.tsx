@@ -11,7 +11,8 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 
 // What a shared link shows. The favicon, the icons and the share image live beside this file
 // (favicon.ico, icon.png, apple-icon.png, opengraph-image.png, twitter-image.png) and are picked up by
-// Next. All of them are real frames of the film: the orb, and the Arrival shot.
+// Next. The icons are the DB monogram (smoke, softly lit, in the site's Archivo); the share image is a
+// real frame of the film, the Arrival shot.
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.divyansh-bansal.space"),
   title: "Divyansh Bansal",
