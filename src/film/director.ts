@@ -11,6 +11,10 @@ export type Key = {
   roll?: number;
   /** how the camera meets this pose: 1 comes to rest, 0.5 slows to half speed, 0 (the default) glides through */
   settle?: number;
+  /** the pose in the film's vertical cut (a portrait screen), where it differs */
+  tall?: Partial<Pick<Key, "s" | "pos" | "tgt" | "fov" | "roll" | "settle">>;
+  /** a pose that exists in only one of the cuts */
+  only?: "wide" | "tall";
 };
 export type Shot = { pos: THREE.Vector3; tgt: THREE.Vector3; fov: number; roll: number; name: string };
 
@@ -19,28 +23,39 @@ export type Shot = { pos: THREE.Vector3; tgt: THREE.Vector3; fov: number; roll: 
  * Scroll glides the camera through the setups; it comes to rest only where a setup asks to (settle).
  */
 export function firstHalfKeys(): Key[] {
+  // (tall: the vertical cut. His figure and the orb are framed centred and high, over his name; the
+  // planet low, under its words, pulled back so the moons' whole orbit fits; the stack is seen from
+  // its end, so its long side runs up the screen)
   const keys: Key[] = [
-    { s: 0.0, name: "Arrival · establishing", pos: V(0, 0.1, 7.4), tgt: V(0, 0.05, 0), fov: 30 },
-    { s: 0.0225, name: "Arrival · slow push in", pos: V(0.35, -0.15, 6.3), tgt: V(0.6, 0.12, 0), fov: 31 },
-    { s: 0.054, name: "Arc around him as it leaves", pos: V(FIG_X + 4.1, 0.25, 4.3), tgt: V(FIG_X + 1.0, 0.6, 0.6), fov: 36, roll: 0.03 },
-    { s: 0.0855, name: "The orb, close", pos: O1.clone().add(V(0.9, 0.2, 5.0)), tgt: O1.clone(), fov: 32 },
-    { s: 0.1125, name: "Orbit the orb", pos: O1.clone().add(V(-3.5, 0.8, 3.3)), tgt: O1.clone(), fov: 32, roll: -0.03 },
+    { s: 0.0, name: "Arrival · establishing", pos: V(0, 0.1, 7.4), tgt: V(0, 0.05, 0), fov: 30, tall: { pos: V(FIG_X, 0.2, 6.0), tgt: V(FIG_X, 0.1, 0) } },
+    { s: 0.0225, name: "Arrival · slow push in", pos: V(0.35, -0.15, 6.3), tgt: V(0.6, 0.12, 0), fov: 31, tall: { pos: V(FIG_X + 0.15, 0, 5.3), tgt: V(FIG_X + 0.1, 0.15, 0) } },
+    { s: 0.054, name: "Arc around him as it leaves", pos: V(FIG_X + 4.1, 0.25, 4.3), tgt: V(FIG_X + 1.0, 0.6, 0.6), fov: 36, roll: 0.03, tall: { pos: V(FIG_X + 4.6, 0.35, 5.6) } },
+    { s: 0.0855, name: "The orb, close", pos: O1.clone().add(V(0.9, 0.2, 5.0)), tgt: O1.clone(), fov: 32, tall: { pos: O1.clone().add(V(0.9, 0.2, 5.8)) } },
+    { s: 0.1125, name: "Orbit the orb", pos: O1.clone().add(V(-3.5, 0.8, 3.3)), tgt: O1.clone(), fov: 32, roll: -0.03, tall: { pos: O1.clone().add(V(-4.0, 0.9, 3.9)) } },
     { s: 0.1935, name: "It flies, and lays out how he thinks", pos: V(14.0, 2.2, -0.8), tgt: V(9.6, 0.9, -7.0), fov: 46, roll: -0.05 },
-    { s: 0.27, name: "Crane back · the planet forms", pos: PC.clone().add(V(-2.5, 3.8, 13.5)), tgt: PC.clone(), fov: 40 },
-    { s: 0.3015, name: "Think", pos: PC.clone().add(V(-4.6, 0.6, 11.5)), tgt: PC.clone().add(V(-3.3, 0, 0)), fov: 34 },
-    { s: 0.345, name: "Think · hold", pos: PC.clone().add(V(-4.4, 0.55, 10.9)), tgt: PC.clone().add(V(-3.2, 0, 0)), fov: 34, settle: 1 },
+    { s: 0.27, name: "Crane back · the planet forms", pos: PC.clone().add(V(-2.5, 3.8, 13.5)), tgt: PC.clone(), fov: 40, tall: { pos: PC.clone().add(V(-2.5, 4.2, 16.5)) } },
+    { s: 0.3015, name: "Think", pos: PC.clone().add(V(-4.6, 0.6, 11.5)), tgt: PC.clone().add(V(-3.3, 0, 0)), fov: 34, tall: { pos: PC.clone().add(V(-1.8, 1.1, 17)), tgt: PC.clone().add(V(0, 0.3, 0)) } },
+    { s: 0.345, name: "Think · hold", pos: PC.clone().add(V(-4.4, 0.55, 10.9)), tgt: PC.clone().add(V(-3.2, 0, 0)), fov: 34, settle: 1, tall: { pos: PC.clone().add(V(-1.6, 1.0, 16.4)), tgt: PC.clone().add(V(0, 0.3, 0)) } },
     { s: 0.47, name: "The planet rises into the work", pos: PC.clone().add(V(-3, 1.2, 12)), tgt: PC.clone().add(V(0, 7, -6)), fov: 44 },
     { s: 0.52, name: "The work · wide, from below", pos: PJ.clone().add(V(-0.2, -4.6, 14.2)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52 },
     { s: 0.575, name: "The work · pick one", pos: PJ.clone().add(V(-0.4, -4.4, 13.8)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, settle: 1 },
     { s: 0.745, name: "Roots drop · tilt down", pos: PJ.clone().add(V(4, 1, 13)), tgt: PJ.clone().add(V(2, -9, -2)), fov: 50 },
-    { s: 0.8, name: "Dive with the orb", pos: SF.clone().add(V(1, 9, 9)), tgt: SF.clone().add(V(0, 0, -1)), fov: 48, roll: -0.04 },
-    { s: 0.845, name: "Overhead · what it runs on", pos: SF.clone().add(V(0.3, 13, 3.5)), tgt: SF.clone().add(V(0, 0, -0.5)), fov: 50 },
-    { s: 0.9, name: "Crane down through the layers", pos: SF.clone().add(V(0.4, 8.2, 11.2)), tgt: SF.clone().add(V(0, -0.3, -0.4)), fov: 50 },
-    { s: 0.955, name: "Track across the names", pos: SF.clone().add(V(-2.4, 5.8, 12.4)), tgt: SF.clone().add(V(0.2, -0.3, 0)), fov: 50, roll: 0.02 },
-    { s: 1.0, name: "Stack · hold", pos: SF.clone().add(V(1.2, 5.4, 12.6)), tgt: SF.clone().add(V(0.3, -0.3, 0)), fov: 50, settle: 1 },
+    { s: 0.8, name: "Dive with the orb", pos: SF.clone().add(V(1, 9, 9)), tgt: SF.clone().add(V(0, 0, -1)), fov: 48, roll: -0.04, tall: { pos: SF.clone().add(V(9, 10, 2)), tgt: SF.clone().add(V(-1, 0, 0)), fov: 44 } },
+    { s: 0.845, name: "Overhead · what it runs on", pos: SF.clone().add(V(0.3, 13, 3.5)), tgt: SF.clone().add(V(0, 0, -0.5)), fov: 50, tall: { pos: SF.clone().add(V(5, 15, 0.4)), tgt: SF.clone().add(V(-0.5, 0, 0)), fov: 40 } },
+    { s: 0.9, name: "Crane down through the layers", pos: SF.clone().add(V(0.4, 8.2, 11.2)), tgt: SF.clone().add(V(0, -0.3, -0.4)), fov: 50, tall: { pos: SF.clone().add(V(11.5, 9.5, 0.6)), tgt: SF.clone().add(V(-0.6, -0.3, 0.2)), fov: 40 } },
+    { s: 0.955, name: "Track across the names", pos: SF.clone().add(V(-2.4, 5.8, 12.4)), tgt: SF.clone().add(V(0.2, -0.3, 0)), fov: 50, roll: 0.02, tall: { pos: SF.clone().add(V(12.4, 7.6, -1.2)), tgt: SF.clone().add(V(-0.6, -0.3, 0.2)), fov: 40 } },
+    { s: 1.0, name: "Stack · hold", pos: SF.clone().add(V(1.2, 5.4, 12.6)), tgt: SF.clone().add(V(0.3, -0.3, 0)), fov: 50, settle: 1, tall: { pos: SF.clone().add(V(12.6, 7.2, 1.0)), tgt: SF.clone().add(V(-0.6, -0.3, 0.2)), fov: 40 } },
   ];
-  for (const k of keys) k.s *= OS;
+  for (const k of keys) {
+    k.s *= OS;
+    if (k.tall?.s !== undefined) k.tall.s *= OS;
+  }
   return keys;
+}
+
+/** The shot list for one cut of the film: the wide one as composed, or the vertical one for a portrait screen. */
+export function cut(keys: Key[], tall: boolean): Key[] {
+  return keys.filter((k) => !k.only || k.only === (tall ? "tall" : "wide")).map((k) => (tall && k.tall ? { ...k, ...k.tall } : k));
 }
 
 export class Director {

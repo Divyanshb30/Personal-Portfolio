@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { Form } from "./device";
 
 export type U<T> = { value: T };
 
@@ -17,6 +18,8 @@ export type Shared = {
     uDentAmt: U<number>;
   };
   TURN: { uYaw: U<number>; uPitch: U<number> };
+  /** 1 while the film plays its vertical cut (a portrait screen), for what is laid out differently there */
+  TALL: U<number>;
 };
 
 /** Everything a section needs to build itself and to update each frame. */
@@ -32,8 +35,13 @@ export type Ctx = {
   labels: HTMLElement;
   /** 1 on desktop, lower on small or weak devices: particle counts scale with it. */
   quality: number;
+  /** the frame, in CSS pixels: the canvas is as tall as the largest viewport, so a phone's toolbar never resizes it */
   W: number;
   H: number;
+  /** how much of the frame is actually visible below the top (less than H while a phone's toolbar shows) */
+  VH: number;
+  /** what kind of screen this is (phone, portrait, touch …) */
+  form: Form;
   /** compile something's shaders ahead of time, as the film draws them (set once the film's buffers exist) */
   warm?: (o: THREE.Object3D) => void;
 };
@@ -52,6 +60,9 @@ export type Frame = {
   mouse: { x: number; y: number };
   calm: number;
   fixed: boolean;
+  /** where the text layer has drifted with the camera this frame, in px */
+  layerX: number;
+  layerY: number;
 };
 
 export type Section = {
@@ -83,6 +94,7 @@ export function makeShared(W: number, H: number, pixelRatio: number): Shared {
       uDentAmt: { value: 0 },
     },
     TURN: { uYaw: { value: 0 }, uPitch: { value: 0 } },
+    TALL: { value: 0 },
   };
 }
 

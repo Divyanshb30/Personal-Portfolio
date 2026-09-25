@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -29,6 +29,16 @@ export const metadata: Metadata = {
     title: "Divyansh Bansal",
     description: "Perpetually Curious",
   },
+};
+
+// The film runs edge to edge, under a phone's notch and home bar (the chrome keeps clear of them with
+// the safe-area insets), and the browser's own toolbars take the film's near-black.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#050507",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({

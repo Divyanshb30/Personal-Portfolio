@@ -54,10 +54,11 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
   // a sun, not a wash
   const sunGlow = [sprite(ctx, 0xff9a50, 18, END, 0), sprite(ctx, 0xffe2c0, 5, END, 0)];
 
+  // (tall: the vertical cut puts the sun in the middle, low, under the words)
   const keys: Key[] = [
-    { s: 0.835, name: "Out of the river, into the light", pos: END.clone().add(V(-3.5, 3.6, 21)), tgt: END.clone().add(V(-3, 0.2, 0)), fov: 44 },
-    { s: 0.865, name: "Horizon", pos: END.clone().add(V(-4.6, 1.5, 15.5)), tgt: END.clone().add(V(-4.4, -0.3, 0)), fov: 36 },
-    { s: 0.9, name: "Horizon · slow push", pos: END.clone().add(V(-4.4, 1.35, 14.2)), tgt: END.clone().add(V(-4.3, -0.3, 0)), fov: 36, settle: 0.5 },
+    { s: 0.835, name: "Out of the river, into the light", pos: END.clone().add(V(-3.5, 3.6, 21)), tgt: END.clone().add(V(-3, 0.2, 0)), fov: 44, tall: { pos: END.clone().add(V(-0.8, 3.6, 22)), tgt: END.clone().add(V(0, 0.6, 0)) } },
+    { s: 0.865, name: "Horizon", pos: END.clone().add(V(-4.6, 1.5, 15.5)), tgt: END.clone().add(V(-4.4, -0.3, 0)), fov: 36, tall: { pos: END.clone().add(V(-0.6, 1.7, 17)), tgt: END.clone().add(V(0, 0.9, 0)) } },
+    { s: 0.9, name: "Horizon · slow push", pos: END.clone().add(V(-4.4, 1.35, 14.2)), tgt: END.clone().add(V(-4.3, -0.3, 0)), fov: 36, settle: 0.5, tall: { pos: END.clone().add(V(-0.5, 1.6, 15.8)), tgt: END.clone().add(V(0, 0.9, 0)) } },
   ];
   const now = block(ctx, "now");
 

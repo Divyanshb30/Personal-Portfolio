@@ -38,6 +38,11 @@ export type Project = {
   /** offset from the projects sky centre, and scale of the constellation */
   off: [number, number, number];
   sc: number;
+  /**
+   * The same, in the film's vertical cut (a portrait screen): the five stand in a column, the featured
+   * one first, and each name sits beside its constellation (or below it)
+   */
+  tall: { off: [number, number, number]; sc: number; label: "left" | "right" | "below" };
   uses: string[];
   links: { label: string; url: string }[];
   problem: string;
@@ -57,6 +62,7 @@ export const PROJECTS: Project[] = [
     line: "Hybrid retrieval and AST analysis over a codebase.",
     off: [-7.4, 1.4, 2.0],
     sc: 1.25,
+    tall: { off: [-0.95, 2.0, 0], sc: 0.95, label: "right" },
     uses: ["Python", "FAISS", "BM25", "Cross-Encoder Reranking", "Hugging Face Transformers", "ChromaDB", "CI/CD Eval Gates", "GitHub Actions"],
     links: [
       { label: "Code", url: "https://github.com/Divyanshb30/IntelliCode" },
@@ -77,6 +83,7 @@ export const PROJECTS: Project[] = [
     line: "A decoder-only transformer with no framework abstractions.",
     off: [-3.4, 4.0, -3],
     sc: 1.25,
+    tall: { off: [1.0, -1.7, 0], sc: 1.1, label: "left" },
     uses: ["PyTorch", "Python", "Tokenisation", "Sequence Modelling", "Text Generation"],
     links: [{ label: "Code", url: "https://github.com/Divyanshb30/GPT-from-Scratch" }],
     problem: "Using transformers every day is not the same as understanding one. The only way to be sure was to build it with nothing hidden.",
@@ -92,6 +99,7 @@ export const PROJECTS: Project[] = [
     line: "A stacking ensemble over ~1.8M LendingClub loans, SHAP-audited and drift-monitored.",
     off: [5.6, -0.3, 1.6],
     sc: 1.1,
+    tall: { off: [-0.9, -5.2, 0], sc: 0.95, label: "right" },
     uses: ["XGBoost", "PyTorch", "SHAP Explainability", "MLflow", "DagsHub", "Drift Monitoring (PSI/KS)", "GCP Cloud Run", "Docker", "FastAPI", "Streamlit"],
     links: [
       { label: "Code", url: "https://github.com/Divyanshb30/Loan-Risk-Intelligence" },
@@ -112,6 +120,7 @@ export const PROJECTS: Project[] = [
     line: "An ML-powered ERP for higher education, live across the university.",
     off: [8.8, 3.2, -2],
     sc: 1.2,
+    tall: { off: [1.0, -8.9, 0], sc: 1.05, label: "left" },
     uses: ["ChromaDB", "Vector Embeddings", "Semantic Search", "Docker", "PostgreSQL"],
     links: [{ label: "Paper · Wiley", url: "https://doi.org/10.1002/spe.70060" }],
     problem: "Preparing the university for accreditation took 25 days of manual work.",
@@ -130,6 +139,7 @@ export const PROJECTS: Project[] = [
     line: "Five AI agents built to take over reconciliation work on the AT&T account.",
     off: [0.8, 1.0, 1.2],
     sc: 1.45,
+    tall: { off: [0, 7.3, 0], sc: 1.05, label: "below" },
     uses: ["Python", "FastAPI", "Azure OpenAI (GPT-4.1)", "Agent Orchestration", "NL-to-SQL", "Structured Output Generation", "Redis", "PostgreSQL", "Vector Embeddings", "CI/CD Eval Gates"],
     links: [],
     problem: "Reconciliation on the AT&T account ran on manual work every week, across systems that had to agree exactly.",

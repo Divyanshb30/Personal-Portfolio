@@ -185,14 +185,20 @@ const panelHTML = (pr: Project) => `
  * by the transformer for a while and it wanders into the attention field, which notices it.
  */
 export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Orb) {
+  type Layout = { center: THREE.Vector3; sc: number };
   const projs = PROJECTS.map((pr) => {
-    const center = PJ.clone().add(V(...pr.off));
+    // two arrangements: the wide sky, and the vertical cut's column (a portrait screen)
+    const wide: Layout = { center: PJ.clone().add(V(...pr.off)), sc: pr.sc }, tall: Layout = { center: PJ.clone().add(V(...pr.tall.off)), sc: pr.tall.sc };
     const grp = new THREE.Group();
-    grp.position.copy(center);
-    grp.scale.setScalar(pr.sc);
     ctx.scene.add(grp);
-    grp.updateMatrixWorld(true);
     const sh = shape(pr.id), r2 = rng(pr.id.length * 91 + pr.id.charCodeAt(1));
+    const worldIn = (l: Layout) => {
+      grp.position.copy(l.center);
+      grp.scale.setScalar(l.sc);
+      grp.updateMatrixWorld(true);
+      return sh.P.map((v) => v.clone().applyMatrix4(grp.matrixWorld));
+    };
+    const worldTall = worldIn(tall), worldWide = worldIn(wide);
     const p: number[] = [], c: number[] = [], s: number[] = [], k: number[] = [];
     sh.P.forEach((v, i) => {
       p.push(v.x, v.y, v.z);
@@ -213,9 +219,6 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     }
     const pulses = richStars(ctx, pp, pc, ps, pk, grp);
     const tails = fadeLines(tail, [1, 0.86, 0.68], 1.3, grp, true);
-    const world = sh.P.map((v) => v.clone().applyMatrix4(grp.matrixWorld));
-    const box = new THREE.Box3().setFromPoints(world);
-    const edgeWorld = sh.E.map(([a, b]) => [world[a], world[b]] as [THREE.Vector3, THREE.Vector3]);
     const label = el(
       ctx,
       pr.featured ? "proj featured" : "proj",
@@ -224,42 +227,84 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     label.setAttribute("role", "button");
     label.setAttribute("aria-label", `Open ${pr.title}`);
     label.tabIndex = -1;
-    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0, lx: 0, ly: 0, lw: 260, lh: 110, tf: "", op: "", pe: "", bx: 0, by: 0, bpy: 0, push: 0 };
+    return {
+      data: pr,
+      grp,
+      local: sh.P,
+      edges: sh.E,
+      wide,
+      tall,
+      worldWide,
+      worldTall,
+      // where it is now, in whichever arrangement the screen asks for (set by arrange())
+      center: wide.center.clone(),
+      world: worldWide,
+      box: new THREE.Box3().setFromPoints(worldWide),
+      edgeWorld: sh.E.map(([a, b]) => [worldWide[a], worldWide[b]] as [THREE.Vector3, THREE.Vector3]),
+      stars,
+      lines,
+      pulses,
+      tails,
+      label,
+      hl: 0,
+      sx: 0,
+      sy: 0,
+      lx: 0,
+      ly: 0,
+      lw: 260,
+      lh: 110,
+      tf: "",
+      op: "",
+      pe: "",
+      bx: 0,
+      by: 0,
+      bpy: 0,
+      push: 0,
+    };
   });
 
-  // the rising dust: grains leave the planet's surface (top first) and settle on the stars and lines
+  // the rising dust: grains leave the planet's surface (top first) and settle on the stars and lines,
+  // wherever the arrangement has put them (each grain knows its place in both)
   const NR = Math.round(18000 * ctx.quality);
-  const RS = new Float32Array(NR * 3), RE = new Float32Array(NR * 3), RD = new Float32Array(NR), RC = new Float32Array(NR * 3), RZ = new Float32Array(NR);
+  const RS = new Float32Array(NR * 3), RE = new Float32Array(NR * 3), RET = new Float32Array(NR * 3), RD = new Float32Array(NR), RC = new Float32Array(NR * 3), RZ = new Float32Array(NR);
   {
     const pm = new THREE.Mesh(planetGeo);
     pm.scale.setScalar(PL_R);
     pm.position.copy(PC);
     pm.rotation.copy(planetRot);
     pm.updateMatrixWorld(true);
-    const sampler = new MeshSurfaceSampler(new THREE.Mesh(planetGeo)).build(), p = V();
-    const starWorld = projs.flatMap((pr) => pr.world), allEdges = projs.flatMap((pr) => pr.edgeWorld);
+    const sampler = new MeshSurfaceSampler(new THREE.Mesh(planetGeo)).build(), p = V(), j = V(), q = V(), qt = V();
+    const starIdx = projs.flatMap((pr, pi) => pr.local.map((_, i) => [pi, i] as const));
+    const edgeIdx = projs.flatMap((pr, pi) => pr.edges.map(([a, b]) => [pi, a, b] as const));
     for (let i = 0; i < NR; i++) {
       sampler.sample(p);
       p.applyMatrix4(pm.matrixWorld);
       RS.set([p.x, p.y, p.z], i * 3);
       RD[i] = clamp(0.5 - ((p.y - PC.y) / PL_R) * 0.4 + (R() - 0.5) * 0.2, 0, 0.9);
-      let q: THREE.Vector3;
-      if (R() < 0.45) q = starWorld[Math.floor(R() * starWorld.length)].clone().add(V(gauss() * 0.05, gauss() * 0.05, gauss() * 0.05));
-      else {
-        const [a, b] = allEdges[Math.floor(R() * allEdges.length)];
-        q = a.clone().lerp(b, R()).add(V(gauss() * 0.03, gauss() * 0.03, gauss() * 0.03));
+      if (R() < 0.45) {
+        const [pi, k] = starIdx[Math.floor(R() * starIdx.length)];
+        j.set(gauss() * 0.05, gauss() * 0.05, gauss() * 0.05);
+        q.copy(projs[pi].worldWide[k]).add(j);
+        qt.copy(projs[pi].worldTall[k]).add(j);
+      } else {
+        const [pi, a, b] = edgeIdx[Math.floor(R() * edgeIdx.length)], t = R(), pr = projs[pi];
+        j.set(gauss() * 0.03, gauss() * 0.03, gauss() * 0.03);
+        q.copy(pr.worldWide[a]).lerp(pr.worldWide[b], t).add(j);
+        qt.copy(pr.worldTall[a]).lerp(pr.worldTall[b], t).add(j);
       }
       RE.set([q.x, q.y, q.z], i * 3);
+      RET.set([qt.x, qt.y, qt.z], i * 3);
       RC.set(emberAt(0.1 + R() * 0.5), i * 3);
       RZ[i] = 0.016 + R() * 0.026;
     }
   }
-  const riseU = { uR: { value: 0 }, uOut: { value: 0 }, uTime: ctx.u.TIME, uScale: ctx.u.SCALE, uFocus: ctx.u.FOCUS, ...ctx.u.CUR };
+  const riseU = { uR: { value: 0 }, uOut: { value: 0 }, uTall: ctx.u.TALL, uTime: ctx.u.TIME, uScale: ctx.u.SCALE, uFocus: ctx.u.FOCUS, ...ctx.u.CUR };
   let rise: THREE.Points;
   {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(RS, 3));
     g.setAttribute("aE", new THREE.BufferAttribute(RE, 3));
+    g.setAttribute("aET", new THREE.BufferAttribute(RET, 3));
     g.setAttribute("aD", new THREE.BufferAttribute(RD, 1));
     g.setAttribute("aCol", new THREE.BufferAttribute(RC, 3));
     g.setAttribute("aSize", new THREE.BufferAttribute(RZ, 1));
@@ -269,12 +314,12 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       blending: THREE.AdditiveBlending,
       uniforms: riseU,
       vertexShader: /* glsl */ `
-        attribute vec3 aE, aCol; attribute float aD, aSize; uniform float uR, uOut, uTime, uScale, uFocus; varying vec3 vC; varying float vCoc;
+        attribute vec3 aE, aET, aCol; attribute float aD, aSize; uniform float uR, uOut, uTall, uTime, uScale, uFocus; varying vec3 vC; varying float vCoc;
         ${GLSL_FN}
         ${STIR_GLSL}
         void main(){
           float x = clamp((uR - aD) / (1.0 - aD * 0.9), 0.0, 1.0), e = x * x * (3.0 - 2.0 * x), f = sin(3.14159 * e);
-          vec3 p = mix(position, aE, e) + vec3(0.0, 2.5, 0.0) * f + flow(position * 0.4 + uTime * 0.05) * 1.3 * f;
+          vec3 p = mix(position, mix(aE, aET, uTall), e) + vec3(0.0, 2.5, 0.0) * f + flow(position * 0.4 + uTime * 0.05) * 1.3 * f;
           vec4 mv = modelViewMatrix * vec4(p, 1.0); float d = -mv.z; stir(mv, d, 20.0);
           float coc = clamp(abs(d - uFocus) * 0.04, 0.0, 1.0), vis = step(0.001, uR) * (1.0 - uOut);
           gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 + f * 1.4) * (1.0 + coc * 2.0), 36.0); vCoc = coc;

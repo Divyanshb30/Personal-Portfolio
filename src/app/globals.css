@@ -22,14 +22,31 @@
 
 :root {
   color-scheme: dark;
+  /* a phone's notch and home bar (the film runs under them; the chrome keeps clear) */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  /* the side gutter, on a phone */
+  --gut: 24px;
+  /* how high above the bottom edge the words that sit low begin (clear of the progress line, or a phone's dock) */
+  --low: 120px;
 }
 * {
   box-sizing: border-box;
 }
+[hidden] {
+  display: none !important;
+}
 html {
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
   text-rendering: optimizeLegibility;
   scroll-behavior: auto;
+  /* no pull-to-refresh: reloading the film by accident is expensive */
+  overscroll-behavior-y: none;
 }
 body {
   margin: 0;
@@ -37,6 +54,11 @@ body {
   color: #ececee;
   font-family: var(--font-body);
   overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+button,
+a {
+  touch-action: manipulation;
 }
 ::selection {
   background: rgba(255, 200, 150, 0.22);
@@ -61,8 +83,10 @@ html {
   background: rgba(255, 200, 150, 0.32);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 200, 150, 0.55);
+@media (hover: hover) {
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 200, 150, 0.55);
+  }
 }
 
 /* ---------- type ---------- */
@@ -92,9 +116,12 @@ html {
 }
 .film-canvas {
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
   width: 100vw;
+  /* as tall as the largest viewport, so a phone's toolbar coming and going never resizes the film */
   height: 100vh;
+  height: 100lvh;
   display: block;
 }
 .film-ui {
@@ -120,6 +147,29 @@ html {
   left: 50%;
   bottom: 48px;
   transform: translateX(-50%);
+  white-space: nowrap;
+}
+/* on iOS the hint is how tilt is asked for */
+.film-hint button {
+  appearance: none;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 14px 18px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: #ffd2a4;
+  cursor: pointer;
+  pointer-events: auto;
+}
+/* a little shade under the chrome, on a phone only */
+.film-scrim {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
 }
 .film-loading {
   position: fixed;
@@ -229,6 +279,21 @@ html {
     opacity: 0;
   }
 }
+/* the GPU dropped the film: say so, and offer a reload */
+.film-lost {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+}
+.film-lost .chip {
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: #ffd2a4;
+  padding: 14px 20px;
+}
 
 /* the section rail */
 .film-rail {
@@ -250,9 +315,6 @@ html {
   letter-spacing: 0.2em;
   color: #4d4d54;
   transition: color 0.5s;
-}
-.film-rail button:hover {
-  color: #a9a9b0;
 }
 .film-rail button.on {
   color: #ffd2a4;
@@ -279,14 +341,22 @@ html {
   color: #a9a9b0;
   transition: color 0.3s;
 }
-.film-bar a:hover,
-.film-bar button:hover {
-  color: #ffd2a4;
-}
 .film-bar a:focus-visible,
 .film-bar button:focus-visible {
   outline: 1px solid rgba(255, 210, 170, 0.6);
   outline-offset: 4px;
+}
+@media (hover: hover) {
+  .film-rail button:hover {
+    color: #a9a9b0;
+  }
+  .film-rail button.on:hover {
+    color: #ffd2a4;
+  }
+  .film-bar a:hover,
+  .film-bar button:hover {
+    color: #ffd2a4;
+  }
 }
 
 /* the cursor, with a mouse: an ember dot on the pointer and a hairline ring that trails it; the ring
@@ -343,6 +413,118 @@ html.film-cursor * {
   opacity: 0;
   will-change: opacity, transform;
   text-shadow: 0 0 24px #050507, 0 0 40px #050507;
+}
+.blk p {
+  margin-bottom: 0;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #a9a9b0;
+}
+/* each moment's words, and where they sit in a wide frame */
+.blk-arrival {
+  left: 72px;
+  top: 30vh;
+  opacity: 1;
+}
+.blk-arrival h1 {
+  font-size: clamp(56px, 6.6vw, 96px);
+  line-height: 0.98;
+  margin-top: 18px;
+}
+.blk-arrival p {
+  margin-top: 26px;
+  max-width: 380px;
+}
+.blk-think {
+  left: 72px;
+  top: 27vh;
+}
+.blk-think h2 {
+  font-size: clamp(44px, 4.4vw, 64px);
+  line-height: 1.02;
+  margin-top: 16px;
+}
+.blk-think p {
+  margin-top: 22px;
+  max-width: 340px;
+}
+.blk-build {
+  left: 72px;
+  top: 16vh;
+}
+.blk-build h2 {
+  font-size: clamp(40px, 3.9vw, 56px);
+  line-height: 1.02;
+  margin-top: 14px;
+}
+.blk-build p {
+  margin-top: 16px;
+  font-size: 16px;
+  max-width: 330px;
+}
+.blk-journey {
+  left: 0;
+  right: 0;
+  top: 36%;
+  text-align: center;
+}
+.blk-journey h2 {
+  font-size: clamp(44px, 5.4vw, 78px);
+  line-height: 1;
+  margin-top: 22px;
+}
+.blk-now {
+  left: 16px;
+  right: 16px;
+  top: 16vh;
+  text-align: center;
+}
+.blk-now h2 {
+  font-size: clamp(40px, 4.4vw, 64px);
+  line-height: 1.05;
+  margin-top: 18px;
+}
+.blk-now p {
+  margin-top: 22px;
+  line-height: 1.6;
+  color: #c9c9cf;
+  white-space: pre-line;
+}
+.blk-contact {
+  left: 72px;
+  top: 22vh;
+}
+.blk-contact h2 {
+  font-size: clamp(56px, 6.6vw, 96px);
+  line-height: 0.98;
+  margin-top: 18px;
+}
+.blk-email {
+  margin-top: 30px;
+  font-size: 21px;
+  display: inline-block;
+  border-bottom: 1px solid rgba(255, 200, 150, 0.4);
+  padding-bottom: 6px;
+}
+.blk-links {
+  margin-top: 24px;
+  display: flex;
+  gap: 26px;
+}
+.blk-links a {
+  color: #ffc896;
+}
+.blk-contact .chip {
+  margin-top: 30px;
+}
+.blk-stack {
+  left: 48px;
+  bottom: 84px;
+}
+.blk-stack h2 {
+  font-size: 26px;
+  line-height: 1.1;
+  margin-top: 8px;
 }
 .lbl {
   position: absolute;
@@ -468,6 +650,19 @@ html.film-cursor * {
   background: linear-gradient(rgb(11, 11, 14), rgba(11, 11, 14, 0));
   pointer-events: none;
 }
+/* (a sheet's grabber: shown only where the panel rises from the bottom) */
+.film-panel .grab,
+.film-sheet .grab {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 36px;
+  height: 4px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: rgba(236, 236, 238, 0.2);
+}
 .film-panel h3 {
   font-family: var(--font-display);
   font-stretch: 125%;
@@ -544,9 +739,11 @@ html.film-cursor * {
   border-radius: 20px;
   padding: 10px 18px;
 }
-.pill:hover {
-  border-color: rgba(255, 200, 150, 0.8);
-  background: rgba(255, 200, 150, 0.06);
+@media (hover: hover) {
+  .pill:hover {
+    border-color: rgba(255, 200, 150, 0.8);
+    background: rgba(255, 200, 150, 0.06);
+  }
 }
 
 /* stack names */
@@ -585,6 +782,10 @@ html.film-cursor * {
 }
 .tool.lead .big + .note {
   margin-top: 10px;
+}
+/* a lead a finger has picked: its group comes forward */
+.tool.lead.picked .big {
+  color: #ffd2a4;
 }
 
 /* journey memories */
@@ -639,16 +840,18 @@ html.film-cursor * {
   text-decoration: none;
   transition: border-color 0.3s, color 0.3s;
 }
-.chip:hover {
-  border-color: rgba(255, 200, 150, 0.6);
-  color: #ffd2a4;
-}
 .film-link {
   color: inherit;
   text-decoration: none;
 }
-.film-link:hover {
-  color: #ffd2a4;
+@media (hover: hover) {
+  .chip:hover {
+    border-color: rgba(255, 200, 150, 0.6);
+    color: #ffd2a4;
+  }
+  .film-link:hover {
+    color: #ffd2a4;
+  }
 }
 
 .sr-only {
@@ -661,101 +864,6 @@ html.film-cursor * {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-/* ---------- small screens: the rail folds away, words keep a 24px gutter ---------- */
-@media (max-width: 760px) {
-  .film-name {
-    left: 24px;
-    top: 28px;
-    font-size: 13px;
-  }
-  .film-rail {
-    display: none;
-  }
-  .film-bar {
-    right: 24px;
-    top: 21px;
-    gap: 16px;
-  }
-  .film-bar a,
-  .film-bar button {
-    letter-spacing: 0.16em;
-    padding: 6px 0;
-  }
-  .film-layer .blk {
-    left: 24px !important;
-    right: 24px !important;
-    max-width: calc(100vw - 48px);
-  }
-  .film-layer .blk p {
-    max-width: none !important;
-  }
-  /* the stack's title sits above the progress line, not on it */
-  .film-layer [data-block="stack"] {
-    bottom: 132px !important;
-  }
-  .film-hint {
-    bottom: 32px;
-    white-space: nowrap;
-  }
-  .bud {
-    width: min(320px, calc(100vw - 48px));
-  }
-  .bud .w {
-    font-size: 30px;
-  }
-  .proj {
-    max-width: 200px;
-  }
-  .proj .t {
-    font-size: 14px;
-  }
-  .proj.featured {
-    max-width: 230px;
-  }
-  .proj.featured .t {
-    font-size: 17px;
-  }
-  .mem {
-    width: calc(100vw - 48px);
-  }
-  .mem .yr {
-    font-size: 44px;
-  }
-  .mem .yr.range {
-    font-size: 30px;
-  }
-  .tool.lead .big {
-    font-size: 34px;
-  }
-  .film-panel {
-    left: 12px;
-    right: 12px;
-    top: 76px;
-    bottom: 16px;
-    width: auto;
-    padding: 0 24px 28px;
-  }
-  .film-panel .ph-top {
-    margin: 0 -24px;
-    padding: 22px 24px 12px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .film-panel,
-  .film-loading {
-    transition: none;
-  }
-  /* the lines only fade, and the dots hold still */
-  .film-loading-words {
-    transform: none !important;
-  }
-  .film-loading-dots i {
-    animation: none;
-    opacity: 1;
-  }
 }
 
 /* ---------- the landing's quiet corners, and the progress line ---------- */
@@ -773,6 +881,9 @@ html.film-cursor * {
 .film-hud-time {
   color: #a9a9b0;
 }
+.film-hud-city {
+  display: none;
+}
 .film-progress {
   position: absolute;
   right: 56px;
@@ -783,10 +894,25 @@ html.film-cursor * {
   gap: 10px;
   color: #6d6d75;
 }
+/* (a button, so a phone can open the chapters from it; in a wide frame it only shows where you are) */
 .film-progress-row {
+  appearance: none;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+}
+.film-progress-place,
+.film-progress-menu {
+  display: none;
 }
 /* how the orb feels, right now */
 .film-mood {
@@ -809,20 +935,627 @@ html.film-cursor * {
   transform-origin: left center;
   transform: scaleX(0);
 }
-@media (max-width: 760px) {
-  .film-hud {
-    left: 24px;
-    right: 24px;
-    bottom: 76px;
+/* three hairlines: the chapters */
+.film-progress-menu {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 18px;
+  height: 44px;
+}
+.film-progress-menu i {
+  display: block;
+  height: 1px;
+  background: #c9c9cf;
+}
+.film-progress-menu i:nth-child(2) {
+  width: 12px;
+  margin-left: 6px;
+}
+
+/* ---------- the chapters sheet (a phone's way round the film) ---------- */
+.film-sheet-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.film-sheet-wrap.open {
+  pointer-events: auto;
+}
+.film-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 7, 0.6);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+.film-sheet-wrap.open .film-sheet-backdrop {
+  opacity: 1;
+}
+.film-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 0 calc(var(--safe-b) + 10px);
+  background: rgb(11, 11, 14);
+  border: 1px solid rgba(230, 235, 245, 0.1);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  transform: translateY(105%);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.film-sheet-wrap.open .film-sheet {
+  transform: none;
+}
+.film-sheet.dragging {
+  transition: none;
+}
+.film-sheet .grab {
+  display: block;
+}
+.film-sheet-top {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px calc(var(--gut) + var(--safe-r)) 8px calc(var(--gut) + var(--safe-l));
+  touch-action: none;
+}
+.film-x {
+  appearance: none;
+  background: none;
+  border: 0;
+  margin: -14px 0;
+  padding: 14px 0 14px 20px;
+  color: #a9a9b0;
+  cursor: pointer;
+}
+.film-sheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 8px;
+}
+.film-sheet-list button {
+  appearance: none;
+  background: none;
+  border: 0;
+  margin: 0;
+  width: 100%;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 calc(var(--gut) + var(--safe-r)) 0 calc(var(--gut) + var(--safe-l));
+  font: inherit;
+  text-align: left;
+  color: #d9d9de;
+  cursor: pointer;
+}
+.film-sheet-list li + li button {
+  border-top: 1px solid rgba(236, 236, 238, 0.06);
+}
+.film-sheet-list .disp {
+  font-size: 22px;
+}
+.film-sheet-list .on .disp,
+.film-sheet-list .on .sub {
+  color: #ffd2a4;
+}
+.film-sheet-foot {
+  display: flex;
+  gap: 28px;
+  padding: 6px calc(var(--gut) + var(--safe-r)) 0 calc(var(--gut) + var(--safe-l));
+  border-top: 1px solid rgba(236, 236, 238, 0.08);
+}
+.film-sheet-foot a {
+  color: #ffc896;
+  text-decoration: none;
+  padding: 14px 0;
+}
+
+/* ---------- where the film can't run: its story as a quiet page ---------- */
+.film-fallback {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: calc(var(--safe-t) + 72px) calc(var(--gut) + var(--safe-r)) calc(var(--safe-b) + 96px) calc(var(--gut) + var(--safe-l));
+  font-size: 16px;
+  line-height: 1.65;
+  color: #b9b9c0;
+}
+.film-fallback h1 {
+  font-size: clamp(44px, 12vw, 88px);
+  line-height: 0.98;
+  margin-top: 18px;
+  color: #ececee;
+}
+.film-fallback h2 {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 64px 0 0;
+  color: #ececee;
+}
+.film-fallback h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  color: #ececee;
+}
+.film-fallback p {
+  margin: 12px 0 0;
+}
+.film-fallback ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.film-fallback li {
+  padding: 16px 0;
+  border-top: 1px solid rgba(236, 236, 238, 0.08);
+}
+.film-fallback a {
+  color: #ffd2a4;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 200, 150, 0.35);
+}
+.film-fallback li a {
+  display: inline-block;
+  margin: 12px 18px 0 0;
+}
+.film-fallback footer .mono a {
+  display: inline-block;
+  margin-right: 24px;
+  padding: 12px 0;
+  border: 0;
+}
+.film-fallback footer .sub {
+  margin-top: 40px;
+}
+
+/* ==========================================================================================
+   EVERY SCREEN. A wide frame with a mouse is the film as composed; the rest adapts from it.
+   ========================================================================================== */
+
+/* ---------- touch: every control is big enough for a finger ---------- */
+@media (pointer: coarse) {
+  .film-bar {
+    top: 27px;
   }
-  .film-hud-l > div:first-child {
+  .film-bar a,
+  .film-bar button {
+    padding: 13px 0;
+  }
+  .film-rail {
+    gap: 2px;
+  }
+  .film-rail button {
+    padding: 8px 0;
+  }
+  .chip,
+  .pill {
+    padding: 13px 18px;
+  }
+  .blk-links a {
+    padding: 12px 0;
+  }
+}
+
+/* ---------- portrait: the film's vertical cut; the subject is framed high or low, the words take the other end ---------- */
+@media (max-aspect-ratio: 17/20) {
+  .blk-arrival,
+  .blk-contact {
+    top: auto;
+    bottom: var(--low);
+  }
+  .blk-think {
+    top: calc(var(--safe-t) + 13vh);
+  }
+  .blk-build {
+    top: calc(var(--safe-t) + 11vh);
+  }
+  .blk-now {
+    top: calc(var(--safe-t) + 11vh);
+  }
+  /* a project's story rises from the bottom, under its constellation */
+  .film-panel {
+    left: max(0px, calc(50% - 320px));
+    right: max(0px, calc(50% - 320px));
+    top: auto;
+    bottom: 0;
+    width: auto;
+    height: min(62svh, 720px);
+    padding: 0 28px calc(var(--safe-b) + 32px);
+    background: rgb(10, 10, 13);
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 1;
+    transform: translateY(104%);
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.5s;
+  }
+  .film-panel.dragging {
+    transition: none;
+  }
+  .film-panel .ph-top {
+    margin: 0 -28px;
+    padding: 24px 28px 12px;
+    background: rgb(10, 10, 13);
+    touch-action: none;
+  }
+  .film-panel .ph-top::after {
+    background: linear-gradient(rgb(10, 10, 13), rgba(10, 10, 13, 0));
+  }
+  .film-panel .grab {
+    display: block;
+  }
+  .film-panel [data-close] {
+    margin: -14px 0;
+    padding: 14px 0 14px 20px;
+  }
+}
+
+/* ---------- a phone: gutters, the dock at the bottom, the chapters one tap away ---------- */
+@media (max-width: 760px) and (min-height: 500px) {
+  :root {
+    --low: calc(var(--safe-b) + 92px);
+  }
+  .sub {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+  }
+  .film-scrim {
+    display: block;
+  }
+  .film-scrim-t {
+    top: 0;
+    height: calc(var(--safe-t) + 84px);
+    background: linear-gradient(rgba(5, 5, 7, 0.55), rgba(5, 5, 7, 0));
+  }
+  .film-scrim-b {
+    bottom: 0;
+    height: calc(var(--safe-b) + 170px);
+    background: linear-gradient(rgba(5, 5, 7, 0), rgba(5, 5, 7, 0.5) 45%, rgba(5, 5, 7, 0.82));
+  }
+  .film-name {
+    left: calc(var(--gut) + var(--safe-l));
+    top: calc(var(--safe-t) + 28px);
+    font-size: 13px;
+  }
+  .film-rail {
+    display: none;
+  }
+  .film-bar {
+    right: calc(var(--gut) + var(--safe-r));
+    top: calc(var(--safe-t) + 14px);
+    gap: 18px;
+  }
+  .film-bar a,
+  .film-bar button {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    padding: 13px 0;
+  }
+  /* the landing's time sits where the name will be */
+  .film-hud {
+    left: calc(var(--gut) + var(--safe-l));
+    right: auto;
+    top: calc(var(--safe-t) + 28px);
+    bottom: auto;
+    line-height: 18px;
+  }
+  .film-hud-where {
+    display: none;
+  }
+  .film-hud-city {
+    display: inline;
+  }
+  /* the dock: where you are, how far, and the chapters, in the thumb's reach */
+  .film-progress {
+    left: calc(var(--gut) + var(--safe-l));
+    right: calc(var(--gut) + var(--safe-r));
+    bottom: calc(var(--safe-b) + 8px);
+    align-items: stretch;
+    gap: 2px;
+  }
+  .film-mood {
+    align-self: flex-start;
+  }
+  .film-progress-row {
+    pointer-events: auto;
+    height: 44px;
+    gap: 12px;
+  }
+  .film-progress-n {
+    color: #8f8f96;
+  }
+  .film-progress-place {
+    display: inline;
+    color: #d9d9de;
+    min-width: 5.5em;
+    text-align: left;
+  }
+  .film-progress-track {
+    flex: 1;
+    width: auto;
+  }
+  .film-progress-menu {
+    display: flex;
+  }
+  .film-hint {
+    bottom: calc(var(--safe-b) + 58px);
+  }
+  .film-hint button {
+    padding: 14px 18px;
+  }
+  /* the words keep a gutter */
+  .film-layer .blk {
+    left: calc(var(--gut) + var(--safe-l));
+    right: calc(var(--gut) + var(--safe-r));
+  }
+  .blk p {
+    font-size: 16px;
+    max-width: none;
+  }
+  .blk-arrival h1 {
+    font-size: clamp(44px, 14.5vw, 72px);
+    margin-top: 14px;
+  }
+  .blk-arrival p {
+    margin-top: 16px;
+  }
+  .blk-think h2 {
+    font-size: clamp(36px, 11vw, 52px);
+  }
+  .blk-think p {
+    margin-top: 16px;
+  }
+  .blk-build h2 {
+    font-size: clamp(32px, 10vw, 46px);
+  }
+  .blk-build p {
+    margin-top: 12px;
+    font-size: 15px;
+  }
+  .blk-journey h2 {
+    font-size: clamp(36px, 11.5vw, 56px);
+  }
+  .blk-now h2 {
+    font-size: clamp(34px, 10.5vw, 52px);
+  }
+  .blk-now p {
+    font-size: 16px;
+  }
+  .blk-contact h2 {
+    font-size: clamp(48px, 15vw, 76px);
+    margin-top: 14px;
+  }
+  .blk-email {
+    margin-top: 22px;
+    font-size: 18px;
+    padding: 10px 0 8px;
+  }
+  .blk-links {
+    margin-top: 10px;
+  }
+  .blk-contact .chip {
+    margin-top: 14px;
+  }
+  .film-layer .blk-stack {
+    right: auto;
+    bottom: var(--low);
+  }
+  .blk-stack h2 {
+    font-size: 22px;
+  }
+  .bud {
+    width: min(320px, calc(100vw - 48px));
+  }
+  .bud .w {
+    font-size: 30px;
+  }
+  .proj {
+    max-width: 200px;
+  }
+  .proj .t {
+    font-size: 14px;
+  }
+  .proj .m,
+  .proj .o {
+    font-size: 10.5px;
+  }
+  .proj.featured {
+    max-width: 230px;
+  }
+  .proj.featured .t {
+    font-size: 17px;
+  }
+  .mem {
+    width: calc(100vw - 48px - var(--safe-l) - var(--safe-r));
+  }
+  .mem .yr {
+    font-size: 44px;
+  }
+  .mem .yr.range {
+    font-size: 30px;
+  }
+  .mem .t {
+    margin-top: 8px;
+  }
+  .mem .k {
+    margin-top: 10px;
+    font-size: 26px;
+  }
+  .mem .n {
+    margin-top: 8px;
+    font-size: 15px;
+  }
+  .tool.lead .big {
+    font-size: 34px;
+  }
+  .tool.lead .cap {
+    font-size: 10px;
+  }
+  .film-panel {
+    padding: 0 24px calc(var(--safe-b) + 28px);
+  }
+  .film-panel .ph-top {
+    margin: 0 -24px;
+    padding: 24px 24px 12px;
+  }
+  .film-panel p,
+  .film-panel li {
+    font-size: 15.5px;
+  }
+}
+
+/* ---------- a phone on its side: little height, so everything tightens ---------- */
+@media (max-height: 500px) {
+  .film-name {
+    top: calc(var(--safe-t) + 18px);
+  }
+  .film-bar {
+    top: calc(var(--safe-t) + 5px);
+    right: calc(40px + var(--safe-r));
+  }
+  .film-rail {
+    right: calc(40px + var(--safe-r));
+  }
+  .film-hud {
+    left: calc(48px + var(--safe-l));
+    bottom: 16px;
+  }
+  .film-hud-where {
     display: none;
   }
   .film-progress {
-    right: 24px;
-    bottom: 76px;
+    right: calc(40px + var(--safe-r));
+    bottom: 16px;
   }
-  .film-progress-track {
-    width: 64px;
+  .film-hint {
+    bottom: 16px;
+  }
+  .film-layer .blk-arrival,
+  .film-layer .blk-think,
+  .film-layer .blk-build,
+  .film-layer .blk-contact {
+    left: calc(48px + var(--safe-l));
+  }
+  .blk-arrival {
+    top: 20vh;
+  }
+  .blk-arrival h1,
+  .blk-contact h2 {
+    font-size: clamp(36px, 12vh, 60px);
+    margin-top: 10px;
+  }
+  .blk-arrival p,
+  .blk-think p,
+  .blk-build p {
+    margin-top: 12px;
+    font-size: 14px;
+    max-width: 340px;
+  }
+  .blk-think {
+    top: 20vh;
+  }
+  .blk-think h2,
+  .blk-build h2,
+  .blk-now h2 {
+    font-size: clamp(30px, 10vh, 46px);
+    margin-top: 8px;
+  }
+  .blk-build {
+    top: 14vh;
+  }
+  .blk-now {
+    top: 12vh;
+  }
+  .blk-now p {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .blk-contact {
+    top: 14vh;
+  }
+  .blk-email {
+    margin-top: 14px;
+    font-size: 17px;
+  }
+  .blk-links {
+    margin-top: 6px;
+  }
+  .blk-contact .chip {
+    margin-top: 8px;
+  }
+  .blk-stack {
+    bottom: 48px;
+  }
+  .mem .yr {
+    font-size: 40px;
+  }
+  .mem .yr.range {
+    font-size: 28px;
+  }
+  .mem .n {
+    font-size: 14px;
+  }
+  .film-panel {
+    top: 12px;
+    bottom: 12px;
+    right: calc(12px + var(--safe-r));
+    width: min(440px, 50vw);
+    padding: 0 28px 28px;
+  }
+  .film-panel .ph-top {
+    margin: 0 -28px;
+    padding: 18px 28px 12px;
+  }
+  .film-panel h3 {
+    font-size: 24px;
+  }
+}
+
+/* ---------- a very wide screen: the display type steps up once ---------- */
+@media (min-width: 1800px) and (min-aspect-ratio: 17/20) {
+  .blk-arrival h1,
+  .blk-contact h2 {
+    font-size: clamp(56px, 6.6vw, 112px);
+  }
+  .blk-journey h2 {
+    font-size: clamp(44px, 5.4vw, 92px);
+  }
+  .blk-think h2,
+  .blk-now h2 {
+    font-size: clamp(44px, 4.4vw, 76px);
+  }
+  .blk-build h2 {
+    font-size: clamp(40px, 3.9vw, 66px);
+  }
+  .blk p {
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-panel,
+  .film-loading,
+  .film-sheet,
+  .film-sheet-backdrop {
+    transition: none;
+  }
+  /* the lines only fade, and the dots hold still */
+  .film-loading-words {
+    transform: none !important;
+  }
+  .film-loading-dots i {
+    animation: none;
+    opacity: 1;
   }
 }

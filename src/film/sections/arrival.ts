@@ -140,7 +140,7 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
       const restless = ctx.u.CUR.uStir.value > 0.05, depth = tmp.z;
 
       // is the cursor resting on the words? (they drift with the camera, just as the film moves them this frame)
-      const tx = -f.cam.x * 22 * f.calm, ty = f.cam.y * 14 * f.calm;
+      const tx = f.layerX, ty = f.layerY;
       if (fine && s < 0.02 && (!sized || sizedAt !== ctx.W * 1e5 + ctx.H)) {
         measure();
         sizedAt = ctx.W * 1e5 + ctx.H;

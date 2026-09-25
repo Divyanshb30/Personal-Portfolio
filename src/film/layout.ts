@@ -88,3 +88,21 @@ export const placeAt = (GG: number, G: number): Place =>
             : G < 0.745
               ? "Build"
               : "Stack";
+
+/**
+ * The vertical cut's lens shift, along the film: how far (as a fraction of the frame's height) the
+ * picture moves up, so a subject clears words set below it (the landing, the memories, "Let's talk"),
+ * or down, under words set above it (Think, Now). A wide frame never shifts.
+ */
+const LIFT: [number, number][] = [
+  [0, 0.15], [0.02, 0.15], [0.045, 0], [0.125, 0], [0.145, -0.1], [0.178, -0.1], [0.2, 0],
+  [0.515, 0], [0.535, 0.16], [0.8, 0.16], [0.84, -0.05], [0.92, -0.05], [0.945, 0.2], [1, 0.2],
+];
+export const liftAt = (GG: number) => {
+  for (let k = 1; k < LIFT.length; k++)
+    if (GG <= LIFT[k][0]) {
+      const [a0, b0] = LIFT[k - 1], [a1, b1] = LIFT[k];
+      return b0 + ((b1 - b0) * (GG - a0)) / (a1 - a0);
+    }
+  return LIFT[LIFT.length - 1][1];
+};

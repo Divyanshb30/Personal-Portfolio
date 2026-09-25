@@ -20,8 +20,9 @@ const CYCLE = (() => {
  * The loading screen: black, a line with dots that keep filling in, and a new line every beat, even
  * within one showing. It fades in to cover a jump and fades away when the film is there; a quick jump
  * (from the bar) blinks it in and out. Each showing after the first starts from a line picked at random.
+ * If the GPU drops the film (a phone does, to a page left in the background), it says so and offers a reload.
  */
-export default function LoadingVeil({ covered, failed, quick = false }: { covered: boolean; failed: boolean; quick?: boolean }) {
+export default function LoadingVeil({ covered, lost = false, quick = false }: { covered: boolean; lost?: boolean; quick?: boolean }) {
   const lines = useRef<HTMLSpanElement>(null);
   const first = useRef(true);
 
@@ -47,8 +48,13 @@ export default function LoadingVeil({ covered, failed, quick = false }: { covere
   return (
     <div className={`film-loading mono sub${covered ? " cover" : " done"}${quick ? " quick" : ""}`} aria-hidden={!covered}>
       <style>{CYCLE}</style>
-      {failed ? (
-        "This film needs WebGL. Try a recent desktop browser."
+      {lost ? (
+        <span className="film-lost">
+          The film paused.
+          <button type="button" className="mono chip" onClick={() => location.reload()}>
+            Tap to reload
+          </button>
+        </span>
       ) : (
         <>
           <span className="sr-only">Loading</span>

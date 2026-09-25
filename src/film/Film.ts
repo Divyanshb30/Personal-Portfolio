@@ -3,10 +3,10 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { block, makeShared, type Ctx, type Frame, type Section } from "./ctx";
-import { Director, firstHalfKeys, type Key } from "./director";
+import { Director, cut, firstHalfKeys, type Key } from "./director";
 import { environment, points, blobGeometry } from "./helpers";
 import { R, V, emberAt, gauss, smooth, COOL } from "./math";
-import { A_SPAN, OS, PLACES, PLACE_AT, filmT, placeAt, scrollFor, type Place } from "./layout";
+import { A_SPAN, OS, PLACES, PLACE_AT, filmT, liftAt, placeAt, scrollFor, type Place } from "./layout";
 import { loadFigure } from "./figure";
 import { buildBeing } from "./sections/being";
 import { buildThink } from "./sections/think";
@@ -19,6 +19,7 @@ import { buildAmbient } from "./sections/ambient";
 import { buildArrival } from "./sections/arrival";
 import { makeOrb } from "./orb";
 import { finishPass, maskBloom, photoMask } from "./post";
+import { formOf, makeTilt, type Tilt } from "./device";
 
 export type FilmOptions = {
   canvas: HTMLCanvasElement;
@@ -26,6 +27,10 @@ export type FilmOptions = {
   labels: HTMLElement;
   onPlace?: (p: Place) => void;
   onReady?: () => void;
+  /** the GPU dropped the film (a phone does this to a page left in the background) */
+  onLost?: () => void;
+  /** the device's tilt has started steering the camera */
+  onTilt?: () => void;
 };
 
 /** Pick a particle budget for this device. */
@@ -56,7 +61,9 @@ export class Film {
   private bloom!: UnrealBloomPass;
   private mask!: ReturnType<typeof photoMask>;
   private orb!: ReturnType<typeof makeOrb>;
+  /** the shot lists: the film as composed for a wide frame, and its vertical cut for a portrait one */
   private director!: Director;
+  private directorTall!: Director;
   private sections: Section[] = [];
   private raf = 0;
   private last = 0;
@@ -91,12 +98,21 @@ export class Film {
   private ratio = 0;
   private mouse2 = new THREE.Vector2();
   private maskOn = false;
+  /** tilt steers the camera on a touch screen; a finger only pokes, and lets go */
+  private tilt!: Tilt;
+  private touching = false;
+  private lastType = "mouse";
+  private sway = { x: 0, y: 0 };
+  /** how far through the page the visitor is, kept so a rotation lands them in the same place */
+  private frac = 0;
+  private lastW = 0;
+  private frameH = 0;
 
   constructor(private opts: FilmOptions) {}
 
   async init() {
     const { canvas, root, labels } = this.opts;
-    const W = window.innerWidth, H = window.innerHeight;
+    const { W, H } = this.frameSize();
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     // the resolutions the film may step between, sharpest first
     const top = Math.min(window.devicePixelRatio, 1.5);
@@ -104,14 +120,20 @@ export class Film {
     renderer.setPixelRatio(top);
     // the glass orb sees what is behind it through a copy of the frame; half resolution is plenty for a small orb
     renderer.transmissionResolutionScale = 0.5;
-    renderer.setSize(W, H);
+    // (the canvas keeps its CSS size, a full large viewport, so a phone's toolbar coming and going never resizes it)
+    renderer.setSize(W, H, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.92;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x050507);
     scene.environment = environment(renderer);
     const camera = new THREE.PerspectiveCamera(30, W / H, 0.05, 500);
-    this.ctx = { scene, camera, base: camera.clone(), renderer, root, labels, u: makeShared(W, H, renderer.getPixelRatio()), quality: qualityFor(), W, H };
+    const form = formOf(W, H);
+    this.ctx = { scene, camera, base: camera.clone(), renderer, root, labels, u: makeShared(W, H, renderer.getPixelRatio()), quality: qualityFor(), W, H, VH: window.innerHeight, form };
+    this.lastW = W;
+    this.frameH = H;
+    // a touch screen starts with the camera in the device's hands, until a mouse says otherwise
+    this.lastType = form.touch ? "touch" : "mouse";
     const ctx = this.ctx;
 
     // far stars, and dust drifting through the whole set
@@ -145,7 +167,8 @@ export class Film {
     this.sections.push(buildArrival(ctx, orb), buildAmbient(ctx, orb, () => journey.focus), orb);
 
     const keys: Key[] = [...firstHalfKeys(), ...journey.keys, ...horizon.keys, ...contact.keys];
-    this.director = new Director(keys);
+    this.director = new Director(cut(keys, false));
+    this.directorTall = new Director(cut(keys, true));
 
     // photographs skip the bloom and the filmic grade: a mask of where they are, rendered each frame
     this.mask = photoMask(renderer, scene, camera, ctx.u.TIME);
@@ -156,6 +179,8 @@ export class Film {
     maskBloom(this.bloom, this.mask.texture);
     this.composer.addPass(this.bloom);
     this.composer.addPass(finishPass(this.mask.texture, renderer.toneMappingExposure));
+    // a phone starts a step softer (its GPU is doing a lot at once) and earns the sharpest back once frames are on time
+    if (form.touch && Math.min(W, H) < 700) this.setRatio(1);
 
     // Sections hide what their moment doesn't need, and three compiles a shader (and uploads its buffers)
     // the first time something is drawn. So, behind the loading screen, compile every shader and draw
@@ -177,6 +202,9 @@ export class Film {
 
     this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress"), mood: block(ctx, "mood"), brand: block(ctx, "brand") };
     this.bindInput();
+    // on a touch screen the camera's sway comes from tilting it (asked for with a tap on iOS, see requestTilt)
+    this.tilt = makeTilt(() => this.opts.onTilt?.());
+    if (form.touch) this.tilt.start();
     const q = new URLSearchParams(location.search);
     if (q.has("s")) this.fix = +q.get("s")!;
     this.sSmooth = this.fix ?? this.progress();
@@ -185,28 +213,83 @@ export class Film {
     this.raf = requestAnimationFrame(this.tick);
   }
 
+  /** the canvas's size in CSS pixels: the full width, and the height of the largest viewport (100lvh) */
+  private frameSize() {
+    const c = this.opts.canvas;
+    return { W: c.clientWidth || window.innerWidth, H: c.clientHeight || window.innerHeight };
+  }
+
+  /** how far the page scrolls: measured against the frame, not the visible height, so a toolbar coming and going doesn't move the film */
+  private maxScroll() {
+    return Math.max(1, document.documentElement.scrollHeight - (this.frameH || window.innerHeight));
+  }
+
   private progress() {
-    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    return filmT(window.scrollY / max || 0);
+    return filmT(Math.min(1, window.scrollY / this.maxScroll()) || 0);
+  }
+
+  /** Whether the iOS tilt question still needs asking. */
+  get tiltNeedsPermission() {
+    return !!this.tilt?.needsPermission && !this.tilt.active;
+  }
+
+  /** Ask for the device's tilt (iOS wants this from a tap). Resolves whether tilt is on. */
+  requestTilt() {
+    return this.tilt?.request() ?? Promise.resolve(false);
   }
 
   private bindInput() {
-    const onMove = (e: PointerEvent) => {
-      if (!this.ctx) return;
-      const nx = (e.clientX / window.innerWidth) * 2 - 1, ny = -((e.clientY / window.innerHeight) * 2 - 1);
+    // A mouse is the cursor: it steers the camera and rests where it is. A finger only pokes: it places
+    // the pointer while it is down (a dent, a stir, a tap on the orb) and lets go when it lifts.
+    const place = (e: PointerEvent) => {
+      const c = this.ctx, nx = (e.clientX / c.W) * 2 - 1, ny = -((e.clientY / c.H) * 2 - 1);
       this.stirRaw += Math.hypot(nx - this.mouse.x, ny - this.mouse.y);
       this.mouse.x = nx;
       this.mouse.y = ny;
-      this.ctx.u.CUR.uActive.value = 1;
+      c.u.CUR.uActive.value = 1;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!this.ctx) return;
+      if (e.pointerType === "touch" && !this.touching) return;
+      this.lastType = e.pointerType;
+      place(e);
+    };
+    const onDown = (e: PointerEvent) => {
+      if (!this.ctx) return;
+      this.lastType = e.pointerType;
+      if (e.pointerType === "touch") {
+        // a fresh touch starts where it lands, not swept in from the last one
+        this.touching = true;
+        this.mouse.x = (e.clientX / this.ctx.W) * 2 - 1;
+        this.mouse.y = -((e.clientY / this.ctx.H) * 2 - 1);
+      }
+      place(e);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerType === "touch") this.touching = false;
     };
     let rt = 0;
     const onResize = () => {
+      if (!this.ctx) return;
+      const c = this.ctx;
+      c.VH = window.innerHeight;
+      // turned on its side (or resized across): land on the same moment of the film, not the same pixel
+      const fs = this.frameSize();
+      this.frameH = fs.H;
+      if (fs.W !== this.lastW) {
+        this.lastW = fs.W;
+        window.scrollTo({ top: this.frac * this.maxScroll(), behavior: "instant" });
+      }
       clearTimeout(rt);
       rt = window.setTimeout(() => {
-        const W = window.innerWidth, H = window.innerHeight, c = this.ctx;
+        const { W, H } = this.frameSize();
+        c.VH = window.innerHeight;
+        c.form = formOf(W, H);
+        // (a phone's toolbar only changes the visible height: the frame, and the GPU's buffers, stay as they are)
+        if (W === c.W && H === c.H) return;
         c.W = W;
         c.H = H;
-        c.renderer.setSize(W, H);
+        c.renderer.setSize(W, H, false);
         this.composer.setSize(W, H);
         this.mask.setSize(W * c.renderer.getPixelRatio(), H * c.renderer.getPixelRatio());
         c.camera.aspect = W / H;
@@ -215,26 +298,38 @@ export class Film {
         c.u.CUR.uAspect.value = W / H;
       }, 150);
     };
+    // the GPU can drop the film (a phone does this to a page left in the background): say so, and offer a reload
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(this.raf);
+      this.opts.onLost?.();
+    };
+    const canvas = this.opts.canvas;
     window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("pointerdown", onMove, { passive: true }); // a tap also places the cursor
+    window.addEventListener("pointerdown", onDown, { passive: true });
+    window.addEventListener("pointerup", onUp, { passive: true });
+    window.addEventListener("pointercancel", onUp, { passive: true });
     window.addEventListener("resize", onResize);
+    canvas.addEventListener("webglcontextlost", onLost);
     this.cleanup.push(() => {
+      clearTimeout(rt);
       window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerdown", onMove);
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("resize", onResize);
+      canvas.removeEventListener("webglcontextlost", onLost);
     });
   }
 
   /** Scroll the page to a section, gliding through everything between. */
   goTo(p: Place) {
-    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    window.scrollTo({ top: scrollFor(PLACE_AT[p]) * max, behavior: "smooth" });
+    window.scrollTo({ top: scrollFor(PLACE_AT[p]) * this.maxScroll(), behavior: "smooth" });
   }
 
   /** Cut straight to a section (behind the loading screen): no glide, and the orb appears where it belongs. */
   jumpTo(p: Place) {
-    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    window.scrollTo({ top: scrollFor(PLACE_AT[p]) * max, behavior: "instant" });
+    window.scrollTo({ top: scrollFor(PLACE_AT[p]) * this.maxScroll(), behavior: "instant" });
     this.sSmooth = this.fix ?? this.progress();
     this.orb?.snap();
   }
@@ -248,20 +343,29 @@ export class Film {
     const since = now - this.last, dt = Math.min(0.05, Math.max(0, since / 1000));
     this.last = now;
     u.TIME.value = now / 1000;
-    const target = this.progress();
+    this.frac = Math.min(1, Math.max(0, window.scrollY / this.maxScroll()));
+    const target = filmT(this.frac);
     this.sSmooth = this.fix ?? this.sSmooth + (target - this.sSmooth) * (1 - Math.exp(-dt * 2.2));
     const GG = this.sSmooth, G = Math.min(1, GG / OS), s = Math.min(1, G / A_SPAN);
-    const sh = this.director.shot(GG);
+    u.TALL.value = ctx.form.tall ? 1 : 0;
+    const sh = (ctx.form.tall ? this.directorTall : this.director).shot(GG);
 
-    // the cursor spring: the camera orbits its focus, near layers swing one way and far ones the other
-    const cam = this.cam, m = this.mouse, STIFF = 7.5, DAMP = 2 * Math.sqrt(STIFF) * 0.82;
-    cam.vx += (STIFF * (m.x - cam.x) - DAMP * cam.vx) * dt;
+    // the cursor spring: the camera orbits its focus, near layers swing one way and far ones the other.
+    // With a mouse the cursor leads it; on a touch screen the device's tilt does (or, until there is any,
+    // a slow handheld drift), and a lifted finger lets its poke fade away.
+    const m = this.mouse, sw = this.swayTarget(dt, u.TIME.value);
+    if (this.lastType === "touch" && !this.touching) u.CUR.uActive.value = Math.max(0, u.CUR.uActive.value - dt * 2.5);
+    const cam = this.cam, STIFF = 7.5, DAMP = 2 * Math.sqrt(STIFF) * 0.82;
+    cam.vx += (STIFF * (sw.x - cam.x) - DAMP * cam.vx) * dt;
     cam.x += cam.vx * dt;
-    cam.vy += (STIFF * (m.y - cam.y) - DAMP * cam.vy) * dt;
+    cam.vy += (STIFF * (sw.y - cam.y) - DAMP * cam.vy) * dt;
     cam.y += cam.vy * dt;
     // Arrival holds still; the rest of the film swings (gently, for reduced motion)
     const calm = (0.3 + 0.7 * smooth(0.03, 0.09, G)) * (this.still ? 0.25 : 1);
-    const f: Frame = { dt, time: u.TIME.value, GG, G, s, cam, mouse: m, calm, fixed: this.fix !== null };
+    // the words drift with the camera: less on a small screen, where they have no room to swim
+    const drift = ctx.form.narrow || ctx.form.tall ? 0.4 : 1;
+    const layerX = -cam.x * 22 * calm * drift, layerY = cam.y * 14 * calm * drift;
+    const f: Frame = { dt, time: u.TIME.value, GG, G, s, cam, mouse: m, calm, fixed: this.fix !== null, layerX, layerY };
     for (const sec of this.sections) sec.shot?.(f, sh);
 
     // the shot as directed, before the cursor sways it (words that must hold still are laid out from this)
@@ -272,6 +376,9 @@ export class Film {
     base.rotateZ(sh.roll);
     base.aspect = ctx.camera.aspect;
     base.fov = fitFov(sh.fov, base.aspect);
+    // the vertical cut shifts its lens to clear the words (none in a wide frame)
+    const lift = ctx.form.tall ? liftAt(GG) : 0;
+    this.lens(base, lift);
     base.updateProjectionMatrix();
     base.updateMatrixWorld(true);
 
@@ -287,6 +394,7 @@ export class Film {
     camera.lookAt(this.tmp.copy(sh.tgt).addScaledVector(this.rightV, cam.x * k * 0.14).addScaledVector(this.upV, cam.y * k * 0.1));
     camera.rotateZ(sh.roll - cam.vx * 0.028 * calm);
     camera.fov = fitFov(sh.fov, camera.aspect);
+    this.lens(camera, lift);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     u.FOCUS.value = sh.pos.distanceTo(sh.tgt);
@@ -300,11 +408,15 @@ export class Film {
     this.blocks.arrival.style.opacity = String(1 - smooth(0.02, 0.07, s));
     // the small name in the corner waits until the big one has gone
     this.blocks.brand.style.opacity = String(smooth(0.02, 0.07, s));
-    this.blocks.hint.style.opacity = String(1 - smooth(0.01, 0.05, s));
-    this.blocks.layer.style.transform = `translate(${(-cam.x * 22 * calm).toFixed(1)}px, ${(cam.y * 14 * calm).toFixed(1)}px)`;
-    this.blocks.progress.style.transform = `scaleX(${Math.min(1, Math.max(0, window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight))).toFixed(4)})`;
+    const hintOp = 1 - smooth(0.01, 0.05, s);
+    this.blocks.hint.style.opacity = String(hintOp);
+    // (gone, the hint takes no taps: on a phone it can be a button, and it sits where a thumb scrolls)
+    this.blocks.hint.style.visibility = hintOp < 0.02 ? "hidden" : "";
+    this.blocks.layer.style.transform = `translate(${layerX.toFixed(1)}px, ${layerY.toFixed(1)}px)`;
+    this.blocks.progress.style.transform = `scaleX(${this.frac.toFixed(4)})`;
 
-    this.showMood(u.TIME.value);
+    // (on a phone the orb's mood shares a line with the landing's hint, so it waits for the hint to go)
+    this.showMood(u.TIME.value, ctx.form.narrow && s < 0.06);
 
     const here = placeAt(GG, G);
     if (here !== this.place) {
@@ -320,6 +432,33 @@ export class Film {
     this.composer.render();
     this.govern(since);
   };
+
+  /** Shift a camera's picture up by `lift` of the frame's height (an off-axis lens: no change in perspective). */
+  private lens(c: THREE.PerspectiveCamera, lift: number) {
+    const { W, H } = this.ctx;
+    if (Math.abs(lift) < 1e-4) {
+      if (c.view?.enabled) c.clearViewOffset();
+      return;
+    }
+    c.setViewOffset(W, H, 0, lift * H, W, H);
+  }
+
+  /** Where the camera's sway wants to be: the cursor with a mouse, the tilt (or a slow drift) on a touch screen. */
+  private swayTarget(dt: number, time: number) {
+    if (this.lastType !== "touch") return this.mouse;
+    const w = this.sway;
+    if (this.still) return w.x = w.y = 0, w;
+    const t = this.tilt?.sample(dt);
+    if (t) {
+      w.x = t.x;
+      w.y = t.y;
+    } else {
+      // no tilt (yet): a slow handheld drift, so the world never sits dead still
+      w.x = 0.14 * Math.sin(time * 0.23) + 0.05 * Math.sin(time * 0.61 + 2);
+      w.y = 0.09 * Math.sin(time * 0.19 + 1.3);
+    }
+    return w;
+  }
 
   /** Whether this refresh gets a frame. Also learns the display's refresh interval as it goes. */
   private onBeat(now: number) {
@@ -394,8 +533,8 @@ export class Film {
   }
 
   /** The corner line that says how the orb feels: steady for 0.35s before it changes, with a quick crossfade. */
-  private showMood(time: number) {
-    const m = this.orb?.mood ?? "";
+  private showMood(time: number, hush = false) {
+    const m = hush ? "" : (this.orb?.mood ?? "");
     if (m !== this.moodCand) {
       this.moodCand = m;
       this.moodSince = time;
@@ -415,6 +554,7 @@ export class Film {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     for (const c of this.cleanup) c();
+    this.tilt?.dispose();
     window.clearTimeout(this.moodSwap);
     for (const sec of this.sections) sec.dispose?.();
     if (!this.ctx) return;

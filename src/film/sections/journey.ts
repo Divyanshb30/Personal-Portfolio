@@ -242,12 +242,12 @@ type Shed = ReturnType<typeof shedding>;
 
 const corner = new THREE.Vector3();
 /** a photo's rectangle on screen, in CSS pixels, and whether it is in front of the camera */
-function rectOf(p: Plate, camera: THREE.PerspectiveCamera) {
+function rectOf(p: Plate, camera: THREE.PerspectiveCamera, W: number, H: number) {
   let l = 1e9, t = 1e9, r = -1e9, b = -1e9, front = true;
   for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
     p.g.localToWorld(corner.set((sx * p.wid) / 2, (sy * p.hgt) / 2, 0)).project(camera);
     if (corner.z > 1) front = false;
-    const x = (corner.x * 0.5 + 0.5) * window.innerWidth, y = (-corner.y * 0.5 + 0.5) * window.innerHeight;
+    const x = (corner.x * 0.5 + 0.5) * W, y = (-corner.y * 0.5 + 0.5) * H;
     l = Math.min(l, x);
     r = Math.max(r, x);
     t = Math.min(t, y);
@@ -455,6 +455,9 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     { s: 0.955, name: "Pull back, toward the light", pos: river(196).add(V(0, 11, 0)).addScaledVector(rframe(196).T, -16), tgt: END.clone(), fov: 46 },
     { s: 1.0, name: "Toward the light", pos: river(214).add(V(0, 6, 0)).addScaledVector(rframe(214).T, -8), tgt: END.clone(), fov: 44 },
   ].map((k) => ({ ...k, s: JG(k.s) }));
+  // the vertical cut: each setup a step further back, so a pair of photos fits a narrow frame (the lens
+  // lift then raises them over their words)
+  for (const k of keys) k.tall = { pos: k.tgt.clone().add(k.pos.clone().sub(k.tgt).multiplyScalar(1.18)) };
 
   const title = block(ctx, "journey"), q1 = new THREE.Quaternion(), e1 = new THREE.Euler();
 
@@ -638,7 +641,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     /** how much a memory is the subject right now (0..1): the ambient moments keep out of its way */
     focus: 0,
     update(f: Frame) {
-      const { GG, cam } = f, W = ctx.W, H = ctx.H, camera = ctx.camera;
+      const { GG } = f, W = ctx.W, H = ctx.H, camera = ctx.camera;
       steer(f, (GG - JS0) / (JS1 - JS0));
       title.style.opacity = String(smooth(JG(-0.01), JG(0.0), GG) * (1 - smooth(JG(0.03), JG(0.075), GG)));
       title.style.transform = `translateY(${(-smooth(JG(0), JG(0.09), GG) * 50).toFixed(1)}px)`;
@@ -692,8 +695,8 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         let sz = sizes.get(p.label);
         if (!sz || sz.at !== W * 1e5 + H) sizes.set(p.label, (sz = { w: p.label.offsetWidth || 330, h: p.label.offsetHeight || 150, at: W * 1e5 + H }));
         const mw = sz.w, mh = sz.h, narrow = W < 760;
-        const rects = [rectOf(p, camera)];
-        if (p.extra) rects.push(rectOf(p.extra, camera));
+        const rects = [rectOf(p, camera, W, H)];
+        if (p.extra) rects.push(rectOf(p.extra, camera, W, H));
         const seen = rects.filter((r) => r.front);
         let tx = 24, ty = H - mh - 40;
         if (!narrow && seen.length) {
@@ -714,7 +717,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         p.lx += (tx - p.lx) * k;
         p.ly += (ty - p.ly) * k;
         p.label.style.opacity = (seen.length || narrow ? on : 0).toFixed(3);
-        p.label.style.transform = `translate(${(p.lx - cam.x * 22).toFixed(1)}px, ${(p.ly + (1 - on) * 20 + cam.y * 14).toFixed(1)}px)`;
+        p.label.style.transform = `translate(${(p.lx + f.layerX).toFixed(1)}px, ${(p.ly + (1 - on) * 20 + f.layerY).toFixed(1)}px)`;
       });
       api.focus = focus;
     },
