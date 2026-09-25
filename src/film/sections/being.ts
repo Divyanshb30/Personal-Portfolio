@@ -6,8 +6,12 @@ import { DENT_GLSL, DUST_FRAG, GLSL_FN, STIR_GLSL, turnGLSL } from "../glsl";
 import { R, V, emberAt, gauss, smooth } from "../math";
 import { ARC, FIG_X, FL0, FL1, FRAC, O1, ORB_R, PC, PL_R, planetRot, toPlanet } from "../layout";
 
-/** how much brighter he glows on the first screen than the dust he is made of */
-const GLOW = 1.0;
+/**
+ * How brightly he glows on the first screen, against the dust he is made of. On a portrait screen he is
+ * drawn into far fewer pixels, so the same dust piles up brighter (most of all round his head) and blooms:
+ * there he glows less.
+ */
+const GLOW = 1.0, GLOW_TALL = 0.7;
 
 /**
  * ARRIVAL, and the being itself: one body of ember dust that is his figure, peels off his
@@ -221,7 +225,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
       u.uT1.value = t1;
       u.uT2.value = t2;
       skinU.uT1.value = t1;
-      u.uGlow.value = 1 + (GLOW - 1) * (1 - t1);
+      u.uGlow.value = 1 + ((ctx.form.tall ? GLOW_TALL : GLOW) - 1) * (1 - t1);
       // he looks toward you while he is still whole
       const still = 1 - smooth(0.03, 0.08, f.G);
       ctx.u.TURN.uYaw.value = f.cam.x * 0.38 * still;
