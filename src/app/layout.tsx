@@ -9,8 +9,9 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "sw
 // Data, labels, instruments
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
-// What a shared link shows. The favicon, the home-screen icon and the share image live beside this file
-// (favicon.ico, apple-icon.png, opengraph-image.png, twitter-image.png) and are picked up by Next.
+// What a shared link shows. The favicon, the icons and the share image live beside this file
+// (favicon.ico, icon.png, apple-icon.png, opengraph-image.png, twitter-image.png) and are picked up by
+// Next. All of them are real frames of the film: the orb, and the Arrival shot.
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.divyansh-bansal.space"),
   title: "Divyansh Bansal",
