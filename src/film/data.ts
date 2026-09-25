@@ -2,7 +2,6 @@
 
 export const PROFILE = {
   name: "Divyansh Bansal",
-  roles: "Engineer · Builder · Researcher",
   line: "AI, agentic systems and whatever seems interesting enough to break.",
   email: "divyanshb30@gmail.com",
   github: "https://github.com/Divyanshb30",
@@ -275,7 +274,7 @@ export const LOOSE_PHOTOS: LoosePhoto[] = [
   { photo: ["/photos/letter.jpg", 0, 0, 960, 1280], d: 161, bank: 8, h: 2.5 },
 ];
 
-export const JOURNEY = { kicker: "Journey · 2021 → now", title: "It started somewhere." };
+export const JOURNEY = { kicker: "Journey · 2021 → now", title: "The early work." };
 
 export const NOW = {
   kicker: "Now · Amdocs",

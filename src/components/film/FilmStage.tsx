@@ -140,8 +140,7 @@ export default function FilmStage() {
               <br />
               Bansal
             </h1>
-            <div className="mono" style={{ marginTop: 26, color: "#ffc896" }}>{PROFILE.roles}</div>
-            <p style={{ marginTop: 14, fontSize: 17, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 380 }}>{PROFILE.line}</p>
+            <p style={{ marginTop: 26, fontSize: 17, lineHeight: 1.55, color: "#a9a9b0", maxWidth: 380 }}>{PROFILE.line}</p>
           </section>
           <section data-block="think" className="blk" style={{ left: 72, top: "27vh" }}>
             <div className="mono sub">Think</div>
@@ -250,9 +249,7 @@ export default function FilmStage() {
       <div className="film-track" style={{ height: `${TRACK_VH}vh` }} aria-hidden />
       {/* the whole story as plain text, for screen readers and search engines */}
       <article className="sr-only">
-        <p>
-          {PROFILE.roles}. {PROFILE.line}
-        </p>
+        <p>{PROFILE.line}</p>
         <h2>{THINK.title}</h2>
         <p>{THINK.line}</p>
         <h2>{BUILD.title}</h2>
