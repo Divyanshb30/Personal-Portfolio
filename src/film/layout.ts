@@ -33,11 +33,12 @@ export const JG = (x: number) => JS0 + (JS1 - JS0) * x; // journey-local → fil
 // scroll → film time. Knots are [screens scrolled, film time]. The work is in view about five screens
 // in and the whole film is under thirty: the flight to Think, the rise into the work, the dive into
 // the stack and each memory on the river pass at a brisk pace; the dead stretches (after Think, and
-// after the work) pass in a breath; the work itself holds for a screen and a half, to pick one; and
-// the page ends soon after "Let's talk" is in (the orb then forms on its own clock).
+// after the work) pass in a breath; the work itself holds for a screen and a half, to pick one; Now
+// says its line in a screen or so; and the page ends soon after "Let's talk" is in (the orb then
+// forms on its own clock).
 const SKN: [number, number][] = [
   [0, 0], [0.4, 0.006], [2.7, 0.144], [3.7, 0.1725], [4.05, 0.229], [5.05, 0.265], [6.55, 0.3], [7.05, 0.3625],
-  [10.55, 0.525], [22.55, 0.8], [23.75, 0.852], [28.25, 0.965], [28.75, 1],
+  [10.55, 0.525], [22.55, 0.8], [23.45, 0.852], [25.95, 0.965], [26.45, 1],
 ];
 const SEND = SKN[SKN.length - 1][0];
 /** the scroll track's height: a screen of track per screen of knots, plus the one in view */

@@ -76,7 +76,7 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
   const glow = sprite(ctx, 0xff8a40, 4.4, OC.clone().add(V(0, 0, -0.8)), 0);
 
   const keys: Key[] = [
-    { s: 0.965, name: "Contact", pos: CT.clone().add(V(-1.0, 0.1, 7.4)), tgt: CT.clone().add(V(-1.0, 0.05, 0)), fov: 30 },
+    { s: 0.965, name: "Contact", pos: CT.clone().add(V(-1.0, 0.1, 7.4)), tgt: CT.clone().add(V(-1.0, 0.05, 0)), fov: 30, settle: 0.5 },
     { s: 1.0, name: "Contact · hold", pos: CT.clone().add(V(-0.8, 0.2, 7.0)), tgt: CT.clone().add(V(-0.95, 0.08, 0)), fov: 30 },
   ];
   const words = block(ctx, "contact");

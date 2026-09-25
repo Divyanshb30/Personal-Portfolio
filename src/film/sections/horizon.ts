@@ -57,7 +57,7 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
   const keys: Key[] = [
     { s: 0.835, name: "Out of the river, into the light", pos: END.clone().add(V(-3.5, 3.6, 21)), tgt: END.clone().add(V(-3, 0.2, 0)), fov: 44 },
     { s: 0.865, name: "Horizon", pos: END.clone().add(V(-4.6, 1.5, 15.5)), tgt: END.clone().add(V(-4.4, -0.3, 0)), fov: 36 },
-    { s: 0.9, name: "Horizon · slow push", pos: END.clone().add(V(-4.4, 1.35, 14.2)), tgt: END.clone().add(V(-4.3, -0.3, 0)), fov: 36 },
+    { s: 0.9, name: "Horizon · slow push", pos: END.clone().add(V(-4.4, 1.35, 14.2)), tgt: END.clone().add(V(-4.3, -0.3, 0)), fov: 36, settle: 0.5 },
   ];
   const now = block(ctx, "now");
 
