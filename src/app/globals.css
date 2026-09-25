@@ -1201,7 +1201,7 @@ html.film-cursor * {
     left: -50vw;
     right: -50vw;
     top: -112px;
-    bottom: calc(-1 * var(--low) - 24px);
+    bottom: calc(-1 * var(--low) - 80px);
     z-index: -1;
     pointer-events: none;
     background: linear-gradient(
@@ -1355,11 +1355,14 @@ html.film-cursor * {
   .film-progress-menu {
     display: flex;
   }
+  /* the hint joins the words' column (flush with their left edge) rather than the middle of the screen */
   .film-hint {
+    left: calc(var(--gut) + var(--safe-l));
     bottom: calc(var(--safe-b) + 58px);
+    transform: none;
   }
   .film-hint button {
-    padding: 14px 18px;
+    padding: 14px 18px 14px 0;
   }
   /* the words keep a gutter */
   .film-layer .blk {
@@ -1370,12 +1373,28 @@ html.film-cursor * {
     font-size: 16px;
     max-width: none;
   }
+  /* the landing's words as one column: the line above the name set exactly as wide as the name (both
+     scale with the screen), the name a size down so his figure leads, the tagline two balanced lines, and
+     the column lifted to leave the hint room beneath it */
+  .blk-arrival {
+    bottom: calc(var(--low) + 34px);
+  }
+  .blk-arrival .sub {
+    font-size: clamp(9.5px, 2.56vw, 12px);
+    letter-spacing: 0.08em;
+  }
   .blk-arrival h1 {
-    font-size: clamp(44px, 14.5vw, 72px);
-    margin-top: 14px;
+    font-size: clamp(40px, 13vw, 64px);
+    line-height: 0.96;
+    letter-spacing: -0.015em;
+    margin-top: 12px;
   }
   .blk-arrival p {
-    margin-top: 16px;
+    margin-top: 20px;
+    font-size: 15px;
+    line-height: 1.55;
+    max-width: 18em;
+    text-wrap: balance;
   }
   .blk-think h2 {
     font-size: clamp(36px, 11vw, 52px);
