@@ -99,8 +99,14 @@ export default function Cursor() {
 
   return (
     <>
-      <div ref={ring} className="film-cursor-ring" aria-hidden />
-      <div ref={dot} className="film-cursor-dot" aria-hidden />
+      <div ref={ring} className="film-cursor-ring" aria-hidden>
+        <svg viewBox="0 0 50 50">
+          <circle cx="25" cy="25" r="14.5" />
+        </svg>
+      </div>
+      <div ref={dot} className="film-cursor-dot" aria-hidden>
+        <i />
+      </div>
     </>
   );
 }

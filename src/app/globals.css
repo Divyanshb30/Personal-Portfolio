@@ -372,39 +372,49 @@ html.film-cursor * {
   top: 0;
   z-index: 200;
   pointer-events: none;
-  border-radius: 50%;
   opacity: 0;
-  transition: opacity 0.2s, width 0.25s, height 0.25s, margin 0.25s, background-color 0.25s, border-color 0.25s;
+  transition: opacity 0.2s;
   will-change: transform;
 }
-.film-cursor-dot {
+/* (the boxes only ever move; their sizes change by scaling what is inside, so nothing is laid out again) */
+.film-cursor-dot i {
+  position: absolute;
+  left: -3px;
+  top: -3px;
   width: 6px;
   height: 6px;
-  margin: -3px 0 0 -3px;
+  border-radius: 50%;
   background: #ffd2a4;
+  transition: transform 0.25s;
 }
-.film-cursor-dot.hot {
-  width: 4px;
-  height: 4px;
-  margin: -2px 0 0 -2px;
+.film-cursor-dot.hot i {
+  transform: scale(0.667);
 }
-.film-cursor-ring {
-  width: 30px;
-  height: 30px;
-  margin: -15px 0 0 -15px;
-  border: 1px solid rgba(255, 210, 164, 0.5);
+.film-cursor-ring svg {
+  position: absolute;
+  left: -25px;
+  top: -25px;
+  width: 50px;
+  height: 50px;
+  overflow: visible;
 }
-.film-cursor-ring.hot {
-  width: 48px;
-  height: 48px;
-  margin: -24px 0 0 -24px;
-  border-color: rgba(255, 210, 164, 0.9);
-  background: rgba(255, 200, 150, 0.07);
+/* a 30px hairline that stays a hairline at any size: 48px over anything clickable, 22px while pressed */
+.film-cursor-ring circle {
+  fill: rgba(255, 200, 150, 0);
+  stroke: rgba(255, 210, 164, 0.5);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.25s, fill 0.25s, stroke 0.25s;
 }
-.film-cursor-ring.down {
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
+.film-cursor-ring.hot circle {
+  transform: scale(1.6);
+  fill: rgba(255, 200, 150, 0.07);
+  stroke: rgba(255, 210, 164, 0.9);
+}
+.film-cursor-ring.down circle {
+  transform: scale(0.733);
 }
 
 /* words that live in the world */
