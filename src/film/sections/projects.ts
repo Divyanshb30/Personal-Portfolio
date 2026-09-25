@@ -608,8 +608,15 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         // the column: the names ride with their constellations; one that runs under the heading, the top
         // chrome or the dock fades out rather than crowding them
         const top = Math.max(ctx.form.narrow ? 64 : 84, head > 0.05 ? headBottom + 8 : 0);
+        for (const pr of projs) pr.lx = clamp(pr.lx, 16, ctx.W - pr.lw - 16);
+        // (on a short screen two neighbours' names can meet: the lower one steps down)
+        const byY = [...projs].sort((a, b) => a.ly - b.ly);
+        for (let a = 1; a < byY.length; a++)
+          for (let b = 0; b < a; b++) {
+            const hi = byY[b], lo = byY[a];
+            if (hi.lx < lo.lx + lo.lw && lo.lx < hi.lx + hi.lw && lo.ly < hi.ly + hi.lh + 8) lo.ly = hi.ly + hi.lh + 8;
+          }
         for (const pr of projs) {
-          pr.lx = clamp(pr.lx, 16, ctx.W - pr.lw - 16);
           const vis = smooth(top - 40, top, pr.ly) * (1 - smooth(ctx.floor - pr.lh - 30, ctx.floor - pr.lh + 10, pr.ly));
           const op = (pr.front ? pick * (1 - PICK.amt) * vis : 0).toFixed(3);
           if (op !== pr.op) pr.label.style.opacity = pr.op = op;

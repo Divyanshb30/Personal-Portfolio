@@ -53,6 +53,7 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
   const words = block(ctx, "think");
   const tmp = V(), tmp2 = V(), c = V(), lo = V(), hi = V(), q = V(), t3 = V(), side = V(-toPlanet.z, 0, toPlanet.x).multiplyScalar(-1);
   const ray = new THREE.Raycaster(), inv = new THREE.Matrix4();
+  const spots = moons.map(() => ({ x: 0, y: 0, w: 0 }));
 
   return {
     /** during the flight the camera follows the dust itself, tracking alongside it */
@@ -119,8 +120,18 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
         // (a mono word's width is known from its letters, without asking the page)
         const lw = mo.label.textContent!.length * 8.6 + 4, out = narrow && px < plx;
         const lx = clamp(out ? px - rpx - 14 - lw : px + rpx + 14, 12, ctx.W - lw - 12);
-        mo.label.style.transform = `translate(${lx.toFixed(1)}px, ${(py - 7).toFixed(1)}px)`;
+        spots[i].x = lx;
+        spots[i].y = py - 7;
+        spots[i].w = lw;
       });
+      // (two moons' names that would meet: the lower one steps down a line)
+      const order = [0, 1, 2, 3].sort((a, b) => spots[a].y - spots[b].y);
+      for (let a = 1; a < 4; a++)
+        for (let b = 0; b < a; b++) {
+          const hi = spots[order[b]], lo = spots[order[a]];
+          if (hi.x < lo.x + lo.w && lo.x < hi.x + hi.w && lo.y < hi.y + 16) lo.y = hi.y + 16;
+        }
+      moons.forEach((mo, i) => (mo.label.style.transform = `translate(${spots[i].x.toFixed(1)}px, ${spots[i].y.toFixed(1)}px)`));
       being.u.uAbsorb.value.set(ab[0], ab[1], ab[2], ab[3]);
       words.style.opacity = String(smooth(0.64, 0.68, s) * (1 - smooth(0.755, 0.77, s)));
     },
