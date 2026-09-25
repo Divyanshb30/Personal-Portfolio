@@ -450,8 +450,9 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     { s: 0.585, name: "Slow push in", pos: MP[2].clone().addScaledVector(FF(2), 4.6).add(V(0, -0.9, 0)), tgt: MP[2].clone(), fov: 36, settle: 0.5 },
     { s: 0.655, name: "Track alongside, 2025", pos: river(158).addScaledVector(rframe(158).R, -11).add(V(0, 0.9, 0)), tgt: river(161), fov: 40 },
     { s: 0.755, name: "Track alongside, 2025", pos: river(172).addScaledVector(rframe(172).R, -11).add(V(0, 0.7, 0)), tgt: river(171), fov: 40, settle: 0.5 },
-    { s: 0.815, name: "Orbit, Amdocs", pos: orbitPt(MP[4], FF(4).multiplyScalar(7.4), -0.9, 0.4), tgt: MP[4].clone(), fov: 38, settle: 0.5 },
-    { s: 0.89, name: "Orbit, Amdocs", pos: orbitPt(MP[4], FF(4).multiplyScalar(6.8), 0.55, 1.1), tgt: MP[4].clone(), fov: 36 },
+    // (a step back from the portrait: between these two the path cuts inside the circle, closest to it)
+    { s: 0.815, name: "Orbit, Amdocs", pos: orbitPt(MP[4], FF(4).multiplyScalar(9.0), -0.9, 0.4), tgt: MP[4].clone(), fov: 38, settle: 0.5 },
+    { s: 0.89, name: "Orbit, Amdocs", pos: orbitPt(MP[4], FF(4).multiplyScalar(8.3), 0.55, 1.1), tgt: MP[4].clone(), fov: 36 },
     { s: 0.955, name: "Pull back, toward the light", pos: river(196).add(V(0, 11, 0)).addScaledVector(rframe(196).T, -16), tgt: END.clone(), fov: 46 },
     { s: 1.0, name: "Toward the light", pos: river(214).add(V(0, 6, 0)).addScaledVector(rframe(214).T, -8), tgt: END.clone(), fov: 44 },
   ].map((k) => ({ ...k, s: JG(k.s) }));
