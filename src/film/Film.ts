@@ -79,8 +79,17 @@ export class Film {
   private moodSwap = 0;
   /** visitors who ask for less motion get a much gentler cursor camera */
   private still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  /** frame-time probe: if the device struggles early on, render at a lower resolution */
-  private probe = { n: 0, sum: 0, done: false };
+  /**
+   * The film's rhythm. An even frame rate reads as smooth; one that alternates between one refresh and
+   * two reads as stutter. So: on a fast screen that can't be kept up with, render every other refresh
+   * (a steady 72 on 144Hz, 60 on 120Hz); and hold the sharpest resolution that keeps frames on time,
+   * a step down when they keep missing, a step back up after a quiet spell.
+   */
+  private pace = { iv: 16.7, ivMin: 1e9, ivN: 0, lastRaf: 0, k: 1, beat: 0, n: 0, miss: 0, calm: 0, cool: 0, need: 4, raised: 0, trialK: 0, trialWait: 8 };
+  private ratios: number[] = [];
+  private ratio = 0;
+  private mouse2 = new THREE.Vector2();
+  private maskOn = false;
 
   constructor(private opts: FilmOptions) {}
 
@@ -88,7 +97,12 @@ export class Film {
     const { canvas, root, labels } = this.opts;
     const W = window.innerWidth, H = window.innerHeight;
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // the resolutions the film may step between, sharpest first
+    const top = Math.min(window.devicePixelRatio, 1.5);
+    this.ratios = [top, 1.25, 1, 0.85].filter((r, i) => i === 0 || r < top);
+    renderer.setPixelRatio(top);
+    // the glass orb sees what is behind it through a copy of the frame; half resolution is plenty for a small orb
+    renderer.transmissionResolutionScale = 0.5;
     renderer.setSize(W, H);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.92;
@@ -108,7 +122,8 @@ export class Film {
 
     const fig = await loadFigure();
     if (this.disposed) return;
-    const orbGeo = blobGeometry(9, 0.17), planetGeo = blobGeometry(21, 0.17);
+    // (detail 40 keeps their silhouettes true to a fraction of a pixel, at a third of the triangles)
+    const orbGeo = blobGeometry(9, 0.17, 0.78, 40), planetGeo = blobGeometry(21, 0.17, 0.78, 40);
     const being = buildBeing(ctx, fig, orbGeo, planetGeo);
     // the small glass orb that travels from the work, through the stack, down the river of his years
     const orb = (this.orb = makeOrb(ctx));
@@ -197,9 +212,11 @@ export class Film {
 
   private tick = (now: number) => {
     if (this.disposed) return;
+    this.raf = requestAnimationFrame(this.tick);
+    if (!this.onBeat(now)) return;
     const ctx = this.ctx, u = ctx.u;
     // (the first frame's timestamp can be a little earlier than the moment we started: never step backwards)
-    const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
+    const since = now - this.last, dt = Math.min(0.05, Math.max(0, since / 1000));
     this.last = now;
     u.TIME.value = now / 1000;
     const target = this.progress();
@@ -233,7 +250,7 @@ export class Film {
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     u.FOCUS.value = sh.pos.distanceTo(sh.tgt);
-    u.CUR.uMouse.value.lerp(new THREE.Vector2(m.x, m.y), 1 - Math.exp(-dt * 10));
+    u.CUR.uMouse.value.lerp(this.mouse2.set(m.x, m.y), 1 - Math.exp(-dt * 10));
     u.CUR.uStir.value += (Math.min(1.6, (this.stirRaw / Math.max(dt, 1e-3)) * 0.12) - u.CUR.uStir.value) * (1 - Math.exp(-dt * 3));
     this.stirRaw = 0;
 
@@ -255,11 +272,94 @@ export class Film {
       this.opts.onPlace?.(here);
     }
 
-    this.mask.render();
+    // the photographs' mask, only while photographs can be on screen (cleared once when they can't)
+    const wantMask = GG > 0.46;
+    if (wantMask) this.mask.render();
+    else if (this.maskOn) this.mask.clear();
+    this.maskOn = wantMask;
     this.composer.render();
-    this.adapt(dt);
-    this.raf = requestAnimationFrame(this.tick);
+    this.govern(since);
   };
+
+  /** Whether this refresh gets a frame. Also learns the display's refresh interval as it goes. */
+  private onBeat(now: number) {
+    const p = this.pace, raw = now - p.lastRaf;
+    p.lastRaf = now;
+    // the refresh interval: the shortest gap between callbacks over the last ninety or so
+    if (raw > 3 && raw < 60) p.ivMin = Math.min(p.ivMin, raw);
+    if (++p.ivN >= 90) {
+      if (p.ivMin < 1e9) p.iv = p.ivMin;
+      p.ivMin = 1e9;
+      p.ivN = 0;
+    }
+    if (this.fix !== null) return true;
+    return ++p.beat % p.k === 0;
+  }
+
+  /**
+   * Keeps frames on time. Judged over ~90 frames: if more than one in seven is late, first render every
+   * other refresh (only on a fast screen), then soften the resolution a step; after a quiet spell, sharpen
+   * again, and at full sharpness now and then try the full frame rate. A change that fails is tried
+   * again only after a longer wait, so the film never flickers between settings.
+   */
+  private govern(since: number) {
+    const p = this.pace;
+    if (this.fix !== null || since > 250) return; // a frozen shot, or the tab was away
+    if (p.cool > 0) {
+      p.cool--;
+      return;
+    }
+    p.n++;
+    if (since > p.iv * p.k * 1.4) p.miss++;
+    if (p.n < 90) return;
+    const rate = p.miss / p.n;
+    p.n = p.miss = 0;
+    if (p.raised) p.raised = p.raised > 3 ? 0 : p.raised + 1;
+    if (p.trialK) {
+      // a try at the full frame rate: kept only if it held
+      if (rate > 0.1) {
+        p.k = p.trialK;
+        p.trialWait = Math.min(64, p.trialWait * 2);
+      } else p.trialWait = 8;
+      p.trialK = 0;
+      p.calm = 0;
+      p.cool = 30;
+      return;
+    }
+    if (rate > 0.15) {
+      if (p.raised) p.need = Math.min(40, p.need * 2);
+      p.raised = 0;
+      p.calm = 0;
+      if (p.k === 1 && p.iv < 11) p.k = 2;
+      else this.setRatio(this.ratio + 1);
+      p.cool = 60;
+    } else if (rate < 0.03) {
+      p.calm++;
+      if (this.ratio > 0 && p.calm >= p.need) {
+        this.setRatio(this.ratio - 1);
+        p.raised = 1;
+        p.calm = 0;
+        p.cool = 60;
+      } else if (this.ratio === 0 && p.k === 2 && p.calm >= p.trialWait) {
+        p.trialK = 2;
+        p.k = 1;
+        p.calm = 0;
+        p.cool = 30;
+      }
+    } else p.calm = 0;
+  }
+
+  /** Render at one of the film's resolutions (0 is the sharpest). */
+  private setRatio(i: number) {
+    i = Math.max(0, Math.min(this.ratios.length - 1, i));
+    if (i === this.ratio) return;
+    this.ratio = i;
+    const r = this.ratios[i], c = this.ctx;
+    c.renderer.setPixelRatio(r);
+    this.composer.setPixelRatio(r);
+    this.mask.setSize(c.W * r, c.H * r);
+    c.u.SCALE.value = (r * c.H) / 900;
+  }
 
   /** The corner line that says how the orb feels: steady for 0.35s before it changes, with a quick crossfade. */
   private showMood(time: number) {
@@ -277,23 +377,6 @@ export class Film {
       if (next) el.textContent = `Orb · ${next}`;
       el.style.opacity = next ? "1" : "0";
     }, 180);
-  }
-
-  /** Watch a few seconds of frames once the film is running; drop to 1x resolution if they are slow. */
-  private adapt(dt: number) {
-    const p = this.probe;
-    if (p.done || this.fix !== null) return;
-    p.n++;
-    if (p.n < 60) return; // let shaders compile and the first frames settle
-    p.sum += dt;
-    if (p.n < 240) return;
-    p.done = true;
-    const r = this.ctx.renderer;
-    if (p.sum / (p.n - 60) > 1 / 38 && r.getPixelRatio() > 1) {
-      r.setPixelRatio(1);
-      this.composer.setPixelRatio(1);
-      this.ctx.u.SCALE.value = this.ctx.H / 900;
-    }
   }
 
   dispose() {

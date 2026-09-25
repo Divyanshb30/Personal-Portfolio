@@ -222,7 +222,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     label.setAttribute("role", "button");
     label.setAttribute("aria-label", `Open ${pr.title}`);
     label.tabIndex = -1;
-    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0, lx: 0, ly: 0 };
+    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0, lx: 0, ly: 0, lw: 260, lh: 110, tf: "", op: "", pe: "" };
   });
 
   // the rising dust: grains leave the planet's surface (top first) and settle on the stars and lines
@@ -253,6 +253,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     }
   }
   const riseU = { uR: { value: 0 }, uOut: { value: 0 }, uTime: ctx.u.TIME, uScale: ctx.u.SCALE, uFocus: ctx.u.FOCUS, ...ctx.u.CUR };
+  let rise: THREE.Points;
   {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(RS, 3));
@@ -279,9 +280,9 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         }`,
       fragmentShader: DUST_FRAG,
     });
-    const pts = new THREE.Points(g, m);
-    pts.frustumCulled = false;
-    ctx.scene.add(pts);
+    rise = new THREE.Points(g, m);
+    rise.frustumCulled = false;
+    ctx.scene.add(rise);
   }
 
   // the orb, now small and glass, guiding you from project to project
@@ -363,7 +364,9 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     });
   });
   const tmp = V(), tmp2 = V(), home = V(), UPV = V(0, 1, 0);
-  let wasOn = false;
+  let wasOn = false, sized = false, sizedAt = 0;
+  // the names re-measure once the web fonts have arrived
+  document.fonts?.ready.then(() => (sized = false));
 
   return {
     dispose() {
@@ -404,6 +407,10 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       riseU.uR.value = smooth(0.46, 0.53, G);
       riseU.uOut.value = 0.8 * smooth(0.53, 0.58, G);
       const lit = smooth(0.5, 0.53, G), leave = 1 - 0.65 * smooth(0.76, 0.84, G), pick = smooth(0.515, 0.53, G) * (1 - smooth(0.72, 0.735, G));
+      // the sky is drawn from the moment its dust rises until the camera has dived below it
+      const sky = G > 0.455 && G < 0.83;
+      rise.visible = sky;
+      for (const pr of projs) pr.grp.visible = sky && lit > 0.001;
       PICK.on = pick > 0.5;
       if (PICK.on !== wasOn) {
         wasOn = PICK.on;
@@ -425,18 +432,29 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         tmp2.copy(pr.center).project(ctx.camera);
         pr.sx = (tmp2.x * 0.5 + 0.5) * ctx.W;
         pr.sy = (-tmp2.y * 0.5 + 0.5) * ctx.H;
-        pr.label.style.opacity = (tmp.z < 1 ? pick * (1 - PICK.amt) : 0).toFixed(3);
-        pr.label.style.pointerEvents = PICK.on && PICK.idx < 0 ? "auto" : "none";
+        const op = (tmp.z < 1 ? pick * (1 - PICK.amt) : 0).toFixed(3), pe = PICK.on && PICK.idx < 0 ? "auto" : "none";
+        if (op !== pr.op) pr.label.style.opacity = pr.op = op;
+        if (pe !== pr.pe) pr.label.style.pointerEvents = pr.pe = pe;
         pr.label.classList.toggle("hot", hot > 0);
         pr.lx = px - 110;
         pr.ly = py;
       });
+      // the names' sizes, read from the page only when the screen or the fonts change (reading them every
+      // frame, just after moving them, would make the browser lay the page out again each time)
+      if (pick > 0.001 && (sizedAt !== ctx.W * 1e5 + ctx.H || !sized)) {
+        for (const pr of projs) {
+          pr.lw = pr.label.offsetWidth || 260;
+          pr.lh = pr.label.offsetHeight || 110;
+        }
+        sizedAt = ctx.W * 1e5 + ctx.H;
+        sized = true;
+      }
       // on a narrow screen names can still meet: nudge any that overlap apart, then place them
       if (pick > 0.001) {
         for (let a = 0; a < projs.length; a++)
           for (let b = a + 1; b < projs.length; b++) {
-            const A = projs[a], B = projs[b], wa = A.label.offsetWidth, wb = B.label.offsetWidth, ha = A.label.offsetHeight, hb = B.label.offsetHeight;
-            const ox = Math.min(A.lx + wa, B.lx + wb) - Math.max(A.lx, B.lx), oy = Math.min(A.ly + ha, B.ly + hb) - Math.max(A.ly, B.ly);
+            const A = projs[a], B = projs[b];
+            const ox = Math.min(A.lx + A.lw, B.lx + B.lw) - Math.max(A.lx, B.lx), oy = Math.min(A.ly + A.lh, B.ly + B.lh) - Math.max(A.ly, B.ly);
             if (ox <= 0 || oy <= 0) continue;
             const lower = A.ly > B.ly ? A : B;
             lower.ly += oy + 12;
@@ -444,10 +462,10 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       }
       // and every name stays inside the page, whatever its height
       for (const pr of projs) {
-        const w = pr.label.offsetWidth || 260, h = pr.label.offsetHeight || 110;
-        pr.lx = clamp(pr.lx, 16, ctx.W - w - 16);
-        pr.ly = clamp(pr.ly, 84, ctx.H - h - 64);
-        pr.label.style.transform = `translate(${pr.lx.toFixed(1)}px, ${pr.ly.toFixed(1)}px)`;
+        pr.lx = clamp(pr.lx, 16, ctx.W - pr.lw - 16);
+        pr.ly = clamp(pr.ly, 84, ctx.H - pr.lh - 64);
+        const tf = `translate(${pr.lx.toFixed(1)}px, ${pr.ly.toFixed(1)}px)`;
+        if (tf !== pr.tf) pr.label.style.transform = pr.tf = tf;
       }
       // the guide hovers by whichever project has your attention, then dives down the roots
       const dive = smooth(0.745, 0.8, G);

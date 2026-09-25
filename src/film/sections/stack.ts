@@ -26,6 +26,10 @@ type Tag = {
   near: number;
   blur: number;
   behind: boolean;
+  /** what was last written to the page, so an unchanged style is left alone */
+  wOp: string;
+  wBlur: number;
+  wTf: string;
 };
 
 /**
@@ -41,7 +45,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
   const tags: Tag[] = [];
   const tag = (html: string, at: THREE.Vector3, lead: boolean, chars: number, rows = 0) => {
     const e = el(ctx, lead ? "tool lead" : "tool", html);
-    tags.push({ el: e, at, lead, chars, rows, sx: 0, sy: 0, sc: 1, w: 0, h: 0, tx: 0, ty: 0, ox: 0, oy: 0, near: 1, blur: 0, behind: false });
+    tags.push({ el: e, at, lead, chars, rows, sx: 0, sy: 0, sc: 1, w: 0, h: 0, tx: 0, ty: 0, ox: 0, oy: 0, near: 1, blur: 0, behind: false, wOp: "", wBlur: -1, wTf: "" });
   };
   for (const [cap, lead, items, o, note = []] of STACK) {
     const c = fieldAt(o);
@@ -64,6 +68,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
   coffee.el.classList.add("coffee");
 
   // dust sheets: the layers the names ride on, grown out of the orb as it dives in
+  let sheets: THREE.Points, roots: THREE.LineSegments;
   const NSH = Math.round(16000 * ctx.quality);
   const HS = new Float32Array(NSH * 3), HD = new Float32Array(NSH), HC = new Float32Array(NSH * 3), HZ = new Float32Array(NSH);
   for (let i = 0; i < NSH; i++) {
@@ -99,10 +104,10 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         }`,
       fragmentShader: DUST_FRAG,
     });
-    const pts = new THREE.Points(g, m);
-    pts.frustumCulled = false;
-    pts.renderOrder = 2; // drawn after the veil, so the veil dims only what lies beneath
-    ctx.scene.add(pts);
+    sheets = new THREE.Points(g, m);
+    sheets.frustumCulled = false;
+    sheets.renderOrder = 2; // drawn after the veil, so the veil dims only what lies beneath
+    ctx.scene.add(sheets);
   }
 
   // roots: threads drop from each project's stars down to the tools it was built with
@@ -132,10 +137,10 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
         uniform float uGrow, uOp; varying float vT;
         void main(){ if (vT > uGrow) discard; float head = smoothstep(uGrow - 0.08, uGrow, vT); gl_FragColor = vec4(vec3(1.0, 0.62, 0.3) * (0.35 + 1.2 * head) * uOp, 1.0); }`,
     });
-    const l = new THREE.LineSegments(g, m);
-    l.frustumCulled = false;
-    l.renderOrder = 2;
-    ctx.scene.add(l);
+    roots = new THREE.LineSegments(g, m);
+    roots.frustumCulled = false;
+    roots.renderOrder = 2;
+    ctx.scene.add(roots);
   }
 
   // the veil: a dark translucent floor under the layers, so the river below reads as a dim glow
@@ -165,6 +170,9 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       veil.visible = vo > 0.001;
       sheetU.uG.value = smooth(0.785, 0.845, G);
       sheetU.uOut.value = smooth(0.505, 0.53, GG);
+      // drawn only while they can be seen
+      sheets.visible = sheetU.uG.value > 0.001 && sheetU.uOut.value < 0.999;
+      roots.visible = threadU.uOp.value > 0.001;
       words.style.opacity = String(smooth(0.83, 0.85, G) * (1 - smooth(0.502, 0.512, GG)));
 
       // the orb gathers itself out of the layers, then keeps being drawn back to the coffee on a ~9s loop
@@ -195,7 +203,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
 
       const tv = smooth(0.8, 0.84, G) * (1 - smooth(0.501, 0.509, GG));
       if (tv <= 0) {
-        for (const t of tags) t.el.style.opacity = "0";
+        for (const t of tags) if (t.wOp !== "0") t.el.style.opacity = t.wOp = "0";
         return;
       }
       const cam = ctx.camera, W = ctx.W, H = ctx.H, fd = ctx.u.FOCUS.value;
@@ -247,9 +255,13 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       for (const t of tags) {
         t.ox += (t.tx - t.ox) * k;
         t.oy += (t.ty - t.oy) * k;
-        t.el.style.opacity = t.behind ? "0" : (tv * t.near).toFixed(3);
-        t.el.style.filter = `blur(${t.blur.toFixed(2)}px)`;
-        t.el.style.transform = `translate(${(t.sx + t.ox).toFixed(1)}px, ${(t.sy + t.oy).toFixed(1)}px) translate(-50%, -50%) scale(${t.sc.toFixed(3)})`;
+        const op = t.behind ? "0" : (tv * t.near).toFixed(2);
+        if (op !== t.wOp) t.el.style.opacity = t.wOp = op;
+        // depth of field in half-pixel steps, and none below a third of a pixel: a blur filter is costly to redraw
+        const bl = t.blur < 0.3 ? 0 : Math.round(t.blur * 2) / 2;
+        if (bl !== t.wBlur) t.el.style.filter = (t.wBlur = bl) ? `blur(${bl}px)` : "none";
+        const tf = `translate(${(t.sx + t.ox).toFixed(1)}px, ${(t.sy + t.oy).toFixed(1)}px) translate(-50%, -50%) scale(${t.sc.toFixed(3)})`;
+        if (tf !== t.wTf) t.el.style.transform = t.wTf = tf;
       }
       // where the coffee actually landed on screen, for the orb to find
       cup.ok = !coffee.behind && tv * coffee.near > 0.3;

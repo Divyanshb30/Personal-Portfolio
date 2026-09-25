@@ -33,7 +33,7 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
   const radii = [0.36, 0.5, 0.4, 0.44];
   const angles = [3.55, 2.85, 2.2, 1.5];
   const moons = THINK.steps.map((step, i) => {
-    const m = new THREE.Mesh(blobGeometry(40 + i * 7, i === 1 ? 0.05 : 0.12, 0.78, 40), skins[i]());
+    const m = new THREE.Mesh(blobGeometry(40 + i * 7, i === 1 ? 0.05 : 0.12, 0.78, 28), skins[i]());
     m.rotation.set(0.2 + i, 0.5 + i, 0);
     ctx.scene.add(m);
     if (i === 2) m.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 3), new THREE.MeshBasicMaterial({ color: 0xff9a4a, toneMapped: false })));
@@ -71,6 +71,7 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
       orbSkin.u.uReveal.value = orbVis;
       orb.visible = orbVis > 0.001;
       orbGlow.material.opacity = 0.3 * orbVis;
+      orbGlow.visible = orbVis > 0.001;
       orb.rotation.set(time * 0.05, time * 0.08, 0);
       const plVis = smooth(0.57, 0.64, s) * (1 - smooth(0.465, 0.505, G));
       if (G > 0.455) planetSkin.u.uDir.value.copy(PLANET_UP); // it lifts away from the top, toward the work
@@ -78,7 +79,9 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
       planet.visible = plVis > 0.001;
       planet.rotation.y = planetRot.y + time * 0.02;
       planetGlow.material.opacity = 0.35 * plVis * (1 - smooth(0.465, 0.5, G));
+      planetGlow.visible = planetGlow.material.opacity > 0.001;
       orbitLine.material.opacity = 0.22 * smooth(0.62, 0.68, s) * (1 - smooth(0.455, 0.48, G));
+      orbitLine.visible = orbitLine.material.opacity > 0.001;
       poke(ctx, orb, orbSkin.u, ORB_R, f.mouse, dt, ray, tmp, tmp2, inv);
       // the orb, grown: it is thinking, or on the move between its forms
       if (s > FL0 && s < FL1 + 0.02) orbMood.feel("Flying");

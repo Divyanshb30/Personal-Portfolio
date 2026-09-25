@@ -31,7 +31,7 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
           `,
         );
     };
-    world = new THREE.Mesh(blobGeometry(33, 0.02, 0.6, 96), mat);
+    world = new THREE.Mesh(blobGeometry(33, 0.02, 0.6, 64), mat);
     world.scale.setScalar(HR);
     world.position.copy(HPc);
     world.visible = false;
@@ -70,6 +70,7 @@ export function buildHorizon(ctx: Ctx, riverGain: U<number>) {
       const sun = smooth(JG(0.86), JG(0.95), GG) * (1 - 0.55 * smooth(0.915, 0.95, GG));
       sunGlow[0].material.opacity = 0.3 * sun;
       sunGlow[1].material.opacity = 0.85 * sun;
+      sunGlow[0].visible = sunGlow[1].visible = sun > 0.001;
       riverGain.value = smooth(0.3, 0.36, GG) * (1 - 0.85 * smooth(0.91, 0.94, GG));
       now.style.opacity = String(smooth(0.858, 0.872, GG) * (1 - smooth(0.905, 0.918, GG)));
     },

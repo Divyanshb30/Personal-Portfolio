@@ -32,7 +32,7 @@ const Y = V(0, 1, 0);
 export function makeOrb(ctx: Ctx) {
   const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const root = new THREE.Group(), shape = new THREE.Group();
-  const body = new THREE.Mesh(blobGeometry(17, 0.14, 0.78, 40), glass());
+  const body = new THREE.Mesh(blobGeometry(17, 0.14, 0.78, 32), glass());
   const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 3), new THREE.MeshBasicMaterial({ color: 0xff9a4a, toneMapped: false }));
   shape.add(body, core);
   root.add(shape);

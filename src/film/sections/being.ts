@@ -75,6 +75,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
       GRP[i] = k + 1;
     }
   }
+  let dust: THREE.Points, skin: THREE.Points;
   const u = {
     ...ctx.u.TURN,
     ...ctx.u.CUR,
@@ -124,9 +125,9 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
         }`,
       fragmentShader: DUST_FRAG,
     });
-    const pts = new THREE.Points(g, m);
-    pts.frustumCulled = false;
-    ctx.scene.add(pts);
+    dust = new THREE.Points(g, m);
+    dust.frustumCulled = false;
+    ctx.scene.add(dust);
   }
 
   // the finer layer of the same dust on his figure: it gives the bust its presence, then lifts away with the rest
@@ -185,9 +186,9 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
         }`,
       fragmentShader: DUST_FRAG,
     });
-    const pts = new THREE.Points(g, m);
-    pts.frustumCulled = false;
-    ctx.scene.add(pts);
+    skin = new THREE.Points(g, m);
+    skin.frustumCulled = false;
+    ctx.scene.add(skin);
   }
 
   // a sample of the grains, for the chase camera to follow the flight
@@ -223,6 +224,9 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
       const want = ctx.u.CUR.uActive.value * (1 - smooth(0.035, 0.07, f.G));
       ctx.u.CUR.uDentAmt.value += (want - ctx.u.CUR.uDentAmt.value) * (1 - Math.exp(-f.dt * 5));
       u.uFade.value = 1 - smooth(0.46, 0.5, f.G);
+      // drawn only while they can be seen: the skin has lifted away by s 0.17, the dust has faded by G 0.5
+      skin.visible = f.s < 0.17;
+      dust.visible = f.G < 0.5;
     },
   };
 }

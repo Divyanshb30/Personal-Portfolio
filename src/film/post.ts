@@ -7,7 +7,7 @@ import { GLSL_FN, TORN_GLSL } from "./glsl";
 export const PHOTO_LAYER = 2;
 
 /**
- * Where the photographs are on screen. Rendered each frame at half resolution (photo quads only, as
+ * Where the photographs are on screen. Rendered each frame near the river at half resolution (photo quads only, as
  * white, torn at the edges exactly like the photos themselves), it lets the photos skip the bloom and
  * the filmic tone mapping, so they stay exactly the photographs they are.
  */
@@ -35,6 +35,16 @@ export function photoMask(renderer: THREE.WebGLRenderer, scene: THREE.Scene, cam
     texture: rt.texture,
     setSize(w: number, h: number) {
       rt.setSize(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
+    },
+    /** no photographs on screen: an empty mask (so nothing is left of the last one) */
+    clear() {
+      const alpha = renderer.getClearAlpha();
+      renderer.getClearColor(clear);
+      renderer.setRenderTarget(rt);
+      renderer.setClearColor(0x000000, 1);
+      renderer.clear(true, false, false);
+      renderer.setRenderTarget(null);
+      renderer.setClearColor(clear, alpha);
     },
     render() {
       const bg = scene.background, ov = scene.overrideMaterial, mask = camera.layers.mask, alpha = renderer.getClearAlpha();

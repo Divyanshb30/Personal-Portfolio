@@ -208,6 +208,9 @@ export function livingSkin(ctx: Ctx, mat: THREE.MeshPhysicalMaterial, dir: THREE
   return { mat, u };
 }
 
+// reused every frame, so the poke makes no garbage
+const pokeAt = new THREE.Vector2(), pokeBall = new THREE.Sphere();
+
 /** Jelly: the body bulges toward the cursor where the pointer meets it. */
 export function poke(
   ctx: Ctx,
@@ -222,8 +225,8 @@ export function poke(
   inv: THREE.Matrix4
 ) {
   if (!mesh.visible) return;
-  ray.setFromCamera(new THREE.Vector2(mouse.x, mouse.y), ctx.camera);
-  const hit = ray.ray.intersectSphere(new THREE.Sphere(mesh.position, radius * 1.02), tmp2);
+  ray.setFromCamera(pokeAt.set(mouse.x, mouse.y), ctx.camera);
+  const hit = ray.ray.intersectSphere(pokeBall.set(mesh.position, radius * 1.02), tmp2);
   const cp = hit ? tmp.copy(hit) : ray.ray.closestPointToPoint(mesh.position, tmp);
   const miss = hit ? 0 : cp.distanceTo(mesh.position) / radius;
   const t = Math.min(1, Math.max(0, (miss - 1.25) / (0.95 - 1.25)));

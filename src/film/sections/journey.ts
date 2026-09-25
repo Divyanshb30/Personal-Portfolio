@@ -300,6 +300,7 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
     tU: { value: null as THREE.DataTexture | null },
     ...ctx.u.CUR,
   };
+  let stream: THREE.LineSegments;
   {
     // the river's course baked into textures, so every streak can flow along it on the GPU
     const rfr: Frame3[] = [];
@@ -359,12 +360,12 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         varying vec3 vC;
         void main(){ gl_FragColor = vec4(vC, 1.0); }`,
     });
-    const l = new THREE.LineSegments(g, m);
-    l.frustumCulled = false;
-    ctx.scene.add(l);
+    stream = new THREE.LineSegments(g, m);
+    stream.frustumCulled = false;
+    ctx.scene.add(stream);
   }
   // dust drifting all along the river
-  points(
+  const riverDust = points(
     ctx,
     40000,
     () => {
@@ -622,6 +623,9 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
   };
   /** the journey owns the orb from just before the river comes into view to the end of it */
   const GGon = (GG: number, j: number) => GG >= 0.515 && j <= 1;
+  const sizes = new Map<HTMLElement, { w: number; h: number; at: number }>();
+  // the memories' words re-measure once the web fonts have arrived
+  document.fonts?.ready.then(() => sizes.clear());
 
   const api = {
     keys,
@@ -637,6 +641,8 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
       let focus = 0;
       // the photos only exist once the film is near the river (a wide phone lens would catch them from far off)
       const near = GG > 0.47;
+      // the river itself only once it can be seen (it is dark before 0.3, see Horizon)
+      stream.visible = riverDust.pts.visible = GG > 0.3;
       for (const p of [...plates, ...loose]) p.g.visible = near;
       for (const p of plates) {
         if (p.extra) p.extra.g.visible = near;
@@ -678,7 +684,10 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
           return;
         }
         // the words go where no photo is: beside the photos on whichever side has room, else below or above
-        const mw = p.label.offsetWidth || 330, mh = p.label.offsetHeight || 150, narrow = W < 760;
+        // its size, read from the page only when the screen changes (not every frame, just after moving it)
+        let sz = sizes.get(p.label);
+        if (!sz || sz.at !== W * 1e5 + H) sizes.set(p.label, (sz = { w: p.label.offsetWidth || 330, h: p.label.offsetHeight || 150, at: W * 1e5 + H }));
+        const mw = sz.w, mh = sz.h, narrow = W < 760;
         const rects = [rectOf(p, camera)];
         if (p.extra) rects.push(rectOf(p.extra, camera));
         const seen = rects.filter((r) => r.front);

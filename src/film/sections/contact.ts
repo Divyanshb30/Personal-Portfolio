@@ -20,6 +20,7 @@ const FORM_SECS = 3.2, UNFORM_SECS = 1.8;
 export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) {
   const CT = END.clone().add(V(-4.5, 0.4, 7)), OC = CT.clone().add(V(0, 0.3, 0)), OR = 1.05;
   const contactU = { uF: { value: 0 }, uHide: { value: 0 }, uTime: ctx.u.TIME, uScale: ctx.u.SCALE, uFocus: ctx.u.FOCUS, ...ctx.u.CUR };
+  let grains: THREE.Points;
   {
     // every grain starts in the light and lands on the orb's surface, from the ground up
     const n = Math.round(70000 * ctx.quality);
@@ -62,9 +63,9 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
         }`,
       fragmentShader: DUST_FRAG,
     });
-    const pts = new THREE.Points(g, m);
-    pts.frustumCulled = false;
-    ctx.scene.add(pts);
+    grains = new THREE.Points(g, m);
+    grains.frustumCulled = false;
+    ctx.scene.add(grains);
   }
   const skin = livingSkin(ctx, molten(), V(0, -1, 0));
   const orb = new THREE.Mesh(orbGeo, skin.mat);
@@ -96,9 +97,12 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
       contactU.uF.value = 1.1 * smooth(0, 0.62, form);
       const reveal = smooth(0.42, 0.9, form);
       contactU.uHide.value = 0.88 * smooth(0.62, 1, form);
+      // the grains exist only once the light has started sending them (the shader shows none before)
+      grains.visible = contactU.uF.value > 0.001;
       skin.u.uReveal.value = reveal;
       orb.visible = reveal > 0.001;
       glow.material.opacity = 0.28 * reveal;
+      glow.visible = reveal > 0.001;
       orb.rotation.set(time * 0.05, time * 0.08, 0);
       if (orb.visible) poke(ctx, orb, skin.u, OR, f.mouse, dt, ray, tmp, tmp2, inv);
       if (form > 0.02) mood.feel(form < 0.95 ? "Forming" : "Listening");
