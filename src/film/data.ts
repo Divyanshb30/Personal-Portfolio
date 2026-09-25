@@ -262,9 +262,10 @@ export const MEMORIES: Memory[] = [
     y: "2025",
     t: "Amdocs · AT&T",
     n: "AI software engineer on the AT&T account. Five agents, each with a budget and a fallback. I mentor engineers in agentic AI through hands-on workshops.",
-    // the portrait cropped just short of the man at the bar on its right, his eyes on the upper third
-    photo: ["/photos/amdocs.jpg", 50, 240, 805, 900],
-    w: 1.8,
+    // the portrait cropped to him alone (short of the man at the counter on the left and the one at the bar
+    // on the right), his eyes on the upper third
+    photo: ["/photos/amdocs.jpg", 255, 280, 600, 820],
+    w: 1.4,
     cap: "",
     d: 200,
     bank: 3.0,
