@@ -916,6 +916,8 @@ html.film-cursor * {
 }
 /* how the orb feels, right now */
 .film-mood {
+  /* (a line's height even when empty, so what sits above the dock can be measured once) */
+  min-height: 1.3em;
   color: #ffc896;
   opacity: 0;
   transition: opacity 0.18s ease;

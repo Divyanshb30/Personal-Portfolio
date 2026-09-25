@@ -152,7 +152,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&
 const or = (s: string, ph: string) => (s ? `<p>${esc(s)}</p>` : `<p class="ph">${ph}</p>`);
 const panelHTML = (pr: Project) => `
   <div class="ph-top">
-    <span class="mono sub">${esc(pr.kind)}</span><button type="button" data-close class="mono sub">Close ✕</button>
+    <span class="grab" aria-hidden="true"></span><span class="mono sub">${esc(pr.kind)}</span><button type="button" data-close class="mono sub">Close ✕</button>
   </div>
   <h3>${esc(pr.title)}</h3><p>${esc(pr.line)}</p>
   <div class="sec"><div class="mono sub">Result</div><div class="disp" style="font-size:28px;color:#ffc896;margin-top:10px">${esc(pr.metric)}</div></div>
@@ -240,7 +240,6 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       center: wide.center.clone(),
       world: worldWide,
       box: new THREE.Box3().setFromPoints(worldWide),
-      edgeWorld: sh.E.map(([a, b]) => [worldWide[a], worldWide[b]] as [THREE.Vector3, THREE.Vector3]),
       stars,
       lines,
       pulses,
@@ -260,6 +259,8 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       by: 0,
       bpy: 0,
       push: 0,
+      /** in front of the camera (the column's names only show then) */
+      front: true,
     };
   });
 
@@ -332,8 +333,8 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     ctx.scene.add(rise);
   }
 
-  // the orb, now small and glass, guiding you from project to project
-  const guideAt = projs.map((pr) => V(pr.box.max.x + 0.5, pr.box.max.y + 0.1, pr.center.z + 0.8));
+  // the orb, now small and glass, guiding you from project to project (where it waits by each: see arrange)
+  const guideAt = projs.map(() => V());
 
   // the transformer's attention, all of it at once, on the orb: a line from every token to it
   const gpt = projs.find((pr) => pr.data.id === "gpt")!;
@@ -365,7 +366,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
   }
   // left by the transformer, the orb drifts in among the tokens; a clock per visit, then a long rest
   const EGG = { idle: 0, t: -1, wait: 6, fled: false };
-  const INTO = gpt.grp.localToWorld(V(0.26, 0.23, 0.35)), QUERY = gpt.grp.localToWorld(gpt.local[14].clone());
+  const INTO = V(), QUERY = V();
 
   // picking: hover a constellation to brighten it, click to fly in and read its story
   const panel = block(ctx, "panel"), work = block(ctx, "build");
@@ -379,6 +380,35 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     panel.setAttribute("aria-hidden", "false");
     panel.setAttribute("aria-label", projs[i].data.title);
     panel.querySelector<HTMLButtonElement>("[data-close]")?.addEventListener("click", close);
+    const top = panel.querySelector<HTMLElement>(".ph-top");
+    if (top) sheetDrag(top);
+  };
+  /** Where the story rises from the bottom (a portrait screen), a drag down on its top puts it away. */
+  const sheetDrag = (top: HTMLElement) => {
+    let id = -1, y0 = 0, dy = 0, t0 = 0;
+    top.addEventListener("pointerdown", (e) => {
+      if (!ctx.form.tall || (e.target as Element).closest("button")) return;
+      id = e.pointerId;
+      y0 = e.clientY;
+      dy = 0;
+      t0 = performance.now();
+      top.setPointerCapture(id);
+      panel.classList.add("dragging");
+    });
+    top.addEventListener("pointermove", (e) => {
+      if (e.pointerId !== id) return;
+      dy = Math.max(0, e.clientY - y0);
+      panel.style.transform = `translateY(${dy}px)`;
+    });
+    const up = (e: PointerEvent) => {
+      if (e.pointerId !== id) return;
+      id = -1;
+      panel.classList.remove("dragging");
+      panel.style.transform = "";
+      if (dy > 80 || dy / Math.max(1, performance.now() - t0) > 0.6) close();
+    };
+    top.addEventListener("pointerup", up);
+    top.addEventListener("pointercancel", up);
   };
   const close = () => {
     if (PICK.idx < 0) return;
@@ -391,10 +421,29 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape") close();
   };
+  /** the constellation nearest a point on the page, if it is near enough to mean it */
+  const nearest = (x: number, y: number) => {
+    let best = 170, at = -1;
+    projs.forEach((pr, i) => {
+      const d = Math.hypot(x - pr.sx, y - pr.sy);
+      if (d < best) {
+        best = d;
+        at = i;
+      }
+    });
+    return at;
+  };
   const onClick = (e: MouseEvent) => {
     // only clicks on the open sky count, not on the rail, the bar or the panel
-    if (!PICK.on || PICK.idx >= 0 || e.target !== ctx.renderer.domElement) return;
-    if (PICK.hover >= 0) open(PICK.hover);
+    if (!PICK.on || e.target !== ctx.renderer.domElement) return;
+    // with a story risen from the bottom, a tap on the film above it puts it away
+    if (PICK.idx >= 0) {
+      if (ctx.form.tall) close();
+      return;
+    }
+    // (judged from where the click or tap landed, not from the last frame's hover: a tap has no hover)
+    const i = nearest(e.clientX, e.clientY);
+    if (i >= 0) open(i);
   };
   window.addEventListener("keydown", onKey);
   window.addEventListener("click", onClick);
@@ -415,6 +464,31 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
   // the names re-measure once the web fonts have arrived
   document.fonts?.ready.then(() => (sized = false));
 
+  /** Stand the constellations where this screen wants them: the wide sky, or the vertical cut's column. */
+  let arranged: boolean | null = null;
+  const arrange = (tall: boolean) => {
+    if (tall === arranged) return;
+    arranged = tall;
+    projs.forEach((pr, i) => {
+      const l = tall ? pr.tall : pr.wide;
+      pr.grp.position.copy(l.center);
+      pr.grp.scale.setScalar(l.sc);
+      pr.grp.updateMatrixWorld(true);
+      pr.center.copy(l.center);
+      pr.world = tall ? pr.worldTall : pr.worldWide;
+      pr.box.setFromPoints(pr.world);
+      // the guide waits at a top corner, in the column on the side away from the name
+      const left = tall && pr.data.tall.label === "right";
+      guideAt[i].set(left ? pr.box.min.x - 0.5 : pr.box.max.x + 0.5, pr.box.max.y + 0.1, pr.center.z + 0.8);
+    });
+    gpt.grp.localToWorld(INTO.set(0.26, 0.23, 0.35));
+    gpt.grp.localToWorld(QUERY.copy(gpt.local[14]));
+    sized = false;
+  };
+  arrange(ctx.form.tall);
+  const FEATURED = Math.max(0, projs.findIndex((pr) => pr.data.featured));
+  const FLY_WIDE = V(2.0, -0.35, 7.2), AIM_WIDE = V(2.0, 0, 0), FLY_TALL = V(0, -4.4, 9.5), AIM_TALL = V(0, -4.4, 0);
+
   return {
     dispose() {
       window.removeEventListener("keydown", onKey);
@@ -423,34 +497,39 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     },
     /** the projects' stars in world space, for the roots that drop to the stack */
     // the roots reach every tool a project was built with, and those of the work told beside it
-    stars: projs.map((pr) => ({ uses: [...new Set([...pr.data.uses, ...(pr.data.also ?? []).flatMap((a) => a.uses)])], world: pr.world })),
+    stars: projs.map((pr) => ({ uses: [...new Set([...pr.data.uses, ...(pr.data.also ?? []).flatMap((a) => a.uses)])], world: pr.worldWide, worldTall: pr.worldTall })),
     shot(f: Frame, sh: Shot) {
-      const { dt, mouse } = f;
+      const { dt, mouse } = f, touch = ctx.form.touch, tall = ctx.form.tall;
+      arrange(tall);
       PICK.hover = -1;
       if (PICK.on && PICK.idx < 0) {
-        let best = 1e9;
-        const mx = (mouse.x * 0.5 + 0.5) * ctx.W, my = (-mouse.y * 0.5 + 0.5) * ctx.H;
+        // with a mouse, the one under the cursor has your attention; on a touch screen (no hover), the one
+        // nearest the middle of the frame (in the column, a little above it)
+        let best = touch ? 1e9 : 170;
+        const mx = touch ? ctx.W / 2 : (mouse.x * 0.5 + 0.5) * ctx.W, my = touch ? ctx.VH * (tall ? 0.45 : 0.5) : (-mouse.y * 0.5 + 0.5) * ctx.H;
         projs.forEach((pr, i) => {
-          const d = Math.hypot(mx - pr.sx, my - pr.sy);
-          if (d < 170 && d < best) {
+          const d = Math.hypot((mx - pr.sx) * (touch && tall ? 0.3 : 1), my - pr.sy);
+          if (d < best && pr.sy > 0 && pr.sy < ctx.VH) {
             best = d;
             PICK.hover = i;
           }
         });
       }
-      document.body.style.cursor = PICK.hover >= 0 ? "pointer" : "";
+      document.body.style.cursor = PICK.hover >= 0 && !touch ? "pointer" : "";
       if (PICK.idx >= 0 && Math.abs(window.scrollY - PICK.at) > 40) close();
       PICK.amt += ((PICK.idx >= 0 ? 1 : 0) - PICK.amt) * (1 - Math.exp(-dt * 2.6));
       if (PICK.idx >= 0) PICK.last = PICK.idx;
       if (PICK.amt > 0.001 && PICK.last >= 0) {
+        // it flies to the one you picked: framed beside the story in a wide frame, above it where the story
+        // rises from the bottom
         const pr = projs[PICK.last], e = PICK.amt * PICK.amt * (3 - 2 * PICK.amt);
-        sh.pos.lerp(tmp.copy(pr.center).add(V(2.0, -0.35, 7.2)), e);
-        sh.tgt.lerp(tmp.copy(pr.center).add(V(2.0, 0, 0)), e);
+        sh.pos.lerp(tmp.copy(pr.center).add(tall ? FLY_TALL : FLY_WIDE), e);
+        sh.tgt.lerp(tmp.copy(pr.center).add(tall ? AIM_TALL : AIM_WIDE), e);
         sh.fov = lerp(sh.fov, 40, e);
       }
     },
     update(f: Frame) {
-      const { G, dt, time } = f;
+      const { G, dt, time } = f, tall = ctx.form.tall;
       riseU.uR.value = smooth(0.46, 0.53, G);
       riseU.uOut.value = 0.8 * smooth(0.53, 0.58, G);
       const lit = smooth(0.5, 0.53, G), leave = 1 - 0.65 * smooth(0.76, 0.84, G), pick = smooth(0.515, 0.53, G) * (1 - smooth(0.72, 0.735, G));
@@ -485,6 +564,24 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         pr.pulses.uniforms.uGain.value = g;
         pr.lines.opacity = g;
         pr.tails.opacity = g;
+        tmp2.copy(pr.center).project(ctx.camera);
+        pr.sx = (tmp2.x * 0.5 + 0.5) * ctx.W;
+        pr.sy = (-tmp2.y * 0.5 + 0.5) * ctx.H;
+        const pe = PICK.on && PICK.idx < 0 ? "auto" : "none";
+        if (pe !== pr.pe) pr.label.style.pointerEvents = pr.pe = pe;
+        pr.label.classList.toggle("hot", hot > 0);
+        if (tall) {
+          // in the column each name stands beside its constellation (the featured one's under it), level with it
+          const side = pr.data.tall.label;
+          if (side === "below") tmp3.set(pr.center.x, pr.box.min.y - 0.2, pr.center.z);
+          else tmp3.set(side === "right" ? pr.box.max.x + 0.2 : pr.box.min.x - 0.2, pr.center.y, pr.center.z);
+          tmp.copy(tmp3).project(ctx.camera);
+          const ax = (tmp.x * 0.5 + 0.5) * ctx.W, ay = (-tmp.y * 0.5 + 0.5) * ctx.H;
+          pr.lx = side === "below" ? ax - pr.lw / 2 : side === "right" ? ax : ax - pr.lw;
+          pr.ly = side === "below" ? ay : ay - pr.lh / 2;
+          pr.front = tmp.z < 1;
+          return;
+        }
         // names alternate above and below their constellations so neighbours never collide
         const up = pr.data.label ? pr.data.label === "above" : i === 1 || i === 3;
         const anchor = tmp3.set(pr.center.x, up ? pr.box.max.y + 0.3 : pr.box.min.y - 0.35, pr.center.z);
@@ -494,13 +591,8 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         anchor.project(ctx.base);
         pr.bx = (anchor.x * 0.5 + 0.5) * ctx.W - pr.lw / 2;
         pr.by = (-anchor.y * 0.5 + 0.5) * ctx.H - (up ? 92 : 0);
-        tmp2.copy(pr.center).project(ctx.camera);
-        pr.sx = (tmp2.x * 0.5 + 0.5) * ctx.W;
-        pr.sy = (-tmp2.y * 0.5 + 0.5) * ctx.H;
-        const op = (tmp.z < 1 ? pick * (1 - PICK.amt) : 0).toFixed(3), pe = PICK.on && PICK.idx < 0 ? "auto" : "none";
+        const op = (tmp.z < 1 ? pick * (1 - PICK.amt) : 0).toFixed(3);
         if (op !== pr.op) pr.label.style.opacity = pr.op = op;
-        if (pe !== pr.pe) pr.label.style.pointerEvents = pr.pe = pe;
-        pr.label.classList.toggle("hot", hot > 0);
         // each name centred under (or over) its constellation, following it as the view sways
         pr.lx = px - pr.lw / 2;
         pr.ly = py;
@@ -510,13 +602,29 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       // scrolling does bring glides in rather than snapping.
       // (every name stays inside the page, whatever its height, judged where it will actually sit; on a
       // phone also below the heading and clear of the orb's line at the bottom)
-      const narrow = ctx.W < 760, MX = narrow ? 14 : 40, GAP = narrow ? 12 : 20, TOP = narrow ? Math.max(84, headBottom + 14) : 84;
-      const low = (pr: (typeof projs)[number]) => ctx.H - pr.lh - (narrow ? 124 : 64);
+      // (the heading fades as the column starts down; the names keep clear of it while it's there)
+      const head = smooth(0.51, 0.525, G) * (1 - (tall ? smooth(0.545, 0.565, G) : smooth(0.72, 0.735, G))) * (1 - PICK.amt);
+      if (tall) {
+        // the column: the names ride with their constellations; one that runs under the heading, the top
+        // chrome or the dock fades out rather than crowding them
+        const top = Math.max(ctx.form.narrow ? 64 : 84, head > 0.05 ? headBottom + 8 : 0);
+        for (const pr of projs) {
+          pr.lx = clamp(pr.lx, 16, ctx.W - pr.lw - 16);
+          const vis = smooth(top - 40, top, pr.ly) * (1 - smooth(ctx.floor - pr.lh - 30, ctx.floor - pr.lh + 10, pr.ly));
+          const op = (pr.front ? pick * (1 - PICK.amt) * vis : 0).toFixed(3);
+          if (op !== pr.op) pr.label.style.opacity = pr.op = op;
+          const tf = `translate(${pr.lx.toFixed(1)}px, ${pr.ly.toFixed(1)}px)`;
+          if (tf !== pr.tf) pr.label.style.transform = pr.tf = tf;
+        }
+      }
+      const narrow = ctx.form.narrow, MX = narrow ? 14 : 40, GAP = narrow ? 12 : 20, TOP = narrow ? Math.max(84, headBottom + 14) : 84;
+      const low = (pr: (typeof projs)[number]) => (narrow ? ctx.floor : ctx.H - 64) - pr.lh;
+      if (!tall)
       for (const pr of projs) {
         pr.bx = clamp(pr.bx, 16, ctx.W - pr.lw - 16);
         pr.by = pr.bpy = clamp(pr.by, TOP, low(pr));
       }
-      if (pick > 0.001)
+      if (pick > 0.001 && !tall)
         for (let pass = 0, moved = true; moved && pass < 6; pass++) {
           moved = false;
           for (let a = 0; a < projs.length; a++)
@@ -532,7 +640,8 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
             }
         }
       const glide = f.fixed ? 1 : 1 - Math.exp(-dt * 7);
-      for (const pr of projs) pr.push += (pr.bpy - pr.by - pr.push) * glide;
+      if (!tall) for (const pr of projs) pr.push += (pr.bpy - pr.by - pr.push) * glide;
+      if (!tall)
       for (const pr of projs) {
         pr.lx = clamp(pr.lx, 16, ctx.W - pr.lw - 16);
         pr.ly = clamp(clamp(pr.ly, TOP, low(pr)) + pr.push, TOP, low(pr));
@@ -542,7 +651,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       // the guide hovers by whichever project has your attention, then dives down the roots
       const dive = smooth(0.745, 0.8, G);
       const gs = 0.28 * smooth(0.53, 0.56, G) * (1 - smooth(0.785, 0.8, G));
-      home.copy(guideAt[PICK.idx >= 0 ? PICK.idx : PICK.hover >= 0 ? PICK.hover : 1]).add(tmp.set(0, Math.sin(time * 1.3) * 0.06, 0));
+      home.copy(guideAt[PICK.idx >= 0 ? PICK.idx : PICK.hover >= 0 ? PICK.hover : tall ? FEATURED : 1]).add(tmp.set(0, Math.sin(time * 1.3) * 0.06, 0));
 
       // the attention egg: it only runs while the orb is parked by the transformer and nobody is choosing
       const parked = PICK.on && PICK.idx < 0 && PICK.hover < 0 && gs > 0.27 && !orb.still;
@@ -573,7 +682,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         attnU.uOrb.value.copy(orb.pos);
         gpt.grp.worldToLocal(attnU.uOrb.value);
       }
-      work.style.opacity = String(smooth(0.51, 0.525, G) * (1 - smooth(0.72, 0.735, G)) * (1 - PICK.amt));
+      work.style.opacity = String(head);
     },
   };
 }

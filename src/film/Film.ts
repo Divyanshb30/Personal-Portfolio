@@ -129,7 +129,7 @@ export class Film {
     scene.environment = environment(renderer);
     const camera = new THREE.PerspectiveCamera(30, W / H, 0.05, 500);
     const form = formOf(W, H);
-    this.ctx = { scene, camera, base: camera.clone(), renderer, root, labels, u: makeShared(W, H, renderer.getPixelRatio()), quality: qualityFor(), W, H, VH: window.innerHeight, form };
+    this.ctx = { scene, camera, base: camera.clone(), renderer, root, labels, u: makeShared(W, H, renderer.getPixelRatio()), quality: qualityFor(), W, H, VH: window.innerHeight, floor: window.innerHeight - 64, form };
     this.lastW = W;
     this.frameH = H;
     // a touch screen starts with the camera in the device's hands, until a mouse says otherwise
@@ -202,6 +202,8 @@ export class Film {
 
     this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress"), mood: block(ctx, "mood"), brand: block(ctx, "brand") };
     this.bindInput();
+    this.measureFloor();
+    document.fonts?.ready.then(() => this.measureFloor());
     // on a touch screen the camera's sway comes from tilting it (asked for with a tap on iOS, see requestTilt)
     this.tilt = makeTilt(() => this.opts.onTilt?.());
     if (form.touch) this.tilt.start();
@@ -226,6 +228,12 @@ export class Film {
 
   private progress() {
     return filmT(Math.min(1, window.scrollY / this.maxScroll()) || 0);
+  }
+
+  /** How far down words may reach: above a phone's dock (measured, it knows the safe area), else clear of the progress line. */
+  private measureFloor() {
+    const c = this.ctx, dock = c.root.querySelector<HTMLElement>(".film-progress");
+    c.floor = c.form.narrow && dock ? dock.getBoundingClientRect().top - 10 : c.VH - 64;
   }
 
   /** Whether the iOS tilt question still needs asking. */
@@ -285,6 +293,7 @@ export class Film {
         const { W, H } = this.frameSize();
         c.VH = window.innerHeight;
         c.form = formOf(W, H);
+        this.measureFloor();
         // (a phone's toolbar only changes the visible height: the frame, and the GPU's buffers, stay as they are)
         if (W === c.W && H === c.H) return;
         c.W = W;

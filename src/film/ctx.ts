@@ -40,6 +40,8 @@ export type Ctx = {
   H: number;
   /** how much of the frame is actually visible below the top (less than H while a phone's toolbar shows) */
   VH: number;
+  /** how far down the page words may reach (px from the top): clear of the progress line, or a phone's dock */
+  floor: number;
   /** what kind of screen this is (phone, portrait, touch …) */
   form: Form;
   /** compile something's shaders ahead of time, as the film draws them (set once the film's buffers exist) */

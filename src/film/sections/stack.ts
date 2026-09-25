@@ -21,6 +21,11 @@ type Tag = {
   h: number;
   tx: number;
   ty: number;
+  /** which capability it belongs to (-1: the coffee) */
+  grp: number;
+  /** on a phone: whether it has a place this frame, and how shown it is (fades in and out) */
+  want: number;
+  show: number;
   ox: number;
   oy: number;
   near: number;
@@ -39,31 +44,31 @@ type Tag = {
  * A dark veil beneath the layers dims whatever lies below, and lifts on the way down to the river.
  * The orb re-forms out of the layers and wanders the names, and it keeps drifting back to one of them.
  */
-export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Vector3[] }[], orb: Orb) {
+export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Vector3[]; worldTall: THREE.Vector3[] }[], orb: Orb) {
   const fieldAt = (o: [number, number, number]) => SF.clone().add(V(o[0] * 1.12, o[1] * 1.55, o[2] * 1.1));
   const toolPos: Record<string, THREE.Vector3> = {};
   const tags: Tag[] = [];
-  const tag = (html: string, at: THREE.Vector3, lead: boolean, chars: number, rows = 0) => {
+  const tag = (html: string, at: THREE.Vector3, lead: boolean, chars: number, grp: number, rows = 0) => {
     const e = el(ctx, lead ? "tool lead" : "tool", html);
-    tags.push({ el: e, at, lead, chars, rows, sx: 0, sy: 0, sc: 1, w: 0, h: 0, tx: 0, ty: 0, ox: 0, oy: 0, near: 1, blur: 0, behind: false, wOp: "", wBlur: -1, wTf: "" });
+    tags.push({ el: e, at, lead, chars, rows, sx: 0, sy: 0, sc: 1, w: 0, h: 0, tx: 0, ty: 0, grp, want: 1, show: 0, ox: 0, oy: 0, near: 1, blur: 0, behind: false, wOp: "", wBlur: -1, wTf: "" });
   };
-  for (const [cap, lead, items, o, note = []] of STACK) {
+  STACK.forEach(([cap, lead, items, o, note = []], gi) => {
     const c = fieldAt(o);
     const under = note.map((l) => `<div class="mono cap note">${l}</div>`).join("");
     // (small print is about a quarter as wide per letter as the big name)
     const chars = Math.max(lead.length, ...note.map((l) => Math.ceil(l.length * 0.26)));
-    tag(`<div class="mono cap">${cap}</div><div class="big">${lead}</div>${under}`, c, true, chars, note.length);
+    tag(`<div class="mono cap">${cap}</div><div class="big">${lead}</div>${under}`, c, true, chars, gi, note.length);
     toolPos[LEAD_OF[lead] || lead] = c;
     const rest = items.filter((t) => t !== lead && t !== LEAD_OF[lead]);
     rest.forEach((t, i) => {
       const a = (i / rest.length) * TAU + cap.length * 0.37, rr = i % 2 ? 2.7 : 1.95;
       const q = c.clone().add(V(Math.cos(a) * rr * 1.3, ((i % 3) - 1) * 0.3, Math.sin(a) * rr * 0.8));
-      tag(t, q, false, t.length);
+      tag(t, q, false, t.length, gi);
       toolPos[t] = q;
     });
-  }
+  });
   // not a technology; the orb is fond of it anyway
-  tag("Coffee", SF.clone().add(V(4.4, -0.5, 1.6)), false, 6);
+  tag("Coffee", SF.clone().add(V(4.4, -0.5, 1.6)), false, 6, -1);
   const coffee = tags[tags.length - 1];
   coffee.el.classList.add("coffee");
 
@@ -111,19 +116,22 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
   }
 
   // roots: threads drop from each project's stars down to the tools it was built with
-  const threadU = { uGrow: { value: 0 }, uOp: { value: 0 } };
+  const threadU = { uGrow: { value: 0 }, uOp: { value: 0 }, uTall: ctx.u.TALL };
   {
-    const p: number[] = [], t: number[] = [];
+    // (each root leaves the same star in either arrangement of the projects: the wide sky, or the column)
+    const p: number[] = [], alt: number[] = [], t: number[] = [];
     for (const pr of projects)
       for (const u of pr.uses) {
         const to = toolPos[u];
         if (!to) continue;
-        const from = pr.world[Math.floor(R() * pr.world.length)];
+        const k = Math.floor(R() * pr.world.length), from = pr.world[k], fromT = pr.worldTall[k];
         p.push(from.x, from.y, from.z, to.x, to.y + 0.25, to.z);
+        alt.push(fromT.x, fromT.y, fromT.z, to.x, to.y + 0.25, to.z);
         t.push(0, 1);
       }
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(p, 3));
+    g.setAttribute("aAlt", new THREE.Float32BufferAttribute(alt, 3));
     g.setAttribute("aT", new THREE.Float32BufferAttribute(t, 1));
     const m = new THREE.ShaderMaterial({
       transparent: true,
@@ -131,8 +139,8 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       blending: THREE.AdditiveBlending,
       uniforms: threadU,
       vertexShader: /* glsl */ `
-        attribute float aT; varying float vT;
-        void main(){ vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        attribute float aT; attribute vec3 aAlt; uniform float uTall; varying float vT;
+        void main(){ vT = aT; gl_Position = projectionMatrix * modelViewMatrix * vec4(mix(position, aAlt, uTall), 1.0); }`,
       fragmentShader: /* glsl */ `
         uniform float uGrow, uOp; varying float vT;
         void main(){ if (vT > uGrow) discard; float head = smoothstep(uGrow - 0.08, uGrow, vT); gl_FragColor = vec4(vec3(1.0, 0.62, 0.3) * (0.35 + 1.2 * head) * uOp, 1.0); }`,
@@ -158,6 +166,78 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
   let clock = 1.5, formed = false;
   /** a point on screen, at the coffee's depth, back in the world */
   const unproject = (x: number, y: number, out: THREE.Vector3) => out.set((x / ctx.W) * 2 - 1, -(y / ctx.H) * 2 + 1, cup.z).unproject(ctx.camera);
+
+  // On a phone there is no room for every name at once. The leads are always placed (pushed apart among
+  // themselves); then the rest, one by one, most wanted first (the group a finger has picked, then those
+  // nearest the middle), each where it belongs or a nudge away, and any that can't fit wait unseen. A name
+  // already shown keeps its place a little more readily, so none flickers.
+  const order: Tag[] = [];
+  const free = (a: Tag, x: number, y: number) => {
+    for (const b of order) if (b.want && Math.abs(x - b.sx - b.tx) < (a.w + b.w) / 2 && Math.abs(y - b.sy - b.ty) < (a.h + b.h) / 2) return false;
+    return true;
+  };
+  const placeGreedy = (W: number, mL: number, mR: number, mT: number, floor: number) => {
+    const inPage = (t: Tag) => {
+      t.tx = clamp(t.sx + t.tx, mL + t.w / 2, W - mR - t.w / 2) - t.sx;
+      t.ty = clamp(t.sy + t.ty, mT + t.h / 2, floor - t.h / 2) - t.sy;
+    };
+    const leads = tags.filter((t) => t.lead && !t.behind);
+    for (let it = 0; it < 24; it++) {
+      for (let a = 0; a < leads.length; a++)
+        for (let b = a + 1; b < leads.length; b++) {
+          const A = leads[a], B = leads[b];
+          const ox = (A.w + B.w) / 2 - Math.abs(A.sx + A.tx - B.sx - B.tx), oy = (A.h + B.h) / 2 - Math.abs(A.sy + A.ty - B.sy - B.ty);
+          if (ox <= 0 || oy <= 0) continue;
+          if (oy < ox) {
+            const s2 = Math.sign(A.sy + A.ty - B.sy - B.ty) || 1;
+            A.ty += s2 * oy * 0.5;
+            B.ty -= s2 * oy * 0.5;
+          } else {
+            const s2 = Math.sign(A.sx + A.tx - B.sx - B.tx) || 1;
+            A.tx += s2 * ox * 0.5;
+            B.tx -= s2 * ox * 0.5;
+          }
+        }
+      for (const t of leads) inPage(t);
+    }
+    order.length = 0;
+    for (const t of leads) {
+      t.want = 1;
+      order.push(t);
+    }
+    const cx = W / 2, cy = (mT + floor) / 2;
+    const rest = tags.filter((t) => !t.lead && !t.behind);
+    const pri = (t: Tag) => (t.grp === picked ? 10 : 0) + (t.show > 0.5 ? 0.6 : 0) - Math.hypot(t.sx - cx, (t.sy - cy) * 1.3) / W;
+    rest.sort((a, b) => pri(b) - pri(a));
+    for (const t of rest) {
+      t.want = 0;
+      for (const [dx, dy] of NUDGE) {
+        t.tx = dx * t.w * 0.5;
+        t.ty = dy * t.h;
+        inPage(t);
+        if (free(t, t.sx + t.tx, t.sy + t.ty)) {
+          t.want = 1;
+          break;
+        }
+      }
+      order.push(t);
+    }
+    for (const t of tags) if (t.behind) t.want = 0;
+  };
+  const NUDGE: [number, number][] = [[0, 0], [0, -1], [0, 1], [1, 0], [-1, 0], [1, -1], [-1, 1], [0, -2], [0, 2]];
+
+  // on a phone, tapping a lead brings its group forward for a while
+  let picked = -1, pickUntil = 0, leadPE = "";
+  const pick = (g: number) => {
+    picked = g;
+    pickUntil = g >= 0 ? ctx.u.TIME.value + 8 : 0;
+    for (const t of tags) if (t.lead) t.el.classList.toggle("picked", t.grp === g);
+  };
+  for (const t of tags)
+    if (t.lead)
+      t.el.addEventListener("click", () => {
+        if (ctx.form.narrow) pick(picked === t.grp ? -1 : t.grp);
+      });
 
   return {
     update(f: Frame) {
@@ -202,63 +282,77 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       }
 
       const tv = smooth(0.8, 0.84, G) * (1 - smooth(0.501, 0.509, GG));
+      // (a phone's finger can pick a lead only while the names are there to be seen)
+      const tappable = ctx.form.narrow && tv > 0.5 ? "auto" : "none";
+      if (tappable !== leadPE) {
+        leadPE = tappable;
+        for (const t of tags) if (t.lead) t.el.style.pointerEvents = tappable;
+      }
       if (tv <= 0) {
         for (const t of tags) if (t.wOp !== "0") t.el.style.opacity = t.wOp = "0";
         return;
       }
-      const cam = ctx.camera, W = ctx.W, H = ctx.H, fd = ctx.u.FOCUS.value;
-      // page margins: the rail takes the right edge on wide screens
-      const narrow = W < 760, mL = narrow ? 16 : 48, mR = narrow ? 16 : 170, mT = narrow ? 80 : 92, mB = narrow ? 210 : 120;
+      const cam = ctx.camera, W = ctx.W, H = ctx.H, fd = ctx.u.FOCUS.value, time = f.time;
+      // page margins: the rail takes the right edge on wide screens, a phone's dock the bottom
+      const narrow = ctx.form.narrow, mL = narrow ? 16 : 48, mR = narrow ? 16 : 170, mT = narrow ? 70 : 92;
+      // (on a phone the section's title sits just above the dock: the names stay above both)
+      const floor = narrow ? ctx.floor - 64 : H - 120;
+      if (pickUntil && time > pickUntil) pick(-1);
       // project every name, then push the small ones apart; the big lead words mostly hold their place
       for (const t of tags) {
         tmp.copy(t.at).project(cam);
-        const d = cam.position.distanceTo(t.at), base = t.lead ? 46 : 16;
+        const d = cam.position.distanceTo(t.at), base = t.lead ? (narrow ? 34 : 46) : 16;
         t.behind = tmp.z > 1;
         t.sx = (tmp.x * 0.5 + 0.5) * W;
         t.sy = (-tmp.y * 0.5 + 0.5) * H;
-        t.sc = clamp(12.5 / d, 0.4, 2.4) * (narrow ? 0.62 : 1);
+        // (on a phone, never smaller than can be read: a name at 11px or more, a lead at 22px or more)
+        t.sc = narrow ? clamp((12.5 / d) * 0.75, t.lead ? 0.66 : 0.7, t.lead ? 1.05 : 0.95) : clamp(12.5 / d, 0.4, 2.4);
         t.near = smooth(1.0, 2.2, d);
         t.blur = Math.min(3, Math.abs(d - fd) * 0.22);
-        t.w = t.chars * (t.lead ? 0.68 : 0.56) * base * t.sc + 18;
-        t.h = base * t.sc * (t.lead ? 1.9 : 1.5) + 6 + t.rows * 19 * t.sc;
+        t.w = t.chars * (t.lead ? 0.68 : 0.56) * base * t.sc + (narrow ? 10 : 18);
+        t.h = base * t.sc * (t.lead ? 1.9 : 1.5) + (narrow ? 2 : 6) + t.rows * 19 * t.sc;
         t.tx = 0;
         t.ty = 0;
       }
-      // (a phone has more names per inch, and needs more passes to settle them)
-      for (let it = 0; it < (narrow ? 60 : 14); it++) {
-        for (let a = 0; a < tags.length; a++)
-          for (let b = a + 1; b < tags.length; b++) {
-            const A = tags[a], B = tags[b];
-            if (A.behind || B.behind) continue;
-            const ox = (A.w + B.w) / 2 - Math.abs(A.sx + A.tx - B.sx - B.tx), oy = (A.h + B.h) / 2 - Math.abs(A.sy + A.ty - B.sy - B.ty);
-            if (ox <= 0 || oy <= 0) continue;
-            const wa = A.lead === B.lead ? 0.5 : A.lead ? 0.15 : 0.85, wb = 1 - wa;
-            if (oy < ox) {
-              const s2 = Math.sign(A.sy + A.ty - B.sy - B.ty) || 1;
-              A.ty += s2 * oy * wa;
-              B.ty -= s2 * oy * wb;
-            } else {
-              const s2 = Math.sign(A.sx + A.tx - B.sx - B.tx) || 1;
-              A.tx += s2 * ox * wa;
-              B.tx -= s2 * ox * wb;
+      if (narrow) placeGreedy(W, mL, mR, mT, floor);
+      else
+        for (let it = 0; it < 14; it++) {
+          for (let a = 0; a < tags.length; a++)
+            for (let b = a + 1; b < tags.length; b++) {
+              const A = tags[a], B = tags[b];
+              if (A.behind || B.behind) continue;
+              const ox = (A.w + B.w) / 2 - Math.abs(A.sx + A.tx - B.sx - B.tx), oy = (A.h + B.h) / 2 - Math.abs(A.sy + A.ty - B.sy - B.ty);
+              if (ox <= 0 || oy <= 0) continue;
+              const wa = A.lead === B.lead ? 0.5 : A.lead ? 0.15 : 0.85, wb = 1 - wa;
+              if (oy < ox) {
+                const s2 = Math.sign(A.sy + A.ty - B.sy - B.ty) || 1;
+                A.ty += s2 * oy * wa;
+                B.ty -= s2 * oy * wb;
+              } else {
+                const s2 = Math.sign(A.sx + A.tx - B.sx - B.tx) || 1;
+                A.tx += s2 * ox * wa;
+                B.tx -= s2 * ox * wb;
+              }
             }
+          // and every name stays on the page, clear of the chrome
+          for (const t of tags) {
+            if (t.behind) continue;
+            const x = clamp(t.sx + t.tx, mL + t.w / 2, W - mR - t.w / 2), y = clamp(t.sy + t.ty, mT + t.h / 2, floor - t.h / 2);
+            t.tx = x - t.sx;
+            t.ty = y - t.sy;
           }
-        // and every name stays on the page, clear of the chrome
-        for (const t of tags) {
-          if (t.behind) continue;
-          const x = clamp(t.sx + t.tx, mL + t.w / 2, W - mR - t.w / 2), y = clamp(t.sy + t.ty, mT + t.h / 2, H - mB - t.h / 2);
-          t.tx = x - t.sx;
-          t.ty = y - t.sy;
         }
-      }
-      const k = f.fixed ? 1 : 1 - Math.exp(-dt * 8);
+      const k = f.fixed ? 1 : 1 - Math.exp(-dt * 8), kf = f.fixed ? 1 : 1 - Math.exp(-dt * 6);
+      // (depth of field on the names only with a mouse: a phone redraws a blurred layer at a real cost)
+      const dof = !ctx.form.touch;
       for (const t of tags) {
         t.ox += (t.tx - t.ox) * k;
         t.oy += (t.ty - t.oy) * k;
-        const op = t.behind ? "0" : (tv * t.near).toFixed(2);
+        t.show += ((narrow ? t.want : 1) - t.show) * kf;
+        const op = t.behind ? "0" : (tv * t.near * t.show).toFixed(2);
         if (op !== t.wOp) t.el.style.opacity = t.wOp = op;
         // depth of field in half-pixel steps, and none below a third of a pixel: a blur filter is costly to redraw
-        const bl = t.blur < 0.3 ? 0 : Math.round(t.blur * 2) / 2;
+        const bl = !dof || t.blur < 0.3 ? 0 : Math.round(t.blur * 2) / 2;
         if (bl !== t.wBlur) t.el.style.filter = (t.wBlur = bl) ? `blur(${bl}px)` : "none";
         const tf = `translate(${(t.sx + t.ox).toFixed(1)}px, ${(t.sy + t.oy).toFixed(1)}px) translate(-50%, -50%) scale(${t.sc.toFixed(3)})`;
         if (tf !== t.wTf) t.el.style.transform = t.wTf = tf;

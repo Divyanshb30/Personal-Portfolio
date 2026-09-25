@@ -36,10 +36,13 @@ export function firstHalfKeys(): Key[] {
     { s: 0.27, name: "Crane back · the planet forms", pos: PC.clone().add(V(-2.5, 3.8, 13.5)), tgt: PC.clone(), fov: 40, tall: { pos: PC.clone().add(V(-2.5, 4.2, 16.5)) } },
     { s: 0.3015, name: "Think", pos: PC.clone().add(V(-4.6, 0.6, 11.5)), tgt: PC.clone().add(V(-3.3, 0, 0)), fov: 34, tall: { pos: PC.clone().add(V(-1.8, 1.1, 17)), tgt: PC.clone().add(V(0, 0.3, 0)) } },
     { s: 0.345, name: "Think · hold", pos: PC.clone().add(V(-4.4, 0.55, 10.9)), tgt: PC.clone().add(V(-3.2, 0, 0)), fov: 34, settle: 1, tall: { pos: PC.clone().add(V(-1.6, 1.0, 16.4)), tgt: PC.clone().add(V(0, 0.3, 0)) } },
-    { s: 0.47, name: "The planet rises into the work", pos: PC.clone().add(V(-3, 1.2, 12)), tgt: PC.clone().add(V(0, 7, -6)), fov: 44 },
-    { s: 0.52, name: "The work · wide, from below", pos: PJ.clone().add(V(-0.2, -4.6, 14.2)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52 },
-    { s: 0.575, name: "The work · pick one", pos: PJ.clone().add(V(-0.4, -4.4, 13.8)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, settle: 1 },
-    { s: 0.745, name: "Roots drop · tilt down", pos: PJ.clone().add(V(4, 1, 13)), tgt: PJ.clone().add(V(2, -9, -2)), fov: 50 },
+    { s: 0.47, name: "The planet rises into the work", pos: PC.clone().add(V(-3, 1.2, 12)), tgt: PC.clone().add(V(0, 7, -6)), fov: 44, tall: { pos: PC.clone().add(V(-1.5, 1.2, 15)), tgt: PC.clone().add(V(0, 9, -6)) } },
+    // (in the vertical cut the work is a column, the featured project first: the camera frames the top of
+    // it under the heading, then goes down it evenly as you scroll, and rests on the last)
+    { s: 0.52, name: "The work · wide, from below", pos: PJ.clone().add(V(-0.2, -4.6, 14.2)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, tall: { pos: PJ.clone().add(V(0, 3.4, 12.3)), tgt: PJ.clone().add(V(0, 4.6, 0)), fov: 36 } },
+    { s: 0.575, name: "The work · pick one", pos: PJ.clone().add(V(-0.4, -4.4, 13.8)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, settle: 1, tall: { s: 0.572, pos: PJ.clone().add(V(0, -0.5, 12.3)), tgt: PJ.clone().add(V(0, 0.7, 0)), fov: 36, settle: 0.3 } },
+    { s: 0.7, name: "The work · the last of the column", pos: PJ.clone().add(V(0, -4.4, 12.3)), tgt: PJ.clone().add(V(0, -3.2, 0)), fov: 36, settle: 0.8, only: "tall" },
+    { s: 0.745, name: "Roots drop · tilt down", pos: PJ.clone().add(V(4, 1, 13)), tgt: PJ.clone().add(V(2, -9, -2)), fov: 50, tall: { pos: PJ.clone().add(V(1, -6.5, 13)), tgt: PJ.clone().add(V(0.5, -15, -2)) } },
     { s: 0.8, name: "Dive with the orb", pos: SF.clone().add(V(1, 9, 9)), tgt: SF.clone().add(V(0, 0, -1)), fov: 48, roll: -0.04, tall: { pos: SF.clone().add(V(9, 10, 2)), tgt: SF.clone().add(V(-1, 0, 0)), fov: 44 } },
     { s: 0.845, name: "Overhead · what it runs on", pos: SF.clone().add(V(0.3, 13, 3.5)), tgt: SF.clone().add(V(0, 0, -0.5)), fov: 50, tall: { pos: SF.clone().add(V(5, 15, 0.4)), tgt: SF.clone().add(V(-0.5, 0, 0)), fov: 40 } },
     { s: 0.9, name: "Crane down through the layers", pos: SF.clone().add(V(0.4, 8.2, 11.2)), tgt: SF.clone().add(V(0, -0.3, -0.4)), fov: 50, tall: { pos: SF.clone().add(V(11.5, 9.5, 0.6)), tgt: SF.clone().add(V(-0.6, -0.3, 0.2)), fov: 40 } },
