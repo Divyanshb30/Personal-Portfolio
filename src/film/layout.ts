@@ -30,17 +30,18 @@ export const SBUD = FRAC.map((a) => FL0 + (FL1 - FL0) * invSmooth(a));
 export const JS0 = 0.525, JS1 = 0.8;
 export const JG = (x: number) => JS0 + (JS1 - JS0) * x; // journey-local → film time
 
-// scroll → film time. Knots are [scroll units, film time]. From him to the Think planet runs 1.5x;
-// two dead stretches pass in a breath (the hold after Think, and after the Projects hold); the stack
-// runs about twice as fast; so does the climb out of the river into the light; and the page ends soon
-// after "Let's talk" is in (the orb then forms on its own clock).
+// scroll → film time. Knots are [screens scrolled, film time]. The work is in view about five screens
+// in and the whole film is under thirty: the flight to Think, the rise into the work, the dive into
+// the stack and each memory on the river pass at a brisk pace; the dead stretches (after Think, and
+// after the work) pass in a breath; the work itself holds for a screen and a half, to pick one; and
+// the page ends soon after "Let's talk" is in (the orb then forms on its own clock).
 const SKN: [number, number][] = [
-  [0, 0], [0.006, 0.006], [0.098, 0.144], [0.1265, 0.1725], [0.1325, 0.229], [0.2035, 0.3], [0.2095, 0.3625],
-  [0.2834, 0.525], [0.5708, 0.8], [0.5979, 0.852], [0.716, 0.965], [0.724, 1],
+  [0, 0], [0.4, 0.006], [2.7, 0.144], [3.7, 0.1725], [4.05, 0.229], [5.05, 0.265], [6.55, 0.3], [7.05, 0.3625],
+  [10.55, 0.525], [22.55, 0.8], [23.75, 0.852], [28.25, 0.965], [28.75, 1],
 ];
 const SEND = SKN[SKN.length - 1][0];
-/** the scroll track's height: 88vh of track per 0.01 scroll units keeps the pace the film was tuned at */
-export const TRACK_VH = Math.round(SEND * 8802);
+/** the scroll track's height: a screen of track per screen of knots, plus the one in view */
+export const TRACK_VH = Math.round((SEND + 1) * 100);
 export const filmT = (u: number) => {
   u = Math.min(1, Math.max(0, u)) * SEND;
   for (let k = 1; k < SKN.length; k++)
