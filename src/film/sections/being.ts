@@ -6,6 +6,9 @@ import { DENT_GLSL, DUST_FRAG, GLSL_FN, STIR_GLSL, turnGLSL } from "../glsl";
 import { R, V, emberAt, gauss, smooth } from "../math";
 import { ARC, FIG_X, FL0, FL1, FRAC, O1, ORB_R, PC, PL_R, planetRot, toPlanet } from "../layout";
 
+/** how much brighter he glows on the first screen than the dust he is made of */
+const GLOW = 1.3;
+
 /**
  * ARRIVAL, and the being itself: one body of ember dust that is his figure, peels off his
  * shoulder, gathers into the orb, flies (shedding the four moons) and becomes the Think planet.
@@ -80,6 +83,8 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
     ...ctx.u.TURN,
     ...ctx.u.CUR,
     uFade: { value: 1 },
+    // he glows a little brighter while he is whole; the dust is its usual self once it has left him
+    uGlow: { value: GLOW },
     uT1: { value: 0 },
     uT2: { value: 0 },
     uArc: { value: ARC },
@@ -100,7 +105,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
       uniforms: u,
       vertexShader: /* glsl */ `
         attribute vec3 aB, aC, aCol; attribute float aSize, aLA, aLB, aD1, aD2, aW2, aFr, aGrp, aSeed;
-        uniform float uT1, uT2, uTime, uFocus, uScale, uFade; uniform vec3 uArc; uniform vec4 uAbsorb; varying vec3 vC; varying float vCoc;
+        uniform float uT1, uT2, uTime, uFocus, uScale, uFade, uGlow; uniform vec3 uArc; uniform vec4 uAbsorb; varying vec3 vC; varying float vCoc;
         ${GLSL_FN}
         ${STIR_GLSL}
         ${DENT_GLSL}
@@ -120,7 +125,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
           float coc = clamp(abs(d - uFocus) * 0.045, 0.0, 1.0);
           gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 + 1.4 * (f1 + f2)) * (1.0 + coc * 2.0), 36.0); vCoc = coc;
           float gone = aGrp < 0.5 ? 0.0 : aGrp < 1.5 ? uAbsorb.x : aGrp < 2.5 ? uAbsorb.y : aGrp < 3.5 ? uAbsorb.z : uAbsorb.w;
-          vC = aCol * b * mix(1.0, 0.3, coc) * (1.0 + st * 0.5) * (1.0 - 0.72 * dn) * (1.0 - gone) * uFade;
+          vC = aCol * b * mix(1.0, 0.3, coc) * (1.0 + st * 0.5) * (1.0 - 0.72 * dn) * (1.0 - gone) * uFade * uGlow;
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: DUST_FRAG,
@@ -151,7 +156,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
     }
     for (let k = 0; k < NS; k++) KD[k] = Math.min(1, Math.hypot(KP[k * 3] - shd.x, KP[k * 3 + 1] - shd.y, KP[k * 3 + 2] - shd.z) / 2.4 + R() * 0.12);
   }
-  const skinU = { ...ctx.u.TURN, ...ctx.u.CUR, uT1: { value: 0 }, uTime: ctx.u.TIME, uScale: ctx.u.SCALE, uFocus: ctx.u.FOCUS };
+  const skinU = { ...ctx.u.TURN, ...ctx.u.CUR, uT1: { value: 0 }, uGlow: u.uGlow, uTime: ctx.u.TIME, uScale: ctx.u.SCALE, uFocus: ctx.u.FOCUS };
   {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(KP, 3));
@@ -165,7 +170,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
       blending: THREE.AdditiveBlending,
       uniforms: skinU,
       vertexShader: /* glsl */ `
-        attribute vec3 aN; attribute float aD, aSeed, aSize; uniform float uT1, uTime, uScale, uFocus; varying vec3 vC; varying float vCoc;
+        attribute vec3 aN; attribute float aD, aSeed, aSize; uniform float uT1, uGlow, uTime, uScale, uFocus; varying vec3 vC; varying float vCoc;
         ${GLSL_FN}
         ${STIR_GLSL}
         ${DENT_GLSL}
@@ -181,7 +186,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
           vec4 mv = modelViewMatrix * vec4(p, 1.0); float dn = dent(mv, 1.0); float d = -mv.z;
           float coc = clamp(abs(d - uFocus) * 0.05, 0.0, 1.0);
           gl_PointSize = min(aSize * (260.0 * uScale / d) * (1.0 - 0.25 * dn) * (1.0 + coc * 2.0), 30.0); vCoc = coc;
-          vC = col * (1.0 - 0.76 * dn) * (1.0 - dis) * mix(1.0, 0.35, coc);
+          vC = col * (1.0 - 0.76 * dn) * (1.0 - dis) * mix(1.0, 0.35, coc) * uGlow;
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: DUST_FRAG,
@@ -216,6 +221,7 @@ export function buildBeing(ctx: Ctx, fig: Figure, orbGeo: THREE.BufferGeometry, 
       u.uT1.value = t1;
       u.uT2.value = t2;
       skinU.uT1.value = t1;
+      u.uGlow.value = 1 + (GLOW - 1) * (1 - t1);
       // he looks toward you while he is still whole
       const still = 1 - smooth(0.03, 0.08, f.G);
       ctx.u.TURN.uYaw.value = f.cam.x * 0.38 * still;
