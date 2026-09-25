@@ -210,11 +210,13 @@ export const MEMORIES: Memory[] = [
     extra: { photo: ["/photos/library.jpg", 0, 0, 1206, 667], d: 62, bank: 2, h: 3.3, w: 1.8 },
   },
   {
-    y: "2022",
+    y: "2022 → 2023",
     t: "First builds",
     n: "Started turning ideas into systems.",
-    photo: ["/photos/builds.jpg", 0, 180, 960, 720],
-    cap: "First builds · 2022",
+    // (cropped above the second laptop in the foreground)
+    photo: ["/photos/builds.jpg", 0, 180, 960, 630],
+    w: 3.1,
+    cap: "First builds · 2022 → 2023",
     // side by side with the night portrait, well apart, both facing the level shot
     d: 101,
     bank: -2.6,
@@ -250,9 +252,9 @@ export const MEMORIES: Memory[] = [
     y: "2025",
     t: "Amdocs · AT&T",
     n: "AI software engineer on the AT&T account. Five agents, each with a budget and a fallback. I mentor engineers in agentic AI through hands-on workshops.",
-    // a square crop of the portrait, his eyes on the upper third
-    photo: ["/photos/amdocs.jpg", 0, 220, 960, 960],
-    w: 2.3,
+    // the portrait cropped just short of the man at the bar on its right, his eyes on the upper third
+    photo: ["/photos/amdocs.jpg", 50, 240, 805, 900],
+    w: 1.8,
     cap: "",
     d: 200,
     bank: 3.0,

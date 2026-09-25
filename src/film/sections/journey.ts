@@ -414,7 +414,8 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
       shedX = shedding(ctx, extra, 500, fe.T);
       load(extra, e.photo, 900, shedX);
     }
-    const label = el(ctx, "mem", `<div class="yr">${m.y}</div><div class="mono t">${m.t}</div>${m.k ? `<div class="k">${m.k}</div>` : ""}<div class="n">${m.n}</div>`);
+    // (a span of years is set a size down, to fit where a single year does)
+    const label = el(ctx, "mem", `<div class="yr${m.y.includes("→") ? " range" : ""}">${m.y}</div><div class="mono t">${m.t}</div>${m.k ? `<div class="k">${m.k}</div>` : ""}<div class="n">${m.n}</div>`);
     return { ...p, m, pos, face, extra, label, shed, shedX, env: surround(ctx, p), envX: extra ? surround(ctx, extra) : null, lx: NaN, ly: NaN };
   });
 

@@ -604,6 +604,10 @@ html.film-cursor * {
   font-size: 60px;
   line-height: 1;
 }
+.mem .yr.range {
+  font-size: 40px;
+  white-space: nowrap;
+}
 .mem .t {
   margin-top: 12px;
   color: #ffc896;
@@ -718,6 +722,9 @@ html.film-cursor * {
   }
   .mem .yr {
     font-size: 44px;
+  }
+  .mem .yr.range {
+    font-size: 30px;
   }
   .tool.lead .big {
     font-size: 34px;
