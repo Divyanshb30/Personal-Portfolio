@@ -3,7 +3,7 @@ import type { Ctx, Frame } from "../ctx";
 import type { Shot } from "../director";
 import { block, el } from "../ctx";
 import { blobGeometry, livingSkin, molten, glass, blackRim, banded, sprite, poke } from "../helpers";
-import { TAU, V, smooth, smoother } from "../math";
+import { TAU, V, clamp, smooth, smoother } from "../math";
 import { BUD, FL0, FL1, O1, ORB_R, PC, PL_R, PLANET_UP, SBUD, orbitAt, planetRot, toPlanet } from "../layout";
 import type { Being } from "./being";
 import type { Orb } from "../orb";
@@ -88,7 +88,10 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
       else if (orbVis > 0.3 || plVis > 0.3) orbMood.feel("Thinking");
       poke(ctx, planet, planetSkin.u, PL_R, f.mouse, dt, ray, tmp, tmp2, inv);
 
-      const toOrbit = smooth(0.57, 0.67, s), ab = [0, 0, 0, 0];
+      const toOrbit = smooth(0.57, 0.67, s), ab = [0, 0, 0, 0], narrow = ctx.form.narrow;
+      // (on a phone each moon's name goes on its outer side, away from the planet, so neighbours never meet)
+      tmp.copy(PC).project(ctx.camera);
+      const plx = (tmp.x * 0.5 + 0.5) * ctx.W;
       moons.forEach((mo, i) => {
         const sb = SBUD[i], grow = smooth(sb - 0.006, sb + 0.02, s) * (1 - smooth(0.46, 0.5, G));
         ab[i] = smooth(sb + 0.004, sb + 0.03, s);
@@ -104,9 +107,19 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
         const big = smooth(sb, sb + 0.01, s) * (1 - smooth(nx - 0.006, nx + 0.004, s));
         const small = smooth(0.66, 0.7, s) * (1 - smooth(0.455, 0.47, G));
         mo.bud.style.opacity = String(vis ? big : 0);
-        mo.bud.style.transform = `translate(${(px + rpx + 26 - f.cam.x * 10).toFixed(1)}px, ${(py - 30 + f.cam.y * 6).toFixed(1)}px)`;
+        let bx = px + rpx + 26 - f.cam.x * 10, by = py - 30 + f.cam.y * 6;
+        if (narrow) {
+          // on a phone the word sits under its moon (over it, near the bottom), inside the gutters
+          const bw = Math.min(320, ctx.W - 48), bh = 110;
+          bx = clamp(px - bw / 2, 24, ctx.W - 24 - bw);
+          by = py + rpx + 18 + bh < ctx.floor ? py + rpx + 18 : py - rpx - 18 - bh;
+        }
+        mo.bud.style.transform = `translate(${bx.toFixed(1)}px, ${by.toFixed(1)}px)`;
         mo.label.style.opacity = String(vis ? small : 0);
-        mo.label.style.transform = `translate(${(px + rpx + 14).toFixed(1)}px, ${(py - 7).toFixed(1)}px)`;
+        // (a mono word's width is known from its letters, without asking the page)
+        const lw = mo.label.textContent!.length * 8.6 + 4, out = narrow && px < plx;
+        const lx = clamp(out ? px - rpx - 14 - lw : px + rpx + 14, 12, ctx.W - lw - 12);
+        mo.label.style.transform = `translate(${lx.toFixed(1)}px, ${(py - 7).toFixed(1)}px)`;
       });
       being.u.uAbsorb.value.set(ab[0], ab[1], ab[2], ab[3]);
       words.style.opacity = String(smooth(0.64, 0.68, s) * (1 - smooth(0.755, 0.77, s)));

@@ -1213,6 +1213,10 @@ html.film-cursor * {
   .film-panel.dragging {
     transition: none;
   }
+  /* (over the dock and the chrome while it's up) */
+  .film-panel {
+    z-index: 5;
+  }
   .film-panel .ph-top {
     margin: 0 -28px;
     padding: 24px 28px 12px;
@@ -1256,7 +1260,7 @@ html.film-cursor * {
   .film-name {
     left: calc(var(--gut) + var(--safe-l));
     top: calc(var(--safe-t) + 28px);
-    font-size: 13px;
+    font-size: 12px;
   }
   .film-rail {
     display: none;
@@ -1264,12 +1268,12 @@ html.film-cursor * {
   .film-bar {
     right: calc(var(--gut) + var(--safe-r));
     top: calc(var(--safe-t) + 14px);
-    gap: 18px;
+    gap: 14px;
   }
   .film-bar a,
   .film-bar button {
-    font-size: 11px;
-    letter-spacing: 0.16em;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
     padding: 13px 0;
   }
   /* the landing's time sits where the name will be */
@@ -1285,6 +1289,9 @@ html.film-cursor * {
   }
   .film-hud-city {
     display: inline;
+  }
+  .film-hud-time {
+    letter-spacing: 0.1em;
   }
   /* the dock: where you are, how far, and the chapters, in the thumb's reach */
   .film-progress {
@@ -1442,6 +1449,13 @@ html.film-cursor * {
   .film-panel p,
   .film-panel li {
     font-size: 15.5px;
+  }
+}
+
+/* (the smallest phones: the landing's corner keeps just the time, so the bar has room) */
+@media (max-width: 389px) {
+  .film-hud-city {
+    display: none !important;
   }
 }
 

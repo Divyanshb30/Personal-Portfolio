@@ -57,6 +57,19 @@ All of the words are in `src/film/data.ts`, with facts taken from the résumé:
 
 Résumés are in `public/resume`. The dust figure is `public/models/divyansh.glb` (Draco-compressed; the decoder is served from `public/draco`).
 
+## Phones, tablets and every other screen
+
+The film knows what kind of screen it is on (`src/film/device.ts`): portrait, a phone held upright, a phone on its side, a touch screen. A wide frame with a mouse gets the film exactly as composed; the rest adapts from it.
+
+- **The vertical cut.** On a portrait screen the camera plays a second shot list (each shot's `tall` pose in `director.ts`, `horizon.ts`, `contact.ts`, and a step back on the river in `journey.ts`), with a lens shift along the film (`LIFT` in `layout.ts`) that lifts the subject clear of words set below it, or under words set above it. His figure stands over his name, the planet under its words, the orb over "Let's talk".
+- **The work as a column.** In the vertical cut the five constellations stand in a column, the featured Amdocs work first (each project's `tall` in `data.ts`), with each name beside its constellation; the camera goes down it as you scroll. A tap opens the nearest, and its story rises from the bottom as a sheet (a drag down, a tap above it, Esc or a scroll puts it away).
+- **The thumb's reach.** On a phone the chrome moves to the bottom: a dock with where you are and how far, and a chapters sheet (`ChapterSheet.tsx`) that cuts to any section. The top keeps the name and Work · Résumé · Contact. Every control is at least 44px for a finger, and nothing sits under the notch or the home bar.
+- **Touch and tilt.** A finger pokes (a dent, a stir, a tap on the orb) and lets go when it lifts. The camera's handheld sway comes from tilting the device instead of the cursor, and his head turns with it (on iOS the landing's hint asks for it with a tap); without tilt, a slow drift keeps the world alive.
+- **The stack on a phone** keeps every name readable and shows the ones that fit; a tapped lead brings its group forward.
+- **Steady on a phone.** The canvas is as tall as the largest viewport, so the toolbar coming and going never resizes the film, and turning the phone keeps your place in it. If the GPU drops the film (a phone does, to a page left in the background) it says so and offers a reload. Where WebGL can't run at all, the whole story shows as a quiet page of its own.
+
+To look at any moment on any screen, use `?s=<0..1>` with the browser's device mode.
+
 ## Performance
 
-Particle counts scale with a quality tier (desktop 1, weaker CPUs 0.7, phones 0.45). If the first few seconds render slowly, the film drops to 1× resolution. A `prefers-reduced-motion` setting calms the cursor camera.
+Particle counts scale with a quality tier (desktop 1, weaker CPUs 0.7, phones 0.45). The film holds an even frame rate by stepping its resolution down when frames run late and back up after a quiet spell; a phone starts a step softer. A `prefers-reduced-motion` setting calms the camera, and turns off tilt and the drift.

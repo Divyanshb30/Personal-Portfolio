@@ -39,7 +39,7 @@ export function firstHalfKeys(): Key[] {
     { s: 0.47, name: "The planet rises into the work", pos: PC.clone().add(V(-3, 1.2, 12)), tgt: PC.clone().add(V(0, 7, -6)), fov: 44, tall: { pos: PC.clone().add(V(-1.5, 1.2, 15)), tgt: PC.clone().add(V(0, 9, -6)) } },
     // (in the vertical cut the work is a column, the featured project first: the camera frames the top of
     // it under the heading, then goes down it evenly as you scroll, and rests on the last)
-    { s: 0.52, name: "The work · wide, from below", pos: PJ.clone().add(V(-0.2, -4.6, 14.2)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, tall: { pos: PJ.clone().add(V(0, 3.4, 12.3)), tgt: PJ.clone().add(V(0, 4.6, 0)), fov: 36 } },
+    { s: 0.52, name: "The work · wide, from below", pos: PJ.clone().add(V(-0.2, -4.6, 14.2)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, tall: { pos: PJ.clone().add(V(0, 5.0, 12.3)), tgt: PJ.clone().add(V(0, 6.2, 0)), fov: 36 } },
     { s: 0.575, name: "The work · pick one", pos: PJ.clone().add(V(-0.4, -4.4, 13.8)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, settle: 1, tall: { s: 0.572, pos: PJ.clone().add(V(0, -0.5, 12.3)), tgt: PJ.clone().add(V(0, 0.7, 0)), fov: 36, settle: 0.3 } },
     { s: 0.7, name: "The work · the last of the column", pos: PJ.clone().add(V(0, -4.4, 12.3)), tgt: PJ.clone().add(V(0, -3.2, 0)), fov: 36, settle: 0.8, only: "tall" },
     { s: 0.745, name: "Roots drop · tilt down", pos: PJ.clone().add(V(4, 1, 13)), tgt: PJ.clone().add(V(2, -9, -2)), fov: 50, tall: { pos: PJ.clone().add(V(1, -6.5, 13)), tgt: PJ.clone().add(V(0.5, -15, -2)) } },

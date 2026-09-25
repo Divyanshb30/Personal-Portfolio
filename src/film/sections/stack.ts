@@ -56,7 +56,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
     const c = fieldAt(o);
     const under = note.map((l) => `<div class="mono cap note">${l}</div>`).join("");
     // (small print is about a quarter as wide per letter as the big name)
-    const chars = Math.max(lead.length, ...note.map((l) => Math.ceil(l.length * 0.26)));
+    const chars = Math.max(lead.length, Math.ceil(cap.length * 0.26), ...note.map((l) => Math.ceil(l.length * 0.26)));
     tag(`<div class="mono cap">${cap}</div><div class="big">${lead}</div>${under}`, c, true, chars, gi, note.length);
     toolPos[LEAD_OF[lead] || lead] = c;
     const rest = items.filter((t) => t !== lead && t !== LEAD_OF[lead]);
@@ -296,7 +296,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       // page margins: the rail takes the right edge on wide screens, a phone's dock the bottom
       const narrow = ctx.form.narrow, mL = narrow ? 16 : 48, mR = narrow ? 16 : 170, mT = narrow ? 70 : 92;
       // (on a phone the section's title sits just above the dock: the names stay above both)
-      const floor = narrow ? ctx.floor - 64 : H - 120;
+      const floor = narrow ? ctx.floor - 64 : ctx.VH - 120;
       if (pickUntil && time > pickUntil) pick(-1);
       // project every name, then push the small ones apart; the big lead words mostly hold their place
       for (const t of tags) {

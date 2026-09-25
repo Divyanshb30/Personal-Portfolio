@@ -457,7 +457,8 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
   ].map((k) => ({ ...k, s: JG(k.s) }));
   // the vertical cut: each setup a step further back, so a pair of photos fits a narrow frame (the lens
   // lift then raises them over their words)
-  for (const k of keys) k.tall = { pos: k.tgt.clone().add(k.pos.clone().sub(k.tgt).multiplyScalar(1.18)) };
+  // (the far-bank track along 2025 is already wide: there it comes a little closer instead)
+  for (const k of keys) k.tall = { pos: k.tgt.clone().add(k.pos.clone().sub(k.tgt).multiplyScalar(k.name.startsWith("Track alongside") ? 0.72 : 1.18)) };
 
   const title = block(ctx, "journey"), q1 = new THREE.Quaternion(), e1 = new THREE.Euler();
 
@@ -694,14 +695,15 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
         // its size, read from the page only when the screen changes (not every frame, just after moving it)
         let sz = sizes.get(p.label);
         if (!sz || sz.at !== W * 1e5 + H) sizes.set(p.label, (sz = { w: p.label.offsetWidth || 330, h: p.label.offsetHeight || 150, at: W * 1e5 + H }));
-        const mw = sz.w, mh = sz.h, narrow = W < 760;
+        const mw = sz.w, mh = sz.h, narrow = ctx.form.narrow;
         const rects = [rectOf(p, camera, W, H)];
         if (p.extra) rects.push(rectOf(p.extra, camera, W, H));
         const seen = rects.filter((r) => r.front);
-        let tx = 24, ty = H - mh - 40;
+        // (on a phone the words sit in the bottom of the frame, just above the dock)
+        let tx = 24, ty = narrow ? ctx.floor - mh : ctx.VH - mh - 40;
         if (!narrow && seen.length) {
           const u = seen.reduce((a, r) => ({ l: Math.min(a.l, r.l), t: Math.min(a.t, r.t), r: Math.max(a.r, r.r), b: Math.max(a.b, r.b) }), { l: 1e9, t: 1e9, r: -1e9, b: -1e9 });
-          const main = seen[0], cy = (main.t + main.b) / 2 - mh / 2, L = 48, R = W - 230 - mw, T = 96, B = H - 90 - mh;
+          const main = seen[0], cy = (main.t + main.b) / 2 - mh / 2, L = 48, R = W - 230 - mw, T = 96, B = ctx.VH - 90 - mh;
           const free = (x: number, y: number) => x >= L && x <= R && y >= T && y <= B && seen.every((r) => x + mw < r.l - 16 || x > r.r + 16 || y + mh < r.t - 16 || y > r.b + 16);
           const tries: [number, number][] = [
             [main.r + 40, cy], [main.l - 40 - mw, cy], [u.r + 40, cy], [u.l - 40 - mw, cy],
