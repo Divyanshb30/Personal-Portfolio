@@ -32,6 +32,8 @@ export type Ctx = {
   quality: number;
   W: number;
   H: number;
+  /** compile something's shaders ahead of time, as the film draws them (set once the film's buffers exist) */
+  warm?: (o: THREE.Object3D) => void;
 };
 
 /** Per-frame state handed to every section. */

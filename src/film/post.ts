@@ -33,6 +33,8 @@ export function photoMask(renderer: THREE.WebGLRenderer, scene: THREE.Scene, cam
   const clear = new THREE.Color();
   return {
     texture: rt.texture,
+    /** its one material, so the film can compile it ahead of time */
+    material: mat,
     setSize(w: number, h: number) {
       rt.setSize(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
     },

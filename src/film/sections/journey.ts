@@ -392,6 +392,9 @@ export function buildJourney(ctx: Ctx, orb: Orb) {
       pl.mat.map = t;
       pl.mat.needsUpdate = true;
       shed?.colour(t);
+      // on the GPU now, and its shader ready, rather than the moment the river first shows it
+      ctx.renderer.initTexture(t);
+      ctx.warm?.(pl.g);
     }, console.error);
   };
 

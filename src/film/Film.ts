@@ -146,6 +146,24 @@ export class Film {
     this.composer.addPass(this.bloom);
     this.composer.addPass(finishPass(this.mask.texture, renderer.toneMappingExposure));
 
+    // Sections hide what their moment doesn't need, and three compiles a shader (and uploads its buffers)
+    // the first time something is drawn. So, behind the loading screen, compile every shader and draw
+    // the whole world once (the photos' mask too): nothing compiles or uploads mid-scroll. Shaders are
+    // compiled as the film draws them, into its own buffers (linear, graded later), not for the screen.
+    const warm = (o: THREE.Object3D) => {
+      const prev = renderer.getRenderTarget();
+      renderer.setRenderTarget(this.composer.readBuffer);
+      const done = renderer.compileAsync(o, camera, scene);
+      renderer.setRenderTarget(prev);
+      return done;
+    };
+    ctx.warm = (o) => void warm(o);
+    await Promise.all([warm(scene), warm(new THREE.Mesh(new THREE.PlaneGeometry(), this.mask.material))]);
+    if (this.disposed) return;
+    this.composer.render();
+    this.mask.render();
+    this.mask.clear();
+
     this.blocks = { arrival: block(ctx, "arrival"), hint: block(ctx, "hint"), layer: block(ctx, "layer"), progress: block(ctx, "progress"), mood: block(ctx, "mood"), brand: block(ctx, "brand") };
     this.bindInput();
     const q = new URLSearchParams(location.search);
