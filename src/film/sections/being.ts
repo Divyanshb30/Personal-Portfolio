@@ -7,7 +7,7 @@ import { R, V, emberAt, gauss, smooth } from "../math";
 import { ARC, FIG_X, FL0, FL1, FRAC, O1, ORB_R, PC, PL_R, planetRot, toPlanet } from "../layout";
 
 /** how much brighter he glows on the first screen than the dust he is made of */
-const GLOW = 1.15;
+const GLOW = 1.0;
 
 /**
  * ARRIVAL, and the being itself: one body of ember dust that is his figure, peels off his
