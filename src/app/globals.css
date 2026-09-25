@@ -145,30 +145,88 @@ html {
 .film-loading.quick.done {
   transition-duration: 0.3s;
 }
-.film-loading-line {
-  display: inline-block;
+/* (the loops rest while the screen is away) */
+.film-loading.done .film-loading-words,
+.film-loading.done .film-loading-dots i {
+  animation-play-state: paused;
+}
+/* every line waits its turn in one loop, all stacked in one place (each line carries its own timing;
+   the keyframes come with the component, sized to the number of lines) */
+.film-loading-lines {
+  display: grid;
+  max-width: 100%;
   font-size: 12px;
   letter-spacing: 0.22em;
   line-height: 1.8;
 }
 .film-loading-words {
-  display: inline-block;
-  animation: loading-line 0.5s ease both;
+  grid-area: 1 / 1;
+  justify-self: center;
+  text-wrap: balance;
+  opacity: 0;
+  animation-name: loading-cycle;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  will-change: opacity, transform;
 }
-/* the dots keep a fixed box, so the line never shifts as they fill in */
+/* the dots keep a fixed box, so the line never shifts as they fill in, and fill in one by one */
 .film-loading-dots {
   display: inline-block;
   width: calc(3ch + 0.66em);
   text-align: left;
 }
-@keyframes loading-line {
-  from {
+.film-loading-dots i {
+  font-style: normal;
+  opacity: 0;
+  animation: loading-dot-1 1.2s linear infinite both;
+}
+.film-loading-dots i:nth-child(2) {
+  animation-name: loading-dot-2;
+}
+.film-loading-dots i:nth-child(3) {
+  animation-name: loading-dot-3;
+}
+/* ".", "..", "...", then all three clear together */
+@keyframes loading-dot-1 {
+  0% {
     opacity: 0;
-    transform: translateY(6px);
   }
-  to {
+  4%,
+  82% {
     opacity: 1;
-    transform: none;
+  }
+  90%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes loading-dot-2 {
+  0%,
+  24% {
+    opacity: 0;
+  }
+  28%,
+  82% {
+    opacity: 1;
+  }
+  90%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes loading-dot-3 {
+  0%,
+  48% {
+    opacity: 0;
+  }
+  52%,
+  82% {
+    opacity: 1;
+  }
+  90%,
+  100% {
+    opacity: 0;
   }
 }
 
@@ -270,11 +328,13 @@ html {
 }
 
 /* projects: named constellations, and the panel a click opens */
+/* (each name's box hugs its words, so names are kept apart by what they say, not by an empty box) */
 .proj {
   position: absolute;
   left: 0;
   top: 0;
-  width: 260px;
+  width: max-content;
+  max-width: 260px;
   opacity: 0;
   will-change: transform, opacity;
   text-shadow: 0 0 20px #050507, 0 0 36px #050507;
@@ -301,7 +361,7 @@ html {
 }
 /* the featured project: its kicker in ember, its name a size up */
 .proj.featured {
-  width: 300px;
+  max-width: 300px;
 }
 .proj.featured .sub {
   color: #ffc896;
@@ -315,7 +375,7 @@ html {
   top: 100px;
   bottom: 90px;
   width: 440px;
-  padding: 40px;
+  padding: 0 40px 40px;
   background: rgba(9, 9, 12, 0.8);
   border: 1px solid rgba(230, 235, 245, 0.1);
   border-radius: 16px;
@@ -337,6 +397,28 @@ html {
   opacity: 1;
   transform: none;
   visibility: visible;
+}
+/* the story's first line, with its close button, stays at the top while the rest scrolls under it */
+.film-panel .ph-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 -40px;
+  padding: 30px 40px 14px;
+  background: rgb(11, 11, 14);
+}
+.film-panel .ph-top::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 22px;
+  background: linear-gradient(rgb(11, 11, 14), rgba(11, 11, 14, 0));
+  pointer-events: none;
 }
 .film-panel h3 {
   font-family: var(--font-display);
@@ -572,10 +654,16 @@ html {
     font-size: 30px;
   }
   .proj {
-    width: 200px;
+    max-width: 200px;
   }
   .proj .t {
     font-size: 14px;
+  }
+  .proj.featured {
+    max-width: 230px;
+  }
+  .proj.featured .t {
+    font-size: 17px;
   }
   .mem {
     width: calc(100vw - 48px);
@@ -592,7 +680,11 @@ html {
     top: 76px;
     bottom: 16px;
     width: auto;
-    padding: 28px 24px;
+    padding: 0 24px 28px;
+  }
+  .film-panel .ph-top {
+    margin: 0 -24px;
+    padding: 22px 24px 12px;
   }
 }
 
@@ -600,6 +692,14 @@ html {
   .film-panel,
   .film-loading {
     transition: none;
+  }
+  /* the lines only fade, and the dots hold still */
+  .film-loading-words {
+    transform: none !important;
+  }
+  .film-loading-dots i {
+    animation: none;
+    opacity: 1;
   }
 }
 

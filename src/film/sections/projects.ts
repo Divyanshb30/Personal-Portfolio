@@ -151,7 +151,7 @@ function fadeLines(segs: [THREE.Vector3, THREE.Vector3][], rgb: number[], op: nu
 const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]!);
 const or = (s: string, ph: string) => (s ? `<p>${esc(s)}</p>` : `<p class="ph">${ph}</p>`);
 const panelHTML = (pr: Project) => `
-  <div style="display:flex;justify-content:space-between;align-items:center">
+  <div class="ph-top">
     <span class="mono sub">${esc(pr.kind)}</span><button type="button" data-close class="mono sub">Close ✕</button>
   </div>
   <h3>${esc(pr.title)}</h3><p>${esc(pr.line)}</p>
@@ -224,7 +224,7 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     label.setAttribute("role", "button");
     label.setAttribute("aria-label", `Open ${pr.title}`);
     label.tabIndex = -1;
-    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0, lx: 0, ly: 0, lw: 260, lh: 110, tf: "", op: "", pe: "" };
+    return { data: pr, grp, local: sh.P, center, stars, lines, pulses, tails, world, box, edgeWorld, label, hl: 0, sx: 0, sy: 0, lx: 0, ly: 0, lw: 260, lh: 110, tf: "", op: "", pe: "", bx: 0, by: 0, bpy: 0, push: 0 };
   });
 
   // the rising dust: grains leave the planet's surface (top first) and settle on the stars and lines
@@ -365,8 +365,8 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       }
     });
   });
-  const tmp = V(), tmp2 = V(), home = V(), UPV = V(0, 1, 0);
-  let wasOn = false, sized = false, sizedAt = 0;
+  const tmp = V(), tmp2 = V(), tmp3 = V(), home = V(), UPV = V(0, 1, 0);
+  let wasOn = false, sized = false, sizedAt = 0, headBottom = 0;
   // the names re-measure once the web fonts have arrived
   document.fonts?.ready.then(() => (sized = false));
 
@@ -419,6 +419,19 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         for (const pr of projs) pr.label.tabIndex = PICK.on ? 0 : -1;
         if (!PICK.on) close();
       }
+      // the names' sizes, read from the page only when the screen or the fonts change (reading them every
+      // frame, just after moving them, would make the browser lay the page out again each time)
+      if (pick > 0.001 && (sizedAt !== ctx.W * 1e5 + ctx.H || !sized)) {
+        for (const pr of projs) {
+          pr.lw = pr.label.offsetWidth || 260;
+          pr.lh = pr.label.offsetHeight || 110;
+        }
+        // where the section's heading ends (on a phone the names stay below it)
+        const hb = work.getBoundingClientRect();
+        headBottom = hb.height ? hb.bottom : 0;
+        sizedAt = ctx.W * 1e5 + ctx.H;
+        sized = true;
+      }
       projs.forEach((pr, i) => {
         const hot = PICK.hover === i ? 1 : 0, foc = PICK.idx === i ? 1 : 0;
         pr.hl += ((PICK.idx >= 0 ? foc : hot) - pr.hl) * (1 - Math.exp(-dt * 8));
@@ -429,8 +442,13 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         pr.tails.opacity = g;
         // names alternate above and below their constellations so neighbours never collide
         const up = pr.data.label ? pr.data.label === "above" : i === 1 || i === 3;
-        tmp.set(pr.center.x, up ? pr.box.max.y + 0.3 : pr.box.min.y - 0.35, pr.center.z).project(ctx.camera);
+        const anchor = tmp3.set(pr.center.x, up ? pr.box.max.y + 0.3 : pr.box.min.y - 0.35, pr.center.z);
+        tmp.copy(anchor).project(ctx.camera);
         const px = (tmp.x * 0.5 + 0.5) * ctx.W, py = (-tmp.y * 0.5 + 0.5) * ctx.H - (up ? 92 : 0);
+        // the same spot in the shot without the cursor's sway: where the name's place is decided from
+        anchor.project(ctx.base);
+        pr.bx = (anchor.x * 0.5 + 0.5) * ctx.W - pr.lw / 2;
+        pr.by = (-anchor.y * 0.5 + 0.5) * ctx.H - (up ? 92 : 0);
         tmp2.copy(pr.center).project(ctx.camera);
         pr.sx = (tmp2.x * 0.5 + 0.5) * ctx.W;
         pr.sy = (-tmp2.y * 0.5 + 0.5) * ctx.H;
@@ -438,34 +456,41 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
         if (op !== pr.op) pr.label.style.opacity = pr.op = op;
         if (pe !== pr.pe) pr.label.style.pointerEvents = pr.pe = pe;
         pr.label.classList.toggle("hot", hot > 0);
-        pr.lx = px - 110;
+        // each name centred under (or over) its constellation, following it as the view sways
+        pr.lx = px - pr.lw / 2;
         pr.ly = py;
       });
-      // the names' sizes, read from the page only when the screen or the fonts change (reading them every
-      // frame, just after moving them, would make the browser lay the page out again each time)
-      if (pick > 0.001 && (sizedAt !== ctx.W * 1e5 + ctx.H || !sized)) {
-        for (const pr of projs) {
-          pr.lw = pr.label.offsetWidth || 260;
-          pr.lh = pr.label.offsetHeight || 110;
+      // Names that would meet are moved apart (the lower one steps down). Decided from the shot without
+      // the cursor's sway, with room to spare, so moving the cursor can never set one off; a step that
+      // scrolling does bring glides in rather than snapping.
+      // (every name stays inside the page, whatever its height, judged where it will actually sit; on a
+      // phone also below the heading and clear of the orb's line at the bottom)
+      const narrow = ctx.W < 760, MX = narrow ? 14 : 40, GAP = narrow ? 12 : 20, TOP = narrow ? Math.max(84, headBottom + 14) : 84;
+      const low = (pr: (typeof projs)[number]) => ctx.H - pr.lh - (narrow ? 124 : 64);
+      for (const pr of projs) {
+        pr.bx = clamp(pr.bx, 16, ctx.W - pr.lw - 16);
+        pr.by = pr.bpy = clamp(pr.by, TOP, low(pr));
+      }
+      if (pick > 0.001)
+        for (let pass = 0, moved = true; moved && pass < 6; pass++) {
+          moved = false;
+          for (let a = 0; a < projs.length; a++)
+            for (let b = a + 1; b < projs.length; b++) {
+              const [hi, lo] = projs[a].bpy <= projs[b].bpy ? [projs[a], projs[b]] : [projs[b], projs[a]];
+              const ox = Math.min(hi.bx + hi.lw, lo.bx + lo.lw) - Math.max(hi.bx, lo.bx) + MX, need = hi.bpy + hi.lh + GAP - lo.bpy;
+              if (ox <= 0 || need <= 0) continue;
+              // the lower one steps down as far as the page allows; the upper one lifts for the rest
+              const down = Math.min(need, Math.max(0, low(lo) - lo.bpy));
+              lo.bpy += down;
+              if (down < need) hi.bpy = Math.max(TOP, hi.bpy - (need - down));
+              moved = true;
+            }
         }
-        sizedAt = ctx.W * 1e5 + ctx.H;
-        sized = true;
-      }
-      // on a narrow screen names can still meet: nudge any that overlap apart, then place them
-      if (pick > 0.001) {
-        for (let a = 0; a < projs.length; a++)
-          for (let b = a + 1; b < projs.length; b++) {
-            const A = projs[a], B = projs[b];
-            const ox = Math.min(A.lx + A.lw, B.lx + B.lw) - Math.max(A.lx, B.lx), oy = Math.min(A.ly + A.lh, B.ly + B.lh) - Math.max(A.ly, B.ly);
-            if (ox <= 0 || oy <= 0) continue;
-            const lower = A.ly > B.ly ? A : B;
-            lower.ly += oy + 12;
-          }
-      }
-      // and every name stays inside the page, whatever its height
+      const glide = f.fixed ? 1 : 1 - Math.exp(-dt * 7);
+      for (const pr of projs) pr.push += (pr.bpy - pr.by - pr.push) * glide;
       for (const pr of projs) {
         pr.lx = clamp(pr.lx, 16, ctx.W - pr.lw - 16);
-        pr.ly = clamp(pr.ly, 84, ctx.H - pr.lh - 64);
+        pr.ly = clamp(clamp(pr.ly, TOP, low(pr)) + pr.push, TOP, low(pr));
         const tf = `translate(${pr.lx.toFixed(1)}px, ${pr.ly.toFixed(1)}px)`;
         if (tf !== pr.tf) pr.label.style.transform = pr.tf = tf;
       }

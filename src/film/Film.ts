@@ -80,12 +80,13 @@ export class Film {
   /** visitors who ask for less motion get a much gentler cursor camera */
   private still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   /**
-   * The film's rhythm. An even frame rate reads as smooth; one that alternates between one refresh and
-   * two reads as stutter. So: on a fast screen that can't be kept up with, render every other refresh
-   * (a steady 72 on 144Hz, 60 on 120Hz); and hold the sharpest resolution that keeps frames on time,
-   * a step down when they keep missing, a step back up after a quiet spell.
+   * The film's rhythm: about sixty frames a second on every screen, evenly spaced. An even rate reads as
+   * smooth, and one that alternates between one refresh and two reads as stutter, so on a fast screen
+   * the film draws every other refresh (60 on 120Hz, 72 on 144Hz, 60 on 240Hz every fourth). Then it
+   * holds the sharpest resolution that keeps those frames on time: a step down when they keep missing, a
+   * step back up after a quiet spell. Only at the softest does the frame rate halve, as a last resort.
    */
-  private pace = { iv: 16.7, ivMin: 1e9, ivN: 0, lastRaf: 0, k: 1, beat: 0, n: 0, miss: 0, calm: 0, cool: 0, need: 4, raised: 0, trialK: 0, trialWait: 8 };
+  private pace = { iv: 16.7, ivMin: 1e9, ivN: 0, lastRaf: 0, k: 1, kBase: 1, beat: 0, n: 0, miss: 0, calm: 0, cool: 0, need: 4, raised: 0 };
   private ratios: number[] = [];
   private ratio = 0;
   private mouse2 = new THREE.Vector2();
@@ -110,7 +111,7 @@ export class Film {
     scene.background = new THREE.Color(0x050507);
     scene.environment = environment(renderer);
     const camera = new THREE.PerspectiveCamera(30, W / H, 0.05, 500);
-    this.ctx = { scene, camera, renderer, root, labels, u: makeShared(W, H, renderer.getPixelRatio()), quality: qualityFor(), W, H };
+    this.ctx = { scene, camera, base: camera.clone(), renderer, root, labels, u: makeShared(W, H, renderer.getPixelRatio()), quality: qualityFor(), W, H };
     const ctx = this.ctx;
 
     // far stars, and dust drifting through the whole set
@@ -124,12 +125,22 @@ export class Film {
     if (this.disposed) return;
     // (detail 40 keeps their silhouettes true to a fraction of a pixel, at a third of the triangles)
     const orbGeo = blobGeometry(9, 0.17, 0.78, 40), planetGeo = blobGeometry(21, 0.17, 0.78, 40);
+    // the sections are built one at a time, with a breath between them, so the page never locks up
+    // for long while the film is made (the loading screen's own motion runs on regardless)
+    const breathe = () => new Promise((r) => setTimeout(r, 0));
     const being = buildBeing(ctx, fig, orbGeo, planetGeo);
+    await breathe();
     // the small glass orb that travels from the work, through the stack, down the river of his years
     const orb = (this.orb = makeOrb(ctx));
     const projects = buildProjects(ctx, planetGeo, orb);
-    const journey = buildJourney(ctx, orb), horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo, orb);
-    this.sections.push(being, buildThink(ctx, being, orbGeo, planetGeo, orb), projects, buildStack(ctx, projects.stars, orb), journey, horizon, contact);
+    await breathe();
+    const journey = buildJourney(ctx, orb);
+    await breathe();
+    const horizon = buildHorizon(ctx, journey.gain), contact = buildContact(ctx, orbGeo, orb);
+    await breathe();
+    const think = buildThink(ctx, being, orbGeo, planetGeo, orb), stack = buildStack(ctx, projects.stars, orb);
+    if (this.disposed) return;
+    this.sections.push(being, think, projects, stack, journey, horizon, contact);
     // the landing's own life, the ambient moments, then the orb itself, last: it moves once whoever owns it has said where
     this.sections.push(buildArrival(ctx, orb), buildAmbient(ctx, orb, () => journey.focus), orb);
 
@@ -253,6 +264,17 @@ export class Film {
     const f: Frame = { dt, time: u.TIME.value, GG, G, s, cam, mouse: m, calm, fixed: this.fix !== null };
     for (const sec of this.sections) sec.shot?.(f, sh);
 
+    // the shot as directed, before the cursor sways it (words that must hold still are laid out from this)
+    const base = ctx.base;
+    base.position.copy(sh.pos);
+    base.up.set(0, 1, 0);
+    base.lookAt(sh.tgt);
+    base.rotateZ(sh.roll);
+    base.aspect = ctx.camera.aspect;
+    base.fov = fitFov(sh.fov, base.aspect);
+    base.updateProjectionMatrix();
+    base.updateMatrixWorld(true);
+
     const camera = ctx.camera;
     camera.position.copy(sh.pos);
     camera.up.set(0, 1, 0);
@@ -306,7 +328,15 @@ export class Film {
     // the refresh interval: the shortest gap between callbacks over the last ninety or so
     if (raw > 3 && raw < 60) p.ivMin = Math.min(p.ivMin, raw);
     if (++p.ivN >= 90) {
-      if (p.ivMin < 1e9) p.iv = p.ivMin;
+      if (p.ivMin < 1e9) {
+        p.iv = p.ivMin;
+        // about sixty a second, evenly: every refresh at 60Hz, every other at 120 or 144Hz, every fourth at 240Hz
+        const kb = Math.max(1, Math.floor(1000 / p.iv / 58));
+        if (kb !== p.kBase) {
+          p.k = kb * (p.k > p.kBase ? 2 : 1);
+          p.kBase = kb;
+        }
+      }
       p.ivMin = 1e9;
       p.ivN = 0;
     }
@@ -315,10 +345,10 @@ export class Film {
   }
 
   /**
-   * Keeps frames on time. Judged over ~90 frames: if more than one in seven is late, first render every
-   * other refresh (only on a fast screen), then soften the resolution a step; after a quiet spell, sharpen
-   * again, and at full sharpness now and then try the full frame rate. A change that fails is tried
-   * again only after a longer wait, so the film never flickers between settings.
+   * Keeps frames on time. Judged over ~90 frames: if more than one in seven is late, soften the
+   * resolution a step (at the softest, halve the frame rate); after a quiet spell, win back the frame
+   * rate first, then the sharpness. A step back that fails is tried again only after a longer wait, so
+   * the film never flickers between settings.
    */
   private govern(since: number) {
     const p = this.pace;
@@ -333,36 +363,20 @@ export class Film {
     const rate = p.miss / p.n;
     p.n = p.miss = 0;
     if (p.raised) p.raised = p.raised > 3 ? 0 : p.raised + 1;
-    if (p.trialK) {
-      // a try at the full frame rate: kept only if it held
-      if (rate > 0.1) {
-        p.k = p.trialK;
-        p.trialWait = Math.min(64, p.trialWait * 2);
-      } else p.trialWait = 8;
-      p.trialK = 0;
-      p.calm = 0;
-      p.cool = 30;
-      return;
-    }
     if (rate > 0.15) {
       if (p.raised) p.need = Math.min(40, p.need * 2);
       p.raised = 0;
       p.calm = 0;
-      if (p.k === 1 && p.iv < 11) p.k = 2;
-      else this.setRatio(this.ratio + 1);
+      if (this.ratio < this.ratios.length - 1) this.setRatio(this.ratio + 1);
+      else if (p.k === p.kBase) p.k = p.kBase * 2;
       p.cool = 60;
     } else if (rate < 0.03) {
-      p.calm++;
-      if (this.ratio > 0 && p.calm >= p.need) {
-        this.setRatio(this.ratio - 1);
+      if (++p.calm >= p.need && (p.k > p.kBase || this.ratio > 0)) {
+        if (p.k > p.kBase) p.k = p.kBase;
+        else this.setRatio(this.ratio - 1);
         p.raised = 1;
         p.calm = 0;
         p.cool = 60;
-      } else if (this.ratio === 0 && p.k === 2 && p.calm >= p.trialWait) {
-        p.trialK = 2;
-        p.k = 1;
-        p.calm = 0;
-        p.cool = 30;
       }
     } else p.calm = 0;
   }

@@ -23,6 +23,8 @@ export type Shared = {
 export type Ctx = {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
+  /** the director's shot without the cursor's sway: for laying out words that must not jump as the cursor moves */
+  base: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
   u: Shared;
   /** the overlay root (text blocks are found in it by data-block) */
