@@ -236,7 +236,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
   for (const t of tags)
     if (t.lead)
       t.el.addEventListener("click", () => {
-        if (ctx.form.narrow) pick(picked === t.grp ? -1 : t.grp);
+        if (ctx.form.narrow || ctx.form.short) pick(picked === t.grp ? -1 : t.grp);
       });
 
   return {
@@ -283,7 +283,7 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
 
       const tv = smooth(0.8, 0.84, G) * (1 - smooth(0.501, 0.509, GG));
       // (a phone's finger can pick a lead only while the names are there to be seen)
-      const tappable = ctx.form.narrow && tv > 0.5 ? "auto" : "none";
+      const tappable = (ctx.form.narrow || ctx.form.short) && tv > 0.5 ? "auto" : "none";
       if (tappable !== leadPE) {
         leadPE = tappable;
         for (const t of tags) if (t.lead) t.el.style.pointerEvents = tappable;
@@ -294,9 +294,10 @@ export function buildStack(ctx: Ctx, projects: { uses: string[]; world: THREE.Ve
       }
       const cam = ctx.camera, W = ctx.W, H = ctx.H, fd = ctx.u.FOCUS.value, time = f.time;
       // page margins: the rail takes the right edge on wide screens, a phone's dock the bottom
-      const narrow = ctx.form.narrow, mL = narrow ? 16 : 48, mR = narrow ? 16 : 170, mT = narrow ? 70 : 92;
+      // (a phone on its side is placed like a phone held upright: legible names, as many as fit)
+      const narrow = ctx.form.narrow || ctx.form.short, mL = narrow ? 16 : 48, mR = ctx.form.narrow ? 16 : ctx.form.short ? 150 : 170, mT = ctx.form.short ? 46 : narrow ? 70 : 92;
       // (on a phone the section's title sits just above the dock: the names stay above both)
-      const floor = narrow ? ctx.floor - 64 : ctx.VH - 120;
+      const floor = ctx.form.narrow ? ctx.floor - 64 : ctx.form.short ? ctx.VH - 70 : ctx.VH - 120;
       if (pickUntil && time > pickUntil) pick(-1);
       // project every name, then push the small ones apart; the big lead words mostly hold their place
       for (const t of tags) {

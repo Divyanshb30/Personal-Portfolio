@@ -1564,6 +1564,12 @@ html.film-cursor * {
   .film-panel h3 {
     font-size: 24px;
   }
+  .tool.lead .big {
+    font-size: 34px;
+  }
+  .tool.lead .cap {
+    font-size: 10px;
+  }
 }
 
 /* ---------- a very wide screen: the display type steps up once ---------- */

@@ -603,7 +603,9 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
       // (every name stays inside the page, whatever its height, judged where it will actually sit; on a
       // phone also below the heading and clear of the orb's line at the bottom)
       // (the heading fades as the column starts down; the names keep clear of it while it's there)
-      const head = smooth(0.51, 0.525, G) * (1 - (tall ? smooth(0.53, 0.545, G) : smooth(0.72, 0.735, G))) * (1 - PICK.amt);
+      // (and on a phone on its side, where there is no height to share with it)
+      const brief = tall || ctx.form.short;
+      const head = smooth(0.51, 0.525, G) * (1 - (brief ? smooth(0.53, 0.545, G) : smooth(0.72, 0.735, G))) * (1 - PICK.amt);
       if (tall) {
         // the column: the names ride with their constellations; one that runs under the heading, the top
         // chrome or the dock fades out rather than crowding them
@@ -624,8 +626,9 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
           if (tf !== pr.tf) pr.label.style.transform = pr.tf = tf;
         }
       }
-      const narrow = ctx.form.narrow, MX = narrow ? 14 : 40, GAP = narrow ? 12 : 20, TOP = narrow ? Math.max(84, headBottom + 14) : 84;
-      const low = (pr: (typeof projs)[number]) => (narrow ? ctx.floor : ctx.VH - 64) - pr.lh;
+      const narrow = ctx.form.narrow, short = ctx.form.short, MX = narrow || short ? 14 : 40, GAP = narrow || short ? 10 : 20;
+      const TOP = narrow ? Math.max(84, headBottom + 14) : short ? (head > 0.05 ? headBottom + 10 : 48) : 84;
+      const low = (pr: (typeof projs)[number]) => (narrow ? ctx.floor : ctx.VH - (short ? 40 : 64)) - pr.lh;
       if (!tall)
       for (const pr of projs) {
         pr.bx = clamp(pr.bx, 16, ctx.W - pr.lw - 16);
