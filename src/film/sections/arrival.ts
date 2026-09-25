@@ -45,14 +45,16 @@ export function buildArrival(ctx: Ctx, orb: Orb) {
   let sizedAt = 0, sized = false;
   document.fonts?.ready.then(() => (sized = false));
   const measure = () => {
-    const lr = layer.getBoundingClientRect(), br = words.getBoundingClientRect(), kr = kicker.getBoundingClientRect();
-    const nr = name.getBoundingClientRect(), range = document.createRange();
+    // the text itself, not its block (on a narrow screen the block runs the full width, over his figure)
+    const lr = layer.getBoundingClientRect(), kr = kicker.getBoundingClientRect(), nr = name.getBoundingClientRect(), range = document.createRange();
+    range.selectNodeContents(kicker);
+    const line = range.getBoundingClientRect();
     range.selectNodeContents(name);
     const letters = range.getBoundingClientRect();
-    txt.l = br.left - lr.left;
-    txt.r = br.right - lr.left;
-    txt.t = br.top - lr.top;
-    txt.b = br.bottom - lr.top;
+    txt.l = Math.min(line.left, letters.left) - lr.left;
+    txt.r = Math.max(line.right, letters.right) - lr.left;
+    txt.t = line.top - lr.top;
+    txt.b = letters.bottom - lr.top;
     txt.gap = (kr.bottom + nr.top) / 2 - lr.top + 2;
     txt.nl = letters.left - lr.left;
     txt.nr = letters.right - lr.left;
