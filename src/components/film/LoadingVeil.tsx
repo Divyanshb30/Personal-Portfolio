@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { LOADING_LINES } from "@/film/data";
 
 /** how long each line holds the screen, in seconds */
-const BEAT = 1.1;
+const BEAT = 1.5;
 const N = LOADING_LINES.length;
 /**
  * One loop, a slot per line: each rises in, holds and drifts out in its turn. The browser runs it on
@@ -17,9 +17,34 @@ const CYCLE = (() => {
 })();
 
 /**
+ * Deal the lines a new order: a shuffle, written as a stylesheet that gives each line its slot in the loop.
+ * It must stand alone (it is also sent as source, to run in the page before anything else does).
+ */
+function shuffleLines(n: number, beat: number) {
+  const order: number[] = [];
+  for (let i = 0; i < n; i++) order.push(i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1)), t = order[i];
+    order[i] = order[j];
+    order[j] = t;
+  }
+  let css = "";
+  for (let k = 0; k < n; k++) css += `.film-loading-words:nth-child(${order[k] + 1}){animation-delay:${(k * beat).toFixed(2)}s !important}`;
+  let s = document.getElementById("loading-order");
+  if (!s) {
+    s = document.createElement("style");
+    s.id = "loading-order";
+    document.head.appendChild(s);
+  }
+  s.textContent = css;
+}
+// (runs as the page arrives, so even the first line is a surprise; the page is prerendered, the same for everyone)
+const SHUFFLE_NOW = `try{(${shuffleLines.toString()})(${N},${BEAT})}catch(e){}`;
+
+/**
  * The loading screen: black, a line with dots that keep filling in, and a new line every beat, even
  * within one showing. It fades in to cover a jump and fades away when the film is there; a quick jump
- * (from the bar) blinks it in and out. Each showing after the first starts from a line picked at random.
+ * (from the bar) blinks it in and out. Every showing deals the lines in a new random order.
  * If the GPU drops the film (a phone does, to a page left in the background), it says so and offers a reload.
  */
 export default function LoadingVeil({ covered, lost = false, quick = false }: { covered: boolean; lost?: boolean; quick?: boolean }) {
@@ -28,17 +53,14 @@ export default function LoadingVeil({ covered, lost = false, quick = false }: { 
 
   useEffect(() => {
     if (!covered) return;
-    // the first showing plays as served with the page; later ones start the loop over from a random line
+    // the first showing was dealt as the page arrived; each later one deals a new order and starts over
     if (first.current) {
       first.current = false;
       return;
     }
     const el = lines.current;
     if (!el) return;
-    const from = Math.floor(Math.random() * N);
-    el.querySelectorAll<HTMLElement>(".film-loading-words").forEach((w, i) => {
-      w.style.animationDelay = `${(((i - from + N) % N) * BEAT).toFixed(2)}s`;
-    });
+    shuffleLines(N, BEAT);
     for (const a of el.getAnimations({ subtree: true })) {
       a.cancel();
       a.play();
@@ -70,6 +92,7 @@ export default function LoadingVeil({ covered, lost = false, quick = false }: { 
               </span>
             ))}
           </span>
+          <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: SHUFFLE_NOW }} />
         </>
       )}
     </div>
