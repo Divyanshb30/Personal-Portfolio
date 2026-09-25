@@ -1193,6 +1193,26 @@ html.film-cursor * {
     top: auto;
     bottom: var(--low);
   }
+  /* on a short screen his figure reaches down behind the words: a soft dark fade rises behind them, so the
+     line above his name never sits on the bright dust of his shoulders (it leaves with the words) */
+  .blk-arrival::before {
+    content: "";
+    position: absolute;
+    left: -50vw;
+    right: -50vw;
+    top: -112px;
+    bottom: calc(-1 * var(--low) - 24px);
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(5, 5, 7, 0) 0,
+      rgba(5, 5, 7, 0.3) 44px,
+      rgba(5, 5, 7, 0.6) 84px,
+      rgba(5, 5, 7, 0.76) 112px,
+      rgba(5, 5, 7, 0.82) 100%
+    );
+  }
   .blk-think {
     top: calc(var(--safe-t) + 13vh);
   }
