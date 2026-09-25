@@ -677,6 +677,34 @@ html.film-cursor * {
   color: #a9a9b0;
   margin: 10px 0 0;
 }
+/* the one number that matters, big and in ember, and what it was built with, as small tags: where the eye lands first */
+.film-panel .ph-metric {
+  margin-top: 22px;
+  font-size: 28px;
+  line-height: 1.1;
+  color: #ffc896;
+}
+.film-panel ul.ph-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 0;
+}
+.film-panel ul.ph-tags li {
+  padding: 5px 9px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  line-height: 1.3;
+  color: #b9b9c0;
+  border: 1px solid rgba(236, 236, 238, 0.14);
+  border-radius: 12px;
+}
+.film-panel ul.ph-tags li::before {
+  content: none;
+}
+.film-panel ul.ph-tags li + li {
+  margin-top: 0;
+}
 .film-panel .sec {
   margin-top: 24px;
   padding-top: 18px;
