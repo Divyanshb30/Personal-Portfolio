@@ -1,28 +1,29 @@
 # Divyansh Bansal
 
-My portfolio, made as a short film you scroll through.
+Most portfolios are a list of things. Mine is a short film you scroll through.
 
 **[divyansh-bansal.space](https://divyansh-bansal.space)**
 
-There are no pages. The site is one continuous 3D scene, and scrolling moves the camera through it: from a figure made of dust, past the projects and the tools behind them, down a river of the years so far, to a way to get in touch.
+No pages, no navigation maze. Just one 3D scene and a camera that moves when you scroll. Along the way: me, rendered in dust. A small orb that gets shy if your cursor moves too fast. My projects, pretending to be constellations. And a river of the years so far, which ends somewhere you can say hi.
 
-## Built with
+## Under the hood
 
-- Next.js and TypeScript
-- three.js, with custom GLSL shaders and post-processing
-- Hosted on Vercel
+- **Next.js and TypeScript** for the sensible parts
+- **three.js and hand-written GLSL** for the dramatic parts
+- **More particles than strictly necessary**
+- **Vercel** for keeping it all online
 
-## Run it locally
+## Run it yourself
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open http://localhost:3000.
+Open http://localhost:3000 and give it a moment. The loading screen tells jokes while it works. They're load-bearing.
 
-Everything the site says lives in `src/film/data.ts`.
+Everything the site says lives in `src/film/data.ts`, if you'd like to read the script.
 
-## Contact
+## Say hi
 
 [divyanshb30@gmail.com](mailto:divyanshb30@gmail.com) · [LinkedIn](https://www.linkedin.com/in/divyansh-bansal-873610229) · [GitHub](https://github.com/Divyanshb30)
