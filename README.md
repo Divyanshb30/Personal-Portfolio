@@ -22,8 +22,6 @@ npm run dev
 
 Open http://localhost:3000 and give it a moment. The loading screen tells jokes while it works. They're load-bearing.
 
-Everything the site says lives in `src/film/data.ts`, if you'd like to read the script.
-
 ## Say hi
 
 [divyanshb30@gmail.com](mailto:divyanshb30@gmail.com) · [LinkedIn](https://www.linkedin.com/in/divyansh-bansal-873610229) · [GitHub](https://github.com/Divyanshb30)
