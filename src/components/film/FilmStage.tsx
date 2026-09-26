@@ -154,7 +154,15 @@ export default function FilmStage() {
     if (url !== base + location.hash) history.replaceState(history.state, "", url);
   }, [place, ready]);
 
-  const hint = !touch ? "Scroll · move your cursor" : tilt === "on" ? "Scroll · tilt to look around" : "Scroll · tap the orb";
+  const hint = !touch ? "move your cursor" : tilt === "on" ? "tilt to look around" : "tap the orb";
+  // the arrow is a thing of its own: the orb comes down and pushes it, to show what scrolling does
+  const arrow = (
+    <span data-block="arrow" className="film-hint-arrow" aria-hidden>
+      <svg viewBox="0 0 10 16" width="10" height="16">
+        <path d="M5 1.5v12.2M1.4 10.1 5 13.7l3.6-3.6" />
+      </svg>
+    </span>
+  );
 
   return (
     <>
@@ -269,10 +277,12 @@ export default function FilmStage() {
         <div data-block="hint" className="mono sub film-hint">
           {tilt === "ask" ? (
             <button type="button" onClick={askTilt}>
-              Scroll · tap to tilt
+              Scroll {arrow} · tap to tilt
             </button>
           ) : (
-            hint
+            <>
+              Scroll {arrow} · {hint}
+            </>
           )}
         </div>
         <nav className="film-rail mono" aria-label="Sections">
