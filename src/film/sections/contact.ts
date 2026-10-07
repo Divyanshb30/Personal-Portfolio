@@ -3,7 +3,7 @@ import type { Ctx, Frame } from "../ctx";
 import type { Key } from "../director";
 import { block } from "../ctx";
 import { DUST_FRAG, GLSL_FN, STIR_GLSL } from "../glsl";
-import { livingSkin, molten, poke, sprite } from "../helpers";
+import { fluid, fluidify, livingSkin, molten, poke, sprite, stirFluid } from "../helpers";
 import { R, V, clamp, emberAt, fbm, gauss, smooth } from "../math";
 import { END } from "./journey";
 import type { Orb } from "../orb";
@@ -68,6 +68,9 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
     ctx.scene.add(grains);
   }
   const skin = livingSkin(ctx, molten(), V(0, -1, 0));
+  // liquid metal: currents of its own, rings where it's touched or tapped, a slosh when it's stirred
+  const fl = fluid(ctx, 0.026);
+  fluidify(skin.mat, fl);
   const orb = new THREE.Mesh(orbGeo, skin.mat);
   orb.scale.setScalar(OR);
   orb.position.copy(OC);
@@ -82,10 +85,26 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
   ];
   const words = block(ctx, "contact");
   const ray = new THREE.Raycaster(), inv = new THREE.Matrix4(), tmp = V(), tmp2 = V();
-  let form = 0, forming = false;
+  let form = 0, forming = false, landed = false;
+  const stir = { at: V(), acc: 0, amt: 0 }, tap = new THREE.Vector2(), ball = new THREE.Sphere();
+  // a tap on it is a drop into it: a tall ring from there, and it rocks away from the tap
+  const onDown = (e: PointerEvent) => {
+    if (!orb.visible || skin.u.uReveal.value < 0.8 || e.target !== ctx.renderer.domElement) return;
+    ray.setFromCamera(tap.set((e.clientX / ctx.W) * 2 - 1, 1 - (e.clientY / ctx.H) * 2), ctx.camera);
+    const hit = ray.ray.intersectSphere(ball.set(orb.position, OR * 1.05), tmp2);
+    if (!hit) return;
+    inv.copy(orb.matrixWorld).invert();
+    const d = tmp.copy(hit).applyMatrix4(inv).normalize();
+    fl.ripple(d, 0.07);
+    fl.shake(d.clone().multiplyScalar(-1.6));
+  };
+  window.addEventListener("pointerdown", onDown);
 
   return {
     keys,
+    dispose() {
+      window.removeEventListener("pointerdown", onDown);
+    },
     update(f: Frame) {
       const { GG, dt, time } = f;
       const op = smooth(0.935, 0.962, GG);
@@ -105,7 +124,17 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
       glow.material.opacity = 0.28 * reveal;
       glow.visible = reveal > 0.001;
       orb.rotation.set(time * 0.05, time * 0.08, 0);
-      if (orb.visible) poke(ctx, orb, skin.u, OR, f.mouse, dt, ray, tmp, tmp2, inv);
+      if (orb.visible) {
+        poke(ctx, orb, skin.u, OR, f.mouse, dt, ray, tmp, tmp2, inv);
+        stirFluid(fl, skin.u, stir, dt);
+      }
+      // the dust has landed, from the ground up: it takes its weight, and wobbles as it settles
+      if (reveal > 0.85 && !landed) {
+        landed = true;
+        fl.shake(tmp.set(0, -1.3, 0));
+        fl.ripple(tmp.set(0, -1, 0), 0.05);
+      } else if (reveal < 0.2) landed = false;
+      fl.update(dt);
       if (form > 0.02) mood.feel(form < 0.95 ? "Forming" : "Listening");
     },
   };

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Ctx, U } from "./ctx";
 import { R, fbm, noise, V } from "./math";
-import { DUST_FRAG, GLSL_FN, STIR_GLSL } from "./glsl";
+import { DUST_FRAG, FLUID_GLSL, GLSL_FN, STIR_GLSL } from "./glsl";
 
 /** A painted panorama: continuous gradients give the liquid metal smooth, flowing reflections. */
 export function environment(renderer: THREE.WebGLRenderer) {
@@ -234,4 +234,106 @@ export function poke(
   u.uPokeAmt.value += (want - u.uPokeAmt.value) * (1 - Math.exp(-dt * 6));
   inv.copy(mesh.matrixWorld).invert();
   u.uPoke.value.copy(cp).applyMatrix4(inv).normalize();
+}
+
+/**
+ * A body that is liquid: its skin flows on its own, rings out from wherever it is touched and sloshes when
+ * it is shaken (an under-damped swell that rings down over a second or two). `flow` is how tall its own
+ * currents stand, in the body's units. Put it on a material with `fluidify`, then call `update` every frame.
+ */
+export function fluid(ctx: Ctx, flow: number, speed = 1) {
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const u = {
+    uFT: ctx.u.TIME,
+    uFlowAmt: { value: flow },
+    uFlowSpd: { value: still ? 0.25 : speed },
+    uFluid: { value: 1 },
+    uRip: { value: Array.from({ length: 6 }, () => new THREE.Vector4(0, 1, 0, -99)) },
+    uRipA: { value: [0, 0, 0, 0, 0, 0] },
+    uSlosh: { value: V() },
+  };
+  const sl = u.uSlosh.value, slV = V();
+  let next = 0;
+  return {
+    u,
+    still,
+    /** A ring from this direction (in the body's own space), this tall. */
+    ripple(dir: THREE.Vector3, amp: number) {
+      if (still || amp <= 0) return;
+      const r = u.uRip.value[next];
+      const d = dir.lengthSq() > 1e-8 ? dir.clone().normalize() : V(0, 1, 0);
+      r.set(d.x, d.y, d.z, ctx.u.TIME.value);
+      u.uRipA.value[next] = amp;
+      next = (next + 1) % 6;
+    },
+    /** Shake it (an impulse, in the body's own space): it swells toward the shake and rings down. */
+    shake(v: THREE.Vector3) {
+      if (!still) slV.add(v);
+    },
+    update(dt: number) {
+      dt = Math.min(dt, 0.05);
+      // (about one and a half wobbles a second, most of it gone in two)
+      slV.addScaledVector(sl, -90 * dt).multiplyScalar(Math.exp(-dt * 3.2));
+      sl.addScaledVector(slV, dt);
+      if (sl.length() > 0.14) sl.setLength(0.14);
+    },
+  };
+}
+export type Fluid = ReturnType<typeof fluid>;
+
+/** Make a material's body liquid (on top of whatever else its shader already does). */
+export function fluidify(mat: THREE.Material, fl: Fluid) {
+  const prev = mat.onBeforeCompile, prevKey = mat.customProgramCacheKey.bind(mat);
+  mat.onBeforeCompile = (sh, r) => {
+    prev.call(mat, sh, r);
+    Object.assign(sh.uniforms, fl.u);
+    sh.vertexShader = (GLSL_FN + FLUID_GLSL + sh.vertexShader)
+      // the skin's slope bends its normal (so the reflections run with the currents)
+      .replace(
+        "#include <morphnormal_vertex>",
+        `#include <morphnormal_vertex>
+        vec3 fD = normalize(position), fT1 = normalize(cross(abs(fD.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), fD)), fT2 = cross(fD, fT1);
+        float fH = fluidH(fD), fE = 0.02;
+        vec3 fG = fT1 * (fluidH(normalize(fD + fT1 * fE)) - fH) / fE + fT2 * (fluidH(normalize(fD + fT2 * fE)) - fH) / fE;
+        objectNormal = normalize(objectNormal - fG / max(length(position), 0.2));
+        `
+      )
+      .replace(
+        "#include <morphtarget_vertex>",
+        `#include <morphtarget_vertex>
+        transformed += fD * fH;
+        `
+      );
+  };
+  mat.customProgramCacheKey = () => "fluid:" + prevKey();
+  mat.needsUpdate = true;
+  return mat;
+}
+
+const fTouch = new THREE.Vector3();
+/**
+ * The cursor in a liquid body: where it runs across the skin it drags a swell after it and leaves rings
+ * behind; it does nothing while the cursor is away. Call every frame after `poke`, with its uniforms.
+ */
+export function stirFluid(fl: Fluid, u: LivingU, st: { at: THREE.Vector3; acc: number; amt: number }, dt: number, gain = 1) {
+  const amt = u.uPokeAmt.value, d = u.uPoke.value;
+  // arriving on the skin: a ring where it lands
+  if (amt > 0.35 && st.amt <= 0.35) fl.ripple(d, 0.03 * gain);
+  st.amt = amt;
+  if (amt < 0.05) {
+    st.at.copy(d);
+    st.acc = 0;
+    return;
+  }
+  const move = fTouch.copy(d).sub(st.at), ang = move.length();
+  st.at.copy(d);
+  if (ang > 0.5) return;
+  // the drag: the body swells after the cursor the way it is going
+  fl.shake(move.multiplyScalar(1.6 * amt * gain));
+  // and every so far along, a ring left behind (taller the faster it went)
+  st.acc += ang;
+  if (st.acc > 0.28) {
+    st.acc = 0;
+    fl.ripple(d, Math.min(0.045, 0.012 + (ang / Math.max(dt, 1e-3)) * 0.004) * gain * amt);
+  }
 }

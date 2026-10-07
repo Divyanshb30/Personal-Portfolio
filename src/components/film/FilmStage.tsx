@@ -208,7 +208,6 @@ export default function FilmStage() {
             <p>{NOW.line}</p>
           </section>
           <section data-block="contact" className="blk blk-contact" aria-label="Contact">
-            <div className="mono sub">{CONTACT.kicker}</div>
             <h2 className="disp">
               Let&apos;s
               <br />

@@ -296,7 +296,7 @@ export const NOW = {
   line: "Agentic AI on the AT&T account,\nand leading a migration from Oracle to Azure Databricks.",
 };
 
-export const CONTACT = { kicker: "One last thing.", title: "Let's talk." };
+export const CONTACT = { title: "Let's talk." };
 
 export const RESUME = "/resume/Divyansh_Bansal.pdf";
 

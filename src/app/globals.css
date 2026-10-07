@@ -545,6 +545,10 @@ html.film-cursor * {
 .blk-contact .chip {
   margin-top: 30px;
 }
+/* (nothing above the heading: it starts the block) */
+.blk-contact h2:first-child {
+  margin-top: 0;
+}
 .blk-stack {
   left: 48px;
   bottom: 84px;

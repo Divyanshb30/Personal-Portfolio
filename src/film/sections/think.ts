@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Ctx, Frame } from "../ctx";
 import type { Shot } from "../director";
 import { block, el } from "../ctx";
-import { blobGeometry, livingSkin, molten, glass, blackRim, banded, sprite, poke } from "../helpers";
+import { blobGeometry, livingSkin, molten, glass, blackRim, banded, sprite, poke, fluid, fluidify, stirFluid } from "../helpers";
 import { TAU, V, clamp, smooth, smoother } from "../math";
 import { BUD, FL0, FL1, O1, ORB_R, PC, PL_R, PLANET_UP, SBUD, orbitAt, planetRot, toPlanet } from "../layout";
 import type { Being } from "./being";
@@ -16,11 +16,15 @@ import { THINK } from "../data";
  */
 export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry, planetGeo: THREE.BufferGeometry, orbMood: Orb) {
   const orbSkin = livingSkin(ctx, molten(), toPlanet);
+  // both are liquid metal: currents of their own, rings where they're touched, a slosh when they're stirred
+  const orbFl = fluid(ctx, 0.022), plFl = fluid(ctx, 0.012, 0.7);
+  fluidify(orbSkin.mat, orbFl);
   const orb = new THREE.Mesh(orbGeo, orbSkin.mat);
   orb.scale.setScalar(ORB_R);
   orb.position.copy(O1);
   ctx.scene.add(orb);
   const planetSkin = livingSkin(ctx, molten(), V(-1, 0, 0.3).normalize());
+  fluidify(planetSkin.mat, plFl);
   const planet = new THREE.Mesh(planetGeo, planetSkin.mat);
   planet.scale.setScalar(PL_R);
   planet.position.copy(PC);
@@ -54,6 +58,9 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
   const tmp = V(), tmp2 = V(), c = V(), lo = V(), hi = V(), q = V(), t3 = V(), side = V(-toPlanet.z, 0, toPlanet.x).multiplyScalar(-1);
   const ray = new THREE.Raycaster(), inv = new THREE.Matrix4();
   const spots = moons.map(() => ({ x: 0, y: 0, w: 0 }));
+  const orbStir = { at: V(), acc: 0, amt: 0 }, plStir = { at: V(), acc: 0, amt: 0 };
+  // (the orb settles as it condenses, and quivers as it loosens into the comet)
+  let orbWas = 0, orbShook = false;
 
   return {
     /** during the flight the camera follows the dust itself, tracking alongside it */
@@ -84,10 +91,29 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
       orbitLine.material.opacity = 0.22 * smooth(0.62, 0.68, s) * (1 - smooth(0.455, 0.48, G));
       orbitLine.visible = orbitLine.material.opacity > 0.001;
       poke(ctx, orb, orbSkin.u, ORB_R, f.mouse, dt, ray, tmp, tmp2, inv);
+      if (orb.visible) {
+        stirFluid(orbFl, orbSkin.u, orbStir, dt);
+        // condensed: the last of the dust lands on it from below, and it settles with a wobble
+        if (orbVis > 0.92 && orbWas <= 0.92) {
+          orbFl.shake(tmp.set(0, 1.1, 0));
+          orbFl.ripple(tmp.set(0, -1, 0), 0.04);
+        }
+        // loosening: it shivers toward where it is about to fly
+        if (s > 0.27 && !orbShook) {
+          orbShook = true;
+          orbFl.shake(tmp.copy(toPlanet).transformDirection(inv).multiplyScalar(1.4));
+          orbFl.ripple(tmp.copy(toPlanet).transformDirection(inv).negate(), 0.035);
+        }
+      }
+      if (s < 0.25) orbShook = false;
+      orbWas = orbVis;
+      orbFl.update(dt);
       // the orb, grown: it is thinking, or on the move between its forms
       if (s > FL0 && s < FL1 + 0.02) orbMood.feel("Flying");
       else if (orbVis > 0.3 || plVis > 0.3) orbMood.feel("Thinking");
       poke(ctx, planet, planetSkin.u, PL_R, f.mouse, dt, ray, tmp, tmp2, inv);
+      if (planet.visible) stirFluid(plFl, planetSkin.u, plStir, dt, 0.6);
+      plFl.update(dt);
 
       const toOrbit = smooth(0.57, 0.67, s), ab = [0, 0, 0, 0], narrow = ctx.form.narrow;
       // (on a phone each moon's name goes on its outer side, away from the planet, so neighbours never meet)

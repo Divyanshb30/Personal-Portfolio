@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { Ctx, Frame } from "./ctx";
 import { DUST_FRAG } from "./glsl";
-import { blobGeometry, glass, sprite } from "./helpers";
+import { blobGeometry, fluid, fluidify, glass, sprite } from "./helpers";
 import { TAU, V, clamp, gauss, lerp, smooth } from "./math";
 
 /** What the section that owns the orb this frame wants from it. */
@@ -59,7 +59,9 @@ export function makeOrb(ctx: Ctx) {
     bodyGeo.morphAttributes.position = [new THREE.BufferAttribute(sp, 3)];
     bodyGeo.morphAttributes.normal = [new THREE.BufferAttribute(sn, 3)];
   }
-  const body = new THREE.Mesh(bodyGeo, glass());
+  // and the droplet is liquid: it shimmers on its own, lags and sloshes as it is thrown about, rings where it lands
+  const liquid = fluid(ctx, 0.03, 1.3);
+  const body = new THREE.Mesh(bodyGeo, fluidify(glass(), liquid));
   const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 3), new THREE.MeshBasicMaterial({ color: 0xff9a4a, toneMapped: false }));
   shape.add(body, core);
   root.add(shape);
@@ -111,7 +113,10 @@ export function makeOrb(ctx: Ctx) {
   let flashAge = 9, flashSize = 1, flashGain = 1;
 
   const pos = V(), vel = V(), at = V(), look = V(), attendP = V(), gaze = V(), axis = V(0, 1, 0), sqAxis = V(0, 1, 0);
-  const tmp = V(), tmp2 = V(), acc = V(), prev = V(), qInv = new THREE.Quaternion();
+  const tmp = V(), tmp2 = V(), acc = V(), prev = V(), qInv = new THREE.Quaternion(), qBody = new THREE.Quaternion(), slosh = V();
+  /** a world direction, in the droplet's own space (where its liquid lives) */
+  const toBody = (v: THREE.Vector3) => v.applyQuaternion(qBody.copy(shape.quaternion).multiply(body.quaternion).invert());
+  let sqWas = 0;
   const goal = V(), g = V(), cursorW = V(), chaseFrom = V(), holdAt = V(), prevVel = V(), accS = V(), right = V(), up = V(), toCamV = V(), sneezeDir = V();
   let driven = false, size = 0, sizeV = 0, want = 0, wantLook = 0, hasLook = false, pin = 0, glowWant = 0.3;
   let sq = 0, sqV = 0, sqWant = 0, attendLook = 0, attendPull = 0, spinA = 0, spinV = 0, snapNext = false, feeling = "", cursorAmt = 1;
@@ -186,6 +191,11 @@ export function makeOrb(ctx: Ctx) {
     },
     kick(v: THREE.Vector3) {
       vel.add(v);
+      // knocked: a ring from where it was hit, and the liquid thrown back against the knock
+      if (root.visible && v.lengthSq() > 1) {
+        liquid.ripple(toBody(tmp2.copy(v).negate()), Math.min(0.06, 0.012 * v.length()));
+        liquid.shake(toBody(tmp2.copy(v)).multiplyScalar(-0.12));
+      }
     },
     /** Name its mood this frame (the last caller wins, so the ambient moments can override a section). */
     feel(word: string) {
@@ -490,6 +500,18 @@ export function makeOrb(ctx: Ctx) {
       spinV *= Math.exp(-dt * 2.2);
       spinA += spinV * dt;
       body.rotation.set(time * 0.13, time * 0.4 + spinA, 0);
+
+      // the liquid inside: it lags behind every change of speed, swelling against it and ringing down after,
+      // and a hard landing (a sharp flatten) sends a ring round it from where it hit
+      if (!still) {
+        toBody(slosh.copy(accS)).multiplyScalar(-0.0016 * dt * 60);
+        if (slosh.length() > 0.08) slosh.setLength(0.08);
+        liquid.shake(slosh);
+        if (sqWant < -0.25 && sqWas >= -0.25) liquid.ripple(toBody(tmp2.copy(sqAxis).negate()), Math.min(0.06, -sqWant * 0.1));
+      }
+      sqWas = sqWant;
+      liquid.u.uFluid.value = 1 - round;
+      liquid.update(dt);
 
       // the gaze: its core slides toward what it looks at; by default, where it is going
       g.set(0, 0, 0);

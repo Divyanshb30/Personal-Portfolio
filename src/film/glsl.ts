@@ -85,3 +85,30 @@ float torn(vec2 uv, vec2 size, float t){
   return a * mix(1.0, step(0.3, g + a), (1.0 - a) * ${TORN.fray.toFixed(3)});
 }
 `;
+
+/**
+ * A liquid skin, as a height over the body's surface (in its own units) for each direction from its centre:
+ * slow currents of its own, rings running out from wherever it was touched, and a slosh when it is shaken
+ * (a swell along the shake, heavier on its leading side). Needs GLSL_FN. The caller declares nothing.
+ */
+export const FLUID_GLSL = /* glsl */ `
+uniform float uFT, uFlowAmt, uFlowSpd, uFluid; uniform vec4 uRip[6]; uniform float uRipA[6]; uniform vec3 uSlosh;
+float fluidH(vec3 d){
+  float t = uFT * uFlowSpd;
+  // the currents: three swells crossing each other, their fronts bent by a slow drift so they never repeat
+  vec3 w = d + (vec3(vn(d * 1.3 + t * 0.07), vn(d * 1.3 + 11.0 - t * 0.05), vn(d * 1.3 + 23.0 + t * 0.06)) - 0.5) * 0.9;
+  float h = (sin(dot(w, vec3(2.1, 0.7, -1.3)) * 1.7 + t * 0.9) + 0.6 * sin(dot(w, vec3(-0.6, 1.9, 1.1)) * 2.3 - t * 1.1)
+    + 0.3 * sin(dot(w, vec3(1.2, -1.4, 1.8)) * 3.1 + t * 1.4)) * 0.53 * uFlowAmt;
+  // the rings: a bump where it was touched that spreads out as a travelling wave, fading as it goes
+  for (int i = 0; i < 6; i++){
+    float age = uFT - uRip[i].w;
+    if (age < 0.0 || age > 3.5) continue;
+    float x = acos(clamp(dot(d, uRip[i].xyz), -1.0, 1.0)) - age * 1.5;
+    h += uRipA[i] * exp(-age * 1.4) * cos(x * 11.0) * exp(-x * x * 5.0);
+  }
+  // the slosh
+  float s = length(uSlosh);
+  if (s > 1e-5){ float c = dot(d, uSlosh / s); h += s * (1.5 * c * c - 0.5) + s * 0.8 * (2.5 * c * c * c - 1.5 * c); }
+  return h * uFluid;
+}
+`;
