@@ -22,11 +22,11 @@ export const THINK = {
 export const BUILD = {
   kicker: "Build",
   title: "What I build",
-  line: "From a transformer written by hand to five agents built for AT&T.",
+  line: "From a transformer written by hand to a voice agent that haggles with airlines, and the platform I build for AT&T.",
 };
 
 export type Project = {
-  id: "rag" | "gpt" | "loan" | "dtu" | "agents";
+  id: "rag" | "gpt" | "loan" | "dtu" | "agents" | "voice";
   /** the one to look at first: biggest, most central, its own label style */
   featured?: boolean;
   /** where its name sits (by default names alternate above and below) */
@@ -39,8 +39,8 @@ export type Project = {
   off: [number, number, number];
   sc: number;
   /**
-   * The same, in the film's vertical cut (a portrait screen): the five stand in a column, the featured
-   * one first, and each name sits beside its constellation (or below it)
+   * The same, in the film's vertical cut (a portrait screen): the six stand in a column, the featured
+   * one first (and the voice agent next), and each name sits beside its constellation (or below it)
    */
   tall: { off: [number, number, number]; sc: number; label: "left" | "right" | "below" };
   uses: string[];
@@ -49,7 +49,7 @@ export type Project = {
   /** a paragraph, or a few lines shown as a list */
   built: string | string[];
   outcome: string;
-  /** more work from the same place, told briefly at the end of its story (no numbers) */
+  /** more work from the same place, told briefly at the end of its story */
   also?: { title: string; line: string; uses: string[] }[];
 };
 
@@ -58,12 +58,12 @@ export const PROJECTS: Project[] = [
     id: "rag",
     title: "IntelliCode · Hybrid RAG",
     kind: "Intelligence",
-    metric: "121 CI-gated tests",
+    metric: "121 tests · 92% coverage",
     line: "Hybrid retrieval and AST analysis over a codebase.",
     off: [-7.4, 1.4, 2.0],
     sc: 1.25,
-    tall: { off: [-0.95, 2.0, 0], sc: 0.95, label: "right" },
-    uses: ["Python", "Qwen2.5-3B", "FAISS", "BM25", "Cross-encoder", "Hugging Face Transformers", "GitHub Actions"],
+    tall: { off: [-0.95, -1.5, 0], sc: 0.95, label: "right" },
+    uses: ["Python", "Qwen2.5-3B", "FAISS", "BM25", "Cross-Encoder Reranking", "Hugging Face Transformers", "GitHub Actions"],
     links: [
       { label: "Code", url: "https://github.com/Divyanshb30/IntelliCode" },
       { label: "Live demo", url: "https://huggingface.co/spaces/Divb30/intellicode-rag" },
@@ -73,7 +73,7 @@ export const PROJECTS: Project[] = [
     built:
       "A hybrid RAG pipeline: dense FAISS and sparse BM25, fused with reciprocal rank fusion and reranked by a cross-encoder, answering with Qwen2.5-3B on Hugging Face ZeroGPU. Beside it, an async-aware AST analyser covering 12 anti-pattern classes, and a security scanner for injection, weak crypto and hardcoded secrets.",
     outcome:
-      "A labelled evaluation harness (MRR@5, Recall@k, NDCG) measures each stage's lift, and 121 tests gate every change in GitHub Actions CI.",
+      "A labelled evaluation harness (MRR@5, Recall@k, NDCG) measures each stage's lift, and 121 tests at 92% coverage gate every change in GitHub Actions CI.",
   },
   {
     id: "gpt",
@@ -83,7 +83,7 @@ export const PROJECTS: Project[] = [
     line: "A decoder-only transformer with no framework abstractions.",
     off: [-3.4, 4.0, -3],
     sc: 1.25,
-    tall: { off: [1.0, -1.7, 0], sc: 1.1, label: "left" },
+    tall: { off: [1.0, -4.9, 0], sc: 1.1, label: "left" },
     uses: ["PyTorch", "Python", "Tokenisation", "Sequence Modelling", "Text Generation"],
     links: [{ label: "Code", url: "https://github.com/Divyanshb30/GPT-from-Scratch" }],
     problem: "Using transformers every day is not the same as understanding one. The only way to be sure was to build it with nothing hidden.",
@@ -99,7 +99,7 @@ export const PROJECTS: Project[] = [
     line: "A stacking ensemble over ~1.8M LendingClub loans, SHAP-audited and drift-monitored.",
     off: [5.6, -0.3, 1.6],
     sc: 1.1,
-    tall: { off: [-0.9, -5.2, 0], sc: 0.95, label: "right" },
+    tall: { off: [-0.9, -8.2, 0], sc: 0.95, label: "right" },
     uses: ["XGBoost", "PyTorch", "SHAP Explainability", "MLflow", "DagsHub", "Drift Monitoring (PSI/KS)", "GCP Cloud Run", "Docker", "FastAPI", "Streamlit"],
     links: [
       { label: "Code", url: "https://github.com/Divyanshb30/Loan-Risk-Intelligence" },
@@ -120,69 +120,92 @@ export const PROJECTS: Project[] = [
     line: "An ML-powered ERP for higher education, live across the university.",
     off: [8.8, 3.2, -2],
     sc: 1.2,
-    tall: { off: [1.0, -8.9, 0], sc: 1.05, label: "left" },
+    tall: { off: [1.0, -11.5, 0], sc: 1.05, label: "left" },
     uses: ["ChromaDB", "Vector Embeddings", "Semantic Search", "Docker", "PostgreSQL"],
     links: [{ label: "Paper · Wiley", url: "https://doi.org/10.1002/spe.70060" }],
     problem: "Preparing the university for accreditation took 25 days of manual work.",
     built:
-      "An ML-powered ERP with 8+ modules for accreditation automation, analytics and networking, and a semantic-retrieval pipeline (vector embeddings, ChromaDB). I co-founded it and led the architecture, the frontend and adoption across stakeholders.",
+      "An ML-powered ERP with 8+ modules for accreditation automation, analytics and networking, and a semantic-retrieval pipeline (vector embeddings, ChromaDB). I co-founded it as its product architect: I led the architecture and the frontend, trained the pilot department's faculty and staff, supported the rollout, and pitched it to the university administration.",
     outcome:
-      "Preparation went from 25 days to 7 (about 72% less). 1,200+ users across the university, a paper in Wiley's Software: Practice and Experience, and DTU funding for continued development.",
+      "Preparation went from 25 days to 7 (about 72% less). 1,200+ users across the university, a paper in Wiley's Software: Practice and Experience, and the university now funds it.",
   },
   {
     id: "agents",
     featured: true,
     label: "below",
-    title: "Five-Agent Reconciliation Platform",
+    title: "Agentic Reconciliation Platform",
     kind: "Featured · Amdocs · AT&T",
-    metric: "5 agents · CI eval gate",
-    line: "Five AI agents built to take over reconciliation work on the AT&T account.",
+    metric: "Sole engineer · CI eval gate",
+    line: "Agents for the language, a deterministic engine for every verdict. Built alone, for the AT&T account.",
     off: [0.8, 1.0, 1.2],
     sc: 1.45,
     tall: { off: [0, 7.3, 0], sc: 1.05, label: "below" },
-    uses: ["Python", "FastAPI", "Azure OpenAI (GPT-4.1)", "Agent Orchestration", "NL-to-SQL", "Structured Output Generation", "Redis", "PostgreSQL", "Vector Embeddings", "CI/CD Eval Gates"],
+    uses: ["Python", "FastAPI", "Azure OpenAI (GPT-4.1)", "Agent Orchestration", "NL-to-SQL", "Structured Output Generation", "Human-in-the-loop", "CI/CD Eval Gates", "GitLab CI", "PostgreSQL", "Redis"],
     links: [],
-    problem: "Reconciliation on the AT&T account ran on manual work every week, across systems that had to agree exactly.",
+    problem:
+      "Reconciliation on the AT&T account means proving that systems which should agree really do, table by table and row by row. That verdict has to be exact, so a language model can't be the one giving it.",
     built: [
-      "Five agents on a custom Python/FastAPI runtime with Azure OpenAI (GPT-4.1), each with its own cost and latency budget, deterministic fallbacks and human-in-the-loop checkpoints.",
-      "A unified async LLM gateway: structured output, bounded self-repair, circuit-breaker failover and per-session cost gating.",
-      "Retrieval-grounded NL-to-SQL with schema pruning and dry-run self-correction.",
-      "A hermetic, CI-blocking evaluation gate: 8 offline suites, no external dependencies.",
-      "Four-plane agent memory (Redis, PostgreSQL, embeddings, a procedural library) driving a self-improving correction loop.",
+      "As the sole engineer: GPT-4.1 agents handle intake, NL-to-SQL and reporting, and a deterministic engine owns every verdict. LLM intake lifted completion from 71% to 96% of 126 test requests, at $0.004 each.",
+      "A reproducible evaluation platform (12+ suites and a record/replay LLM proxy) that gates every merge request in CI at $0 API cost. It surfaced 38 ranked issues, the next two among them.",
+      "Tables over 10k rows were being silently sampled. I rebuilt the read path with batched streaming, which made reconciliation exact at 1M rows per side on a synthetic benchmark: missed breaks went from 97,212 to 0.",
+      "An agent-runtime defect failed every run. With it fixed, the NL-to-SQL agent reached 87.8% execution accuracy on 498 benchmark questions (a fixed-step pipeline: 67%), at $0.006 and 7.8 s p50 each.",
+      "A self-healing loop that proves each format-noise fix by re-comparison before a human approves it. It cleared all noise on 16 of 18 test pairs while masking 0 real breaks across 17,842 out-of-sample cells.",
     ],
     outcome:
-      "Live in production on the AT&T account. Presented the architecture to 40+ cross-functional stakeholders. The evaluation gate blocks every change in CI, validated at 1,000-reconciliation scale across 6 failure archetypes.",
+      "Every one of those numbers comes from a run pinned to its commit and its data, and it can be replayed. Along the way: technical discussions, solution demos and POCs with 40+ Amdocs and AT&T stakeholders, and their feedback turned into product iterations.",
     also: [
       {
         title: "Databricks migration · leading",
-        line: "Moving a legacy Oracle PL/SQL subscriber-event pipeline to Azure Databricks: parsing inbound events, applying business rules and populating gold-layer tables for downstream use, rebuilt in PySpark on a bronze/silver/gold medallion architecture with Unity Catalog. Along the way, tuning the stored procedures that carry the daily load.",
-        uses: ["Databricks", "PySpark", "SQL", "Unity Catalog", "Medallion Architecture"],
-      },
-      {
-        title: "MCP automation agent",
-        line: "An MCP-based agent integrated with Apache Airflow, giving on-demand pause, resume and stop control over pipeline jobs during infrastructure maintenance windows.",
-        uses: ["MCP", "Apache Airflow", "Python"],
+        line: "Moving the subscriber-event pipeline from Oracle PL/SQL to Azure Databricks (about 80% of the way there): parsing inbound events, applying business rules and populating gold-layer tables, rebuilt in PySpark on a bronze/silver/gold medallion architecture with Unity Catalog. Along the way, a production stored-procedure run over 75M records a day went from 45 minutes to 12–15.",
+        uses: ["Databricks", "PySpark", "SQL", "Oracle", "Unity Catalog", "Medallion Architecture"],
       },
     ],
+  },
+  {
+    id: "voice",
+    label: "above",
+    title: "VocalisAI · Voice Agent",
+    kind: "Voice",
+    metric: "91% success · 0 leaks",
+    line: "A real-time voice agent that calls airlines for refunds.",
+    off: [1.2, 6.6, 0],
+    sc: 1.15,
+    tall: { off: [1.25, 1.1, 0], sc: 0.6, label: "left" },
+    uses: ["Python", "Pipecat", "LangGraph", "Deepgram", "BM25", "Cross-Encoder Reranking", "Vector Embeddings", "LLM-as-judge", "Cohen's κ", "Guardrails"],
+    links: [
+      { label: "Live demo", url: "https://divyanshb30.github.io/VocalisAI/" },
+      { label: "Code", url: "https://github.com/Divyanshb30/VocalisAI" },
+    ],
+    problem:
+      "Airline refunds are won on the phone: long holds, scripted pushback, and knowing which passenger-rights rule applies where. An agent making that call also carries the passenger's personal details, which must never be said to the wrong party.",
+    built: [
+      "A real-time voice agent (Pipecat, LangGraph, Deepgram) that negotiates refunds under Indian, UK/EU and UAE passenger-rights rules.",
+      "Secrets never enter the model's context: placeholders are resolved only at speaking time, behind a deterministic streaming output guard.",
+      "Jurisdiction-scoped hybrid retrieval (BM25, dense embeddings, cross-encoder reranking) for citing the regulations, lifting top-1 accuracy from 47% to 65% on 78 gold questions.",
+      "An LLM judge that rated 29 of 30 calls 5/5, recalibrated with an anchored rubric: its agreement with an independent LLM labeller went from κ −0.05 to 0.73 on 30 held-out calls.",
+      "A phonetic read-back fix for the phone line, which lifted task success over audio from 56% to 68% (25 calls each).",
+    ],
+    outcome:
+      "91% task success over 75 adversarial simulated calls in the text harness, with 0 sensitive-data leaks across them, and 1.86 s p50 (2.70 s p95) voice-to-voice latency on a simulated 8 kHz phone line.",
   },
 ];
 
 /** [capability, lead tool, tools, position in the field, a note under the lead (one line each)] */
 export const STACK: [string, string, string[], [number, number, number], string[]?][] = [
-  ["AI & LLM Engineering", "LangGraph", ["Azure OpenAI (GPT-4.1)", "LangChain", "LangGraph", "MCP", "RAG", "Agent Orchestration"], [-4.4, 2.3, -1.2]],
+  ["AI & LLM Engineering", "LangGraph", ["Azure OpenAI (GPT-4.1)", "LangChain", "LangGraph", "MCP", "LiteLLM", "Agent Orchestration", "Guardrails", "Human-in-the-loop"], [-4.4, 2.3, -1.2]],
   ["Machine Learning & Deep Learning", "PyTorch", ["PyTorch", "TensorFlow", "scikit-learn", "XGBoost", "LoRA / PEFT Fine-tuning", "SHAP Explainability", "Statistical Hypothesis Testing"], [0.6, 2.8, -2.8]],
-  ["Retrieval & Search", "FAISS", ["FAISS", "ChromaDB", "Semantic Search", "Vector Embeddings", "BM25", "Cross-Encoder Reranking"], [4.8, 1.6, -0.6]],
+  ["Retrieval & Search", "FAISS", ["FAISS", "ChromaDB", "RAG", "Semantic Search", "Vector Embeddings", "BM25", "Cross-Encoder Reranking"], [4.8, 1.6, -0.6]],
   [
     "Data Engineering",
     "Databricks",
-    ["Databricks", "PySpark", "SQL", "Unity Catalog", "Medallion Architecture", "Apache Airflow"],
+    ["Databricks", "PySpark", "SQL", "Oracle", "Unity Catalog", "Medallion Architecture", "Apache Airflow"],
     [-1.4, 0.2, 1.6],
     ["Certified Data Engineer Associate", "Certified Generative AI Engineer Associate"],
   ],
-  ["Data & Infrastructure", "Python", ["Python", "FastAPI", "Docker", "GCP Cloud Run", "PostgreSQL", "Redis"], [-1.6, -0.4, -3.6]],
-  ["Natural Language Processing", "Transformers", ["Hugging Face Transformers", "NL-to-SQL", "Text Generation", "Structured Output Generation", "Sequence Modelling", "Tokenisation"], [-5.2, -1.7, 0.4]],
-  ["MLOps & Evaluation", "MLflow", ["MLflow", "DagsHub", "CI/CD Eval Gates", "Drift Monitoring (PSI/KS)", "Model Versioning"], [1.9, -1.3, 2.2]],
-  ["Tools & Languages", "Git", ["Git", "GitHub Actions", "Claude Code", "GitHub Copilot", "Pandas", "NumPy", "Streamlit"], [5.4, -2.3, 1.0]],
+  ["Data & Infrastructure", "Python", ["Python", "FastAPI", "Celery", "Docker", "GCP Cloud Run", "PostgreSQL", "Redis"], [-1.6, -0.4, -3.6]],
+  ["Voice & Language", "Pipecat", ["Pipecat", "Deepgram", "Hugging Face Transformers", "NL-to-SQL", "Structured Output Generation", "Text Generation", "Sequence Modelling", "Tokenisation"], [-5.2, -1.7, 0.4]],
+  ["Evaluation & MLOps", "MLflow", ["MLflow", "DagsHub", "CI/CD Eval Gates", "LLM-as-judge", "Cohen's κ", "Drift Monitoring (PSI/KS)", "Model Versioning"], [1.9, -1.3, 2.2]],
+  ["Tools & Languages", "Git", ["Git", "GitHub Actions", "GitLab CI", "Claude Code", "Pandas", "NumPy", "Streamlit", "React"], [5.4, -2.3, 1.0]],
 ];
 export const LEAD_OF: Record<string, string> = { Transformers: "Hugging Face Transformers" };
 
@@ -261,7 +284,7 @@ export const MEMORIES: Memory[] = [
   {
     y: "2025",
     t: "Amdocs · AT&T",
-    n: "AI software engineer on the AT&T account. Five agents, each with a budget and a fallback. I mentor engineers in agentic AI through hands-on workshops.",
+    n: "AI software engineer on the AT&T account. Building its reconciliation platform alone: agents for the language, a deterministic engine for every verdict.",
     // the portrait cropped to him alone (short of the man at the counter on the left and the one at the bar
     // on the right), his eyes on the upper third
     photo: ["/photos/amdocs.jpg", 255, 280, 600, 820],

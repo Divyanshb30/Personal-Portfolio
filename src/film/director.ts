@@ -41,7 +41,7 @@ export function firstHalfKeys(): Key[] {
     // it under the heading, then goes down it evenly as you scroll, and rests on the last)
     { s: 0.52, name: "The work · wide, from below", pos: PJ.clone().add(V(-0.2, -4.6, 14.2)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, tall: { pos: PJ.clone().add(V(0, 5.0, 12.3)), tgt: PJ.clone().add(V(0, 6.2, 0)), fov: 36 } },
     { s: 0.575, name: "The work · pick one", pos: PJ.clone().add(V(-0.4, -4.4, 13.8)), tgt: PJ.clone().add(V(-0.2, 2.3, 0)), fov: 52, settle: 1, tall: { s: 0.572, pos: PJ.clone().add(V(0, -0.5, 12.3)), tgt: PJ.clone().add(V(0, 0.7, 0)), fov: 36, settle: 0.3 } },
-    { s: 0.7, name: "The work · the last of the column", pos: PJ.clone().add(V(0, -4.4, 12.3)), tgt: PJ.clone().add(V(0, -3.2, 0)), fov: 36, settle: 0.8, only: "tall" },
+    { s: 0.7, name: "The work · the last of the column", pos: PJ.clone().add(V(0, -7.0, 12.3)), tgt: PJ.clone().add(V(0, -5.8, 0)), fov: 36, settle: 0.8, only: "tall" },
     { s: 0.745, name: "Roots drop · tilt down", pos: PJ.clone().add(V(4, 1, 13)), tgt: PJ.clone().add(V(2, -9, -2)), fov: 50, tall: { pos: PJ.clone().add(V(1, -6.5, 13)), tgt: PJ.clone().add(V(0.5, -15, -2)) } },
     { s: 0.8, name: "Dive with the orb", pos: SF.clone().add(V(1, 9, 9)), tgt: SF.clone().add(V(0, 0, -1)), fov: 48, roll: -0.04, tall: { pos: SF.clone().add(V(9, 10, 2)), tgt: SF.clone().add(V(-1, 0, 0)), fov: 44 } },
     { s: 0.845, name: "Overhead · what it runs on", pos: SF.clone().add(V(0.3, 13, 3.5)), tgt: SF.clone().add(V(0, 0, -0.5)), fov: 50, tall: { pos: SF.clone().add(V(5, 15, 0.4)), tgt: SF.clone().add(V(-0.5, 0, 0)), fov: 40 } },

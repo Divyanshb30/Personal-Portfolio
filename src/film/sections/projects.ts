@@ -58,22 +58,43 @@ function shape(id: Project["id"]) {
     pulses.push([1, 0.6, 1], [8, 0.3, 1], [14, 0.7, 1], [11, 0.5, 1]);
   }
   if (id === "agents") {
-    // an orchestrator at the core, five agents around it handing work on to each other, each with its tools
-    const c = add(0, 0, 0, 2.1), ring: number[] = [];
-    for (let k = 0; k < 5; k++) {
-      const a = (k * TAU) / 5 + Math.PI / 2;
-      ring.push(add(Math.cos(a) * 1.25, Math.sin(a) * 1.0, Math.sin(a) * 0.3, 1.15));
+    // the deterministic engine at the core, which owns every verdict; three agents round it (intake, NL-to-SQL,
+    // reporting), each with its tools, that only ever hand it work; and the evaluation suites, a ring round
+    // the whole of it that every change has to pass
+    const c = add(0, 0, 0, 2.1), ag: number[] = [];
+    for (let k = 0; k < 3; k++) {
+      const a = (k * TAU) / 3 + Math.PI / 2;
+      ag.push(add(Math.cos(a) * 1.15, Math.sin(a) * 0.95, Math.sin(a) * 0.3, 1.2));
+      E.push([ag[k], c]);
     }
-    for (let k = 0; k < 5; k++) {
-      E.push([c, ring[k]]);
-      E.push([ring[k], ring[(k + 1) % 5]]);
+    for (let k = 0; k < 3; k++) {
+      const a = (k * TAU) / 3 + Math.PI / 2;
+      for (const o of [-0.38, 0.38]) E.push([ag[k], add(Math.cos(a + o) * 1.6, Math.sin(a + o) * 1.3, (r() - 0.5) * 0.4, 0.45 + r() * 0.2)]);
     }
-    for (let k = 0; k < 5; k++) {
-      const a = (k * TAU) / 5 + Math.PI / 2;
-      for (const o of [-0.22, 0.22]) E.push([ring[k], add(Math.cos(a + o) * 1.95, Math.sin(a + o) * 1.55, (r() - 0.5) * 0.5, 0.45 + r() * 0.2)]);
+    const ring: number[] = [];
+    for (let k = 0; k < 12; k++) {
+      const a = (k * TAU) / 12 + 0.13;
+      ring.push(add(Math.cos(a) * 1.95, Math.sin(a) * 1.55, Math.sin(a) * 0.45 + (r() - 0.5) * 0.2, 0.32 + r() * 0.18));
     }
-    // work leaving the core for an agent, and agents passing it along
-    pulses.push([0, 0.55, 1], [4, 0.4, 1], [1, 0.5, 1], [5, 0.6, 1], [3, 0.35, 1], [8, 0.5, 1]);
+    for (let k = 0; k < 12; k++) E.push([ring[k], ring[(k + 1) % 12]]);
+    // work going in to the engine from each agent, and a check running round the gate
+    pulses.push([0, 0.55, 1], [1, 0.35, 1], [2, 0.7, 1], [10, 0.5, 1], [16, 0.4, 1]);
+  }
+  if (id === "voice") {
+    // the call: the agent and the airline at either end, and between them the line, carrying speech that
+    // swells in the middle of the call; words travel both ways
+    const ag = add(-1.95, 0, 0, 1.45), air = add(1.95, 0, 0.1, 1.2);
+    let prev = ag;
+    for (let k = 1; k < 18; k++) {
+      const t = k / 18, env = Math.pow(Math.sin(Math.PI * t), 1.4);
+      const i = add(-1.95 + t * 3.9, Math.sin(t * TAU * 3.4) * 0.62 * env + (r() - 0.5) * 0.04, (r() - 0.5) * 0.3, 0.3 + env * 0.4 + r() * 0.12);
+      E.push([prev, i]);
+      prev = i;
+    }
+    E.push([prev, air]);
+    // and its echo: a few faint stars scattered round the loudest part
+    for (let k = 0; k < 7; k++) add((r() - 0.5) * 1.8, (r() - 0.5) * 1.5, (r() - 0.5) * 0.5, 0.18 + r() * 0.12);
+    pulses.push([2, 0.5, 1], [7, 0.4, 1], [10, 0.6, -1], [15, 0.45, -1]);
   }
   if (id === "dtu") {
     // a hub and the ring of modules around it
