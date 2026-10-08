@@ -275,7 +275,7 @@ export function fluid(ctx: Ctx, flow: number, speed = 1) {
       // (about one and a half wobbles a second, most of it gone in two)
       slV.addScaledVector(sl, -90 * dt).multiplyScalar(Math.exp(-dt * 3.2));
       sl.addScaledVector(slV, dt);
-      if (sl.length() > 0.14) sl.setLength(0.14);
+      if (sl.length() > 0.06) sl.setLength(0.06);
     },
   };
 }
@@ -318,7 +318,7 @@ const fTouch = new THREE.Vector3();
 export function stirFluid(fl: Fluid, u: LivingU, st: { at: THREE.Vector3; acc: number; amt: number }, dt: number, gain = 1) {
   const amt = u.uPokeAmt.value, d = u.uPoke.value;
   // arriving on the skin: a ring where it lands
-  if (amt > 0.35 && st.amt <= 0.35) fl.ripple(d, 0.03 * gain);
+  if (amt > 0.35 && st.amt <= 0.35) fl.ripple(d, 0.012 * gain);
   st.amt = amt;
   if (amt < 0.05) {
     st.at.copy(d);
@@ -329,11 +329,11 @@ export function stirFluid(fl: Fluid, u: LivingU, st: { at: THREE.Vector3; acc: n
   st.at.copy(d);
   if (ang > 0.5) return;
   // the drag: the body swells after the cursor the way it is going
-  fl.shake(move.multiplyScalar(1.6 * amt * gain));
+  fl.shake(move.multiplyScalar(0.6 * amt * gain));
   // and every so far along, a ring left behind (taller the faster it went)
   st.acc += ang;
   if (st.acc > 0.28) {
     st.acc = 0;
-    fl.ripple(d, Math.min(0.045, 0.012 + (ang / Math.max(dt, 1e-3)) * 0.004) * gain * amt);
+    fl.ripple(d, Math.min(0.018, 0.005 + (ang / Math.max(dt, 1e-3)) * 0.0016) * gain * amt);
   }
 }

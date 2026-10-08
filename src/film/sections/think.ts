@@ -17,7 +17,7 @@ import { THINK } from "../data";
 export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry, planetGeo: THREE.BufferGeometry, orbMood: Orb) {
   const orbSkin = livingSkin(ctx, molten(), toPlanet);
   // both are liquid metal: currents of their own, rings where they're touched, a slosh when they're stirred
-  const orbFl = fluid(ctx, 0.022), plFl = fluid(ctx, 0.012, 0.7);
+  const orbFl = fluid(ctx, 0.008, 0.6), plFl = fluid(ctx, 0.004, 0.45);
   fluidify(orbSkin.mat, orbFl);
   const orb = new THREE.Mesh(orbGeo, orbSkin.mat);
   orb.scale.setScalar(ORB_R);
@@ -95,14 +95,14 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
         stirFluid(orbFl, orbSkin.u, orbStir, dt);
         // condensed: the last of the dust lands on it from below, and it settles with a wobble
         if (orbVis > 0.92 && orbWas <= 0.92) {
-          orbFl.shake(tmp.set(0, 1.1, 0));
-          orbFl.ripple(tmp.set(0, -1, 0), 0.04);
+          orbFl.shake(tmp.set(0, 0.5, 0));
+          orbFl.ripple(tmp.set(0, -1, 0), 0.016);
         }
         // loosening: it shivers toward where it is about to fly
         if (s > 0.27 && !orbShook) {
           orbShook = true;
-          orbFl.shake(tmp.copy(toPlanet).transformDirection(inv).multiplyScalar(1.4));
-          orbFl.ripple(tmp.copy(toPlanet).transformDirection(inv).negate(), 0.035);
+          orbFl.shake(tmp.copy(toPlanet).transformDirection(inv).multiplyScalar(0.6));
+          orbFl.ripple(tmp.copy(toPlanet).transformDirection(inv).negate(), 0.014);
         }
       }
       if (s < 0.25) orbShook = false;

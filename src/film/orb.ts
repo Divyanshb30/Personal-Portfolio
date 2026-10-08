@@ -60,7 +60,7 @@ export function makeOrb(ctx: Ctx) {
     bodyGeo.morphAttributes.normal = [new THREE.BufferAttribute(sn, 3)];
   }
   // and the droplet is liquid: it shimmers on its own, lags and sloshes as it is thrown about, rings where it lands
-  const liquid = fluid(ctx, 0.03, 1.3);
+  const liquid = fluid(ctx, 0.01, 0.8);
   const body = new THREE.Mesh(bodyGeo, fluidify(glass(), liquid));
   const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 3), new THREE.MeshBasicMaterial({ color: 0xff9a4a, toneMapped: false }));
   shape.add(body, core);
@@ -193,8 +193,8 @@ export function makeOrb(ctx: Ctx) {
       vel.add(v);
       // knocked: a ring from where it was hit, and the liquid thrown back against the knock
       if (root.visible && v.lengthSq() > 1) {
-        liquid.ripple(toBody(tmp2.copy(v).negate()), Math.min(0.06, 0.012 * v.length()));
-        liquid.shake(toBody(tmp2.copy(v)).multiplyScalar(-0.12));
+        liquid.ripple(toBody(tmp2.copy(v).negate()), Math.min(0.025, 0.005 * v.length()));
+        liquid.shake(toBody(tmp2.copy(v)).multiplyScalar(-0.05));
       }
     },
     /** Name its mood this frame (the last caller wins, so the ambient moments can override a section). */
@@ -504,10 +504,10 @@ export function makeOrb(ctx: Ctx) {
       // the liquid inside: it lags behind every change of speed, swelling against it and ringing down after,
       // and a hard landing (a sharp flatten) sends a ring round it from where it hit
       if (!still) {
-        toBody(slosh.copy(accS)).multiplyScalar(-0.0016 * dt * 60);
-        if (slosh.length() > 0.08) slosh.setLength(0.08);
+        toBody(slosh.copy(accS)).multiplyScalar(-0.0007 * dt * 60);
+        if (slosh.length() > 0.035) slosh.setLength(0.035);
         liquid.shake(slosh);
-        if (sqWant < -0.25 && sqWas >= -0.25) liquid.ripple(toBody(tmp2.copy(sqAxis).negate()), Math.min(0.06, -sqWant * 0.1));
+        if (sqWant < -0.25 && sqWas >= -0.25) liquid.ripple(toBody(tmp2.copy(sqAxis).negate()), Math.min(0.025, -sqWant * 0.04));
       }
       sqWas = sqWant;
       liquid.u.uFluid.value = 1 - round;

@@ -58,27 +58,22 @@ function shape(id: Project["id"]) {
     pulses.push([1, 0.6, 1], [8, 0.3, 1], [14, 0.7, 1], [11, 0.5, 1]);
   }
   if (id === "agents") {
-    // the deterministic engine at the core, which owns every verdict; three agents round it (intake, NL-to-SQL,
-    // reporting), each with its tools, that only ever hand it work; and the evaluation suites, a ring round
-    // the whole of it that every change has to pass
-    const c = add(0, 0, 0, 2.1), ag: number[] = [];
-    for (let k = 0; k < 3; k++) {
-      const a = (k * TAU) / 3 + Math.PI / 2;
-      ag.push(add(Math.cos(a) * 1.15, Math.sin(a) * 0.95, Math.sin(a) * 0.3, 1.2));
-      E.push([ag[k], c]);
+    // an orchestrator at the core, five agents around it handing work on to each other, each with its tools
+    const c = add(0, 0, 0, 2.1), ring: number[] = [];
+    for (let k = 0; k < 5; k++) {
+      const a = (k * TAU) / 5 + Math.PI / 2;
+      ring.push(add(Math.cos(a) * 1.25, Math.sin(a) * 1.0, Math.sin(a) * 0.3, 1.15));
     }
-    for (let k = 0; k < 3; k++) {
-      const a = (k * TAU) / 3 + Math.PI / 2;
-      for (const o of [-0.38, 0.38]) E.push([ag[k], add(Math.cos(a + o) * 1.6, Math.sin(a + o) * 1.3, (r() - 0.5) * 0.4, 0.45 + r() * 0.2)]);
+    for (let k = 0; k < 5; k++) {
+      E.push([c, ring[k]]);
+      E.push([ring[k], ring[(k + 1) % 5]]);
     }
-    const ring: number[] = [];
-    for (let k = 0; k < 12; k++) {
-      const a = (k * TAU) / 12 + 0.13;
-      ring.push(add(Math.cos(a) * 1.95, Math.sin(a) * 1.55, Math.sin(a) * 0.45 + (r() - 0.5) * 0.2, 0.32 + r() * 0.18));
+    for (let k = 0; k < 5; k++) {
+      const a = (k * TAU) / 5 + Math.PI / 2;
+      for (const o of [-0.22, 0.22]) E.push([ring[k], add(Math.cos(a + o) * 1.95, Math.sin(a + o) * 1.55, (r() - 0.5) * 0.5, 0.45 + r() * 0.2)]);
     }
-    for (let k = 0; k < 12; k++) E.push([ring[k], ring[(k + 1) % 12]]);
-    // work going in to the engine from each agent, and a check running round the gate
-    pulses.push([0, 0.55, 1], [1, 0.35, 1], [2, 0.7, 1], [10, 0.5, 1], [16, 0.4, 1]);
+    // work leaving the core for an agent, and agents passing it along
+    pulses.push([0, 0.55, 1], [4, 0.4, 1], [1, 0.5, 1], [5, 0.6, 1], [3, 0.35, 1], [8, 0.5, 1]);
   }
   if (id === "voice") {
     // the call: the agent and the airline at either end, and between them the line, carrying speech that

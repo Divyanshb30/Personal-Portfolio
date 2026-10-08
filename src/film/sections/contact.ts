@@ -69,7 +69,7 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
   }
   const skin = livingSkin(ctx, molten(), V(0, -1, 0));
   // liquid metal: currents of its own, rings where it's touched or tapped, a slosh when it's stirred
-  const fl = fluid(ctx, 0.026);
+  const fl = fluid(ctx, 0.009, 0.6);
   fluidify(skin.mat, fl);
   const orb = new THREE.Mesh(orbGeo, skin.mat);
   orb.scale.setScalar(OR);
@@ -95,8 +95,8 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
     if (!hit) return;
     inv.copy(orb.matrixWorld).invert();
     const d = tmp.copy(hit).applyMatrix4(inv).normalize();
-    fl.ripple(d, 0.07);
-    fl.shake(d.clone().multiplyScalar(-1.6));
+    fl.ripple(d, 0.03);
+    fl.shake(d.clone().multiplyScalar(-0.7));
   };
   window.addEventListener("pointerdown", onDown);
 
@@ -131,8 +131,8 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
       // the dust has landed, from the ground up: it takes its weight, and wobbles as it settles
       if (reveal > 0.85 && !landed) {
         landed = true;
-        fl.shake(tmp.set(0, -1.3, 0));
-        fl.ripple(tmp.set(0, -1, 0), 0.05);
+        fl.shake(tmp.set(0, -0.5, 0));
+        fl.ripple(tmp.set(0, -1, 0), 0.02);
       } else if (reveal < 0.2) landed = false;
       fl.update(dt);
       if (form > 0.02) mood.feel(form < 0.95 ? "Forming" : "Listening");
