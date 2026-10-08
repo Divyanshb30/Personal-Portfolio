@@ -448,13 +448,13 @@ export function buildProjects(ctx: Ctx, planetGeo: THREE.BufferGeometry, orb: Or
     return at;
   };
   const onClick = (e: MouseEvent) => {
-    // only clicks on the open sky count, not on the rail, the bar or the panel
-    if (!PICK.on || e.target !== ctx.renderer.domElement) return;
-    // with a story risen from the bottom, a tap on the film above it puts it away
+    // with a story open, a click anywhere outside it puts it away (as its ✕ does)
     if (PICK.idx >= 0) {
-      if (ctx.form.tall) close();
+      if (!panel.contains(e.target as Node)) close();
       return;
     }
+    // only clicks on the open sky count, not on the rail or the bar
+    if (!PICK.on || e.target !== ctx.renderer.domElement) return;
     // (judged from where the click or tap landed, not from the last frame's hover: a tap has no hover)
     const i = nearest(e.clientX, e.clientY);
     if (i >= 0) open(i);
