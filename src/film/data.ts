@@ -170,7 +170,7 @@ export const PROJECTS: Project[] = [
     line: "A real-time voice agent that calls airlines for refunds.",
     off: [1.2, 6.6, 0],
     sc: 1.15,
-    tall: { off: [1.25, 1.1, 0], sc: 0.6, label: "left" },
+    tall: { off: [1.25, 1.1, 0], sc: 0.66, label: "left" },
     uses: ["Python", "Pipecat", "LangGraph", "Deepgram", "BM25", "Cross-Encoder Reranking", "Vector Embeddings", "LLM-as-judge", "Cohen's κ", "Guardrails"],
     links: [
       { label: "Live demo", url: "https://divyanshb30.github.io/VocalisAI/" },

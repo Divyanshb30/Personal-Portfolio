@@ -76,20 +76,18 @@ function shape(id: Project["id"]) {
     pulses.push([0, 0.55, 1], [4, 0.4, 1], [1, 0.5, 1], [5, 0.6, 1], [3, 0.35, 1], [8, 0.5, 1]);
   }
   if (id === "voice") {
-    // the call: the agent and the airline at either end, and between them the line, carrying speech that
-    // swells in the middle of the call; words travel both ways
-    const ag = add(-1.95, 0, 0, 1.45), air = add(1.95, 0, 0.1, 1.2);
-    let prev = ag;
-    for (let k = 1; k < 18; k++) {
-      const t = k / 18, env = Math.pow(Math.sin(Math.PI * t), 1.4);
-      const i = add(-1.95 + t * 3.9, Math.sin(t * TAU * 3.4) * 0.62 * env + (r() - 0.5) * 0.04, (r() - 0.5) * 0.3, 0.3 + env * 0.4 + r() * 0.12);
-      E.push([prev, i]);
-      prev = i;
-    }
-    E.push([prev, air]);
-    // and its echo: a few faint stars scattered round the loudest part
-    for (let k = 0; k < 7; k++) add((r() - 0.5) * 1.8, (r() - 0.5) * 1.5, (r() - 0.5) * 0.5, 0.18 + r() * 0.12);
-    pulses.push([2, 0.5, 1], [7, 0.4, 1], [10, 0.6, -1], [15, 0.45, -1]);
+    // a voice as an editor draws it: bars of sound, mirrored about the line they ride on, loudest mid-sentence
+    const hs = [0.3, 0.7, 1.16, 0.81, 1.32, 0.6, 1.0, 0.4, 0.24];
+    let prevM = -1;
+    hs.forEach((h, k) => {
+      const x = -2 + k * 0.5, z = (r() - 0.5) * 0.25;
+      const t = add(x, h, z, 0.45 + h * 0.3), m = add(x, 0, z, 0.32), b = add(x, -h, z, 0.45 + h * 0.3);
+      E.push([t, m], [m, b]);
+      if (prevM >= 0) E.push([prevM, m]);
+      prevM = m;
+    });
+    // the voice running along the line, and the level rising and falling on two of the bars
+    pulses.push([4, 0.5, 1], [10, 0.4, 1], [19, 0.6, 1], [11, 0.5, -1], [17, 0.5, 1]);
   }
   if (id === "dtu") {
     // a hub and the ring of modules around it

@@ -193,7 +193,7 @@ export function makeOrb(ctx: Ctx) {
       vel.add(v);
       // knocked: a ring from where it was hit, and the liquid thrown back against the knock
       if (root.visible && v.lengthSq() > 1) {
-        liquid.ripple(toBody(tmp2.copy(v).negate()), Math.min(0.025, 0.005 * v.length()));
+        liquid.ripple(toBody(tmp2.copy(v).negate()), Math.min(0.017, 0.0035 * v.length()));
         liquid.shake(toBody(tmp2.copy(v)).multiplyScalar(-0.05));
       }
     },
@@ -507,7 +507,7 @@ export function makeOrb(ctx: Ctx) {
         toBody(slosh.copy(accS)).multiplyScalar(-0.0007 * dt * 60);
         if (slosh.length() > 0.035) slosh.setLength(0.035);
         liquid.shake(slosh);
-        if (sqWant < -0.25 && sqWas >= -0.25) liquid.ripple(toBody(tmp2.copy(sqAxis).negate()), Math.min(0.025, -sqWant * 0.04));
+        if (sqWant < -0.25 && sqWas >= -0.25) liquid.ripple(toBody(tmp2.copy(sqAxis).negate()), Math.min(0.017, -sqWant * 0.028));
       }
       sqWas = sqWant;
       liquid.u.uFluid.value = 1 - round;

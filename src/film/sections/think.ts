@@ -96,13 +96,13 @@ export function buildThink(ctx: Ctx, being: Being, orbGeo: THREE.BufferGeometry,
         // condensed: the last of the dust lands on it from below, and it settles with a wobble
         if (orbVis > 0.92 && orbWas <= 0.92) {
           orbFl.shake(tmp.set(0, 0.5, 0));
-          orbFl.ripple(tmp.set(0, -1, 0), 0.016);
+          orbFl.ripple(tmp.set(0, -1, 0), 0.011);
         }
         // loosening: it shivers toward where it is about to fly
         if (s > 0.27 && !orbShook) {
           orbShook = true;
           orbFl.shake(tmp.copy(toPlanet).transformDirection(inv).multiplyScalar(0.6));
-          orbFl.ripple(tmp.copy(toPlanet).transformDirection(inv).negate(), 0.014);
+          orbFl.ripple(tmp.copy(toPlanet).transformDirection(inv).negate(), 0.01);
         }
       }
       if (s < 0.25) orbShook = false;

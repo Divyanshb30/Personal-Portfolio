@@ -95,7 +95,7 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
     if (!hit) return;
     inv.copy(orb.matrixWorld).invert();
     const d = tmp.copy(hit).applyMatrix4(inv).normalize();
-    fl.ripple(d, 0.03);
+    fl.ripple(d, 0.02);
     fl.shake(d.clone().multiplyScalar(-0.7));
   };
   window.addEventListener("pointerdown", onDown);
@@ -132,7 +132,7 @@ export function buildContact(ctx: Ctx, orbGeo: THREE.BufferGeometry, mood: Orb) 
       if (reveal > 0.85 && !landed) {
         landed = true;
         fl.shake(tmp.set(0, -0.5, 0));
-        fl.ripple(tmp.set(0, -1, 0), 0.02);
+        fl.ripple(tmp.set(0, -1, 0), 0.014);
       } else if (reveal < 0.2) landed = false;
       fl.update(dt);
       if (form > 0.02) mood.feel(form < 0.95 ? "Forming" : "Listening");

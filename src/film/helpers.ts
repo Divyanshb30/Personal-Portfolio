@@ -318,7 +318,7 @@ const fTouch = new THREE.Vector3();
 export function stirFluid(fl: Fluid, u: LivingU, st: { at: THREE.Vector3; acc: number; amt: number }, dt: number, gain = 1) {
   const amt = u.uPokeAmt.value, d = u.uPoke.value;
   // arriving on the skin: a ring where it lands
-  if (amt > 0.35 && st.amt <= 0.35) fl.ripple(d, 0.012 * gain);
+  if (amt > 0.35 && st.amt <= 0.35) fl.ripple(d, 0.008 * gain);
   st.amt = amt;
   if (amt < 0.05) {
     st.at.copy(d);
@@ -334,6 +334,6 @@ export function stirFluid(fl: Fluid, u: LivingU, st: { at: THREE.Vector3; acc: n
   st.acc += ang;
   if (st.acc > 0.28) {
     st.acc = 0;
-    fl.ripple(d, Math.min(0.018, 0.005 + (ang / Math.max(dt, 1e-3)) * 0.0016) * gain * amt);
+    fl.ripple(d, Math.min(0.012, 0.0035 + (ang / Math.max(dt, 1e-3)) * 0.0011) * gain * amt);
   }
 }
