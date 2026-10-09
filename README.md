@@ -1,6 +1,6 @@
 # Divyansh Bansal
 
-Most portfolios are a list of things. Mine is a short film you scroll through.
+Somewhere between code and a little imagination.
 
 **[divyansh-bansal.space](https://divyansh-bansal.space)**
 
